@@ -19,7 +19,7 @@ mv example/trojan-go.service /etc/systemd/system/trojan-go.service
 
 # if config.json didn't exist, use the example server.json 
 if [ ! -f "/etc/trojan-go/config.json" ]; then
-  mv example/sever.json /etc/trojan-go/config.json
+  mv /example/sever.json /etc/trojan-go/config.json
 fi
 
 systemctl daemon-reload
