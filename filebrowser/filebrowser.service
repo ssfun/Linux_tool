@@ -1,0 +1,14 @@
+[Unit]
+Description=filebrowser
+After=network-online.target
+Wants=network-online.target systemd-networkd-wait-online.service
+
+[Service]
+Type=simple
+Restart=on-failure
+RestartSec=5s
+DynamicUser=true
+ExecStart=/usr/local/bin/filebrowser -c /etc/filebrowser/config.json
+
+[Install]
+WantedBy=multi-user.target
