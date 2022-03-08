@@ -27,5 +27,6 @@ fi
 
 systemctl daemon-reload
 systemctl reset-failed
+systemctl enable filebrowser
 
 echo "filebrowser is installed. use 'systemctl start filebrowser' to start."
