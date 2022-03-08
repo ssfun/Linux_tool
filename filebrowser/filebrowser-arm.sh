@@ -3,7 +3,7 @@
 echo "Getting the latest version of filebrowser"
 latest_version="$(wget -qO- -t1 -T2 "https://api.github.com/repos/filebrowser/filebrowser/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
 echo "${latest_version}"
-tfilebrowser_link="https://github.com/filebrowser/filebrowser/releases/download/${latest_version}/linux-arm64-filebrowser.tar.gz"
+filebrowser_link="https://github.com/filebrowser/filebrowser/releases/download/${latest_version}/linux-arm64-filebrowser.tar.gz"
 
 mkdir -p "/etc/filebrowser"
 mkdir -p "/opt/filebrowser"
