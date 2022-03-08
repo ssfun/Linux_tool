@@ -1,0 +1,8 @@
+{
+    "address":"127.0.0.1",
+    "database":"/opt/filebrowser/filebrowser.db",
+    "log":"/var/log/filebrowser.log",
+    "port":40030,  //与caddy对应
+    "root":"/home/filebrowser",  //数据目录，修改为自己的。
+    "username":"admin" //默认用户名，同密码。
+}
