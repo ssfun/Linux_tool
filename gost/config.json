@@ -1,0 +1,15 @@
+{
+    "Debug": true,
+    "Retries": 3,
+    "ServeNodes": [
+        ":localport1/site:port"
+    ],
+    "Routes": [
+        {
+            "Retries": 3,
+            "ServeNodes": [
+                ":localport2/site2:port"
+            ]
+        }
+    ]
+}
