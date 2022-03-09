@@ -10,7 +10,7 @@ gost_link="https://github.com/ginuerzh/gost/releases/download/${latest_version}/
 mkdir -p "/etc/gost"
 
 cd `mktemp -d`
-wget -nv "${trojango_link}" -O gost.gz
+wget -nv "${gost_link}" -O gost.gz
 gzip -d gost.gz
 
 mv gost-linux-* /usr/bin/gost
