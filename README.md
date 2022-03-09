@@ -29,3 +29,13 @@ bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/trojan/t
 ```
 bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/trojan/trojan-go-arm.sh)
 ```
+
+## gost
+- amd
+```
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/gost/gost-amd.sh)
+```
+- arm
+```
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/gost/gost-arm.sh)
+```
