@@ -39,3 +39,13 @@ bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/gost/gos
 ```
 bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/gost/gost-arm.sh)
 ```
+
+## oci-help
+- amd
+```
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/oci-help/oci-help-amd.sh)
+```
+- arm
+```
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/oci-help/oci-help-arm.sh)
+```
