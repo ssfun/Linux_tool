@@ -1,0 +1,87 @@
+name: IBM Cloud Foundry - Trojan-go
+ 
+env:
+  IBM_CF_API: https://api.us-south.cf.cloud.ibm.com
+  IBM_CF_APP_MEM: 256M
+
+on:
+  workflow_dispatch:
+ 
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      IBM_CF_USERNAME: ${{ secrets.IBM_CF_USERNAME }}
+      IBM_CF_PASSWORD: ${{ secrets.IBM_CF_PASSWORD }}
+      IBM_CF_ORG_NAME: ${{ secrets.IBM_CF_ORG_NAME }}
+      IBM_CF_SPACE_NAME: ${{ secrets.IBM_CF_SPACE_NAME }}
+      IBM_CF_APP_NAME: ${{ secrets.IBM_CF_APP_NAME }}
+      PASSWORD: ${{ secrets.PASSWORD }}
+      WS_PATH: ${{ secrets.WS_PATH }}
+      WS_HOST: ${{ secrets.HOST }}
+
+    steps:
+
+    - name: Install Cloud Foundry CLI
+      run: |
+        curl -fsSL "https://packages.cloudfoundry.org/stable?release=linux64-binary&version=v7&source=github" | tar -zxC /tmp
+        sudo install -m 755 /tmp/cf7 /usr/local/bin/cf
+        cf version
+    - name: Login to IBM Cloud Foundry
+      run: |
+        cf login \
+          -a "${IBM_CF_API}" \
+          -u "${IBM_CF_USERNAME}" \
+          -p "${IBM_CF_PASSWORD}" \
+          -o "${IBM_CF_ORG_NAME:-$IBM_CF_USERNAME}" \
+          -s "${IBM_CF_SPACE_NAME:-dev}"
+    - name: Download Latest Trojan-go
+      run: |
+        DOWNLOAD_URL="https://github.com/p4gefau1t/trojan-go/releases/latest/download/trojan-go-linux-amd64.zip"
+        curl -fsSL "$DOWNLOAD_URL" -o "latest-trojan-go.zip"
+        unzip latest-trojan-go.zip trojan-go geoip.dat geosite.dat
+        rm latest-trojan-go.zip
+        chmod -v 755 trojan-go
+        ./trojan-go -version
+        mv trojan-go ${IBM_CF_APP_NAME}
+    - name: Generate Trojan-go Config File
+      if: ${{ env.WS_PATH }}
+      run: |
+        base64 << 123 > config
+        {
+          "run_type": "server",
+          "local_addr": "0.0.0.0",
+          "local_port": 443,
+          "remote_addr": "127.0.0.1",
+          "remote_port": 80,
+          "password": [
+              "${PASSWORD}"
+          ],
+          "transport_plugin":{
+           "enabled": true,
+           "type": "plaintext"
+          },
+          "websocket": {
+           "enabled": true,
+           "path": "/${WS_PATH}",
+           "host": "${WS_HOST}"
+          },
+          "router": {
+           "enabled": false
+          }
+        }
+        
+    - name: Generate Manifest File
+      run: |
+        cat << 123 > manifest.yml
+        applications:
+        - name: ${IBM_CF_APP_NAME}
+          memory: ${IBM_CF_APP_MEM}
+          random-route: true
+          command: base64 -d config > config.json; ./${IBM_CF_APP_NAME} -config=config.json
+          buildpacks:
+          - binary_buildpack
+        
+    - name: Deploy Cloud Foundry App
+      run: cf push
