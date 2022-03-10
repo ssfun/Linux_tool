@@ -24,5 +24,6 @@ fi
 systemctl daemon-reload
 systemctl reset-failed
 systemctl enable trojan-go
+chmod -R 777 /etc/ssl/caddy/
 
 echo "trojan-go is installed. use 'systemctl start trojan-go' start trojan-go."
