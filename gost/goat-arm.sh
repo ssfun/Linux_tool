@@ -13,7 +13,7 @@ cd `mktemp -d`
 wget -nv "${gost_link}" -O gost.gz
 gzip -d gost.gz
 
-mv gost-linux-* /usr/bin/gost
+mv gost /usr/bin/gost
 chmod +x /usr/bin/gost
 
 curl -s  https://raw.githubusercontent.com/ssfun/Linux_tool/main/gost/gost.service  -o /etc/systemd/system/gost.service
