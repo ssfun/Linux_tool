@@ -20,7 +20,7 @@ curl -s  https://raw.githubusercontent.com/ssfun/Linux_tool/main/gost/gost.servi
 
 # if config.json didn't exist, use the example server.json 
 if [ ! -f "/etc/gost/config.json" ]; then
-  curl -s  https://raw.githubusercontent.com/ssfun/Linux_tool/main/gost/config.json  -o /etc/systemd/system/config.json
+  curl -s  https://raw.githubusercontent.com/ssfun/Linux_tool/main/gost/config.json  -o /etc/gost/config.json
 fi
 
 systemctl daemon-reload
