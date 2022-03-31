@@ -21,10 +21,27 @@ curl -s  https://raw.githubusercontent.com/ssfun/Linux_tool/main/caddy/index.htm
 mkdir -p "/var/log/caddy"
 chown www-data:www-data /var/log/caddy
 
-# if Caddyfile didn't exist, use the example Caddyfile 
-if [ ! -f "/etc/caddy/Caddyfile" ]; then
-  curl -s  https://raw.githubusercontent.com/ssfun/Linux_tool/main/caddy/Caddyfile  -o /etc/caddy/Caddyfile
-fi
+# use the example Caddyfile 
+cat <<EOF >/etc/caddy/Caddyfile
+site:80 {
+    redir https://site
+}
+site:443 {
+    gzip
+    timeouts none
+    tls email
+    log /var/log/caddy/caddy.site.log
+    proxy / 127.0.0.1:port {
+        header_upstream -Origin
+        websocket
+    }
+}
+
+http://site:404 {
+    root /var/www/404
+    gzip
+}
+EOF
 
 systemctl daemon-reload
 systemctl reset-failed
