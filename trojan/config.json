@@ -1,0 +1,29 @@
+{
+    "run_type": "server",
+    "local_addr": "0.0.0.0",
+    "local_port": port,
+    "remote_addr": "127.0.0.1",
+    "remote_port": 80,
+    "password": [
+        "password"
+    ],
+    "ssl": {
+        "cert": "/etc/ssl/caddy/acme/acme-v02.api.letsencrypt.org/sites/hostname/hostname.crt",
+        "key": "/etc/ssl/caddy/acme/acme-v02.api.letsencrypt.org/sites/hostname/hostname.key",
+        "sni": "hostname",
+        "fallback_port":404
+    },
+    "websocket": {
+        "enabled": true,
+        "path": "/path",
+        "hostname": "site_hostname"
+    },
+    "router": {
+        "enabled": true,
+        "block": [
+            "geoip:private"
+        ],
+        "geoip": "/etc/trojan-go/geoip.dat",
+        "geosite": "/etc/trojan-go/geosite.dat"
+    }
+}                                                    
