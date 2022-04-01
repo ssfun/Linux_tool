@@ -40,6 +40,16 @@ bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/gost/gos
 bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/gost/gost-arm.sh)
 ```
 
+## plexdrive
+- amd
+```
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/plexdrive/plexdrive-amd.sh)
+```
+- arm
+```
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/plexdrive/plexdrive-arm.sh)
+```
+
 ## oci-help
 - amd
 ```
