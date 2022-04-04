@@ -26,4 +26,4 @@
         "geoip": "/etc/trojan-go/geoip.dat",
         "geosite": "/etc/trojan-go/geosite.dat"
     }
-}                                                    
+}
