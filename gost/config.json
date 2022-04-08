@@ -2,13 +2,23 @@
     "Debug": true,
     "Retries": 3,
     "ServeNodes": [
-        ":localport1/site:port"
+        "relay+wss://:localport1/site:port"
     ],
     "Routes": [
         {
             "Retries": 3,
             "ServeNodes": [
-                ":localport2/site2:port"
+                "tcp://:localport2",
+                "udp://:localport2"
+            ],
+            "ChainNodes": [
+                "relay+wss://site:port"
+            ]
+        },
+        {
+            "Retries": 3,
+            "ServeNodes": [
+                ":localport3/site:port"
             ]
         }
     ]
