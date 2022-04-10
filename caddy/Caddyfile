@@ -1,0 +1,49 @@
+{
+	order reverse_proxy before route
+	admin off
+	log {
+		level ERROR
+		output file /var/log/caddy/access.log
+	}
+}
+
+:80, a.b.c {
+	redir https://a.b.c
+}
+
+:443, a.b.c { #a.b.c修改为自己的域名。注意：逗号与域名之间有一个空格。
+	tls {
+		ciphers TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256
+		alpn http/1.1 h2
+	}
+
+	@tws { #匹配器标签。此标签仅区分，多个不同代理需要改成不同名称，但要与下边‘reverse_proxy’中匹配器标签对应。
+		path /twspatch #与tws应用中path对应
+		header Connection *Upgrade*
+		header Upgrade websocket
+	}
+	reverse_proxy @tws localhost:2007 #转发给本机tws监听端口
+
+	@fb { #匹配器标签。此标签仅区分，多个不同代理需要改成不同名称，但要与下边‘reverse_proxy’中匹配器标签对应。
+		path /
+		ecept /twspatch
+		header Connection *Upgrade*
+		header Upgrade websocket
+	}
+	reverse_proxy @fb localhost:2007 #转发给本机fb监听端口
+
+	@host {
+		host a.b.c #限定域名访问（禁止以ip方式访问网站），修改为自己的域名。
+	}
+}
+
+:404, a.b.c {
+	@host {
+		host a.b.c #限定域名访问（禁止以ip方式访问网站），修改为自己的域名。
+	}
+	route @host {
+		file_server {
+			root * /var/www/404 #修改为自己存放的WEB文件路径
+		}
+	}
+}
