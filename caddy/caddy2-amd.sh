@@ -99,9 +99,9 @@ http://$host:404 {
                 host $host #限定域名访问（禁止以ip方式访问网站），修改为自己的域名。
         }
         route @host {
-		        file_server {
-			          root /var/www/404 #修改为自己存放的WEB文件路径
-		        }
+		file_server {
+	                root /var/www/404 #修改为自己存放的WEB文件路径
+		}
         }
 }
 EOF
