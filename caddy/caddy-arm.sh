@@ -2,7 +2,7 @@
 
 echo "Getting the latest version of caddy"
 wget https://raw.githubusercontent.com/ssfun/Linux_tool/main/caddy/arm/caddy -O /usr/local/bin/caddy && chmod +x /usr/local/bin/caddy
-curl -s  https://raw.githubusercontent.com/ssfun/Linux_tool/main/caddy/caddy.service  -o /etc/systemd/system/caddy.service
+curl -s  https://raw.githubusercontent.com/ssfun/Linux_tool/main/caddy/caddy1.service  -o /etc/systemd/system/caddy.service
 
 mkdir -p "/etc/caddy"
 touch /etc/caddy/Caddyfile
