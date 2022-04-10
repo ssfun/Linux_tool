@@ -16,11 +16,33 @@ mkdir -p "/var/www"
 mkdir -p "/var/www/404"
 mkdir -p "/var/log/caddy"
 
-# set caddy.service 
-curl -s  https://raw.githubusercontent.com/ssfun/Linux_tool/main/caddy/caddy.service  -o /etc/systemd/system/caddy.service
-
 # get 404.html
 curl -s  https://raw.githubusercontent.com/ssfun/Linux_tool/main/caddy/index.html  -o /var/www/404/index.html
+
+# set caddy.service
+cat <<EOF >/etc/systemd/system/caddy.service
+[Unit]
+Description=Caddy
+Documentation=https://caddyserver.com/docs/
+After=network.target network-online.target
+Requires=network-online.target
+
+[Service]
+Type=notify
+User=root
+Group=root
+ExecStart=/usr/local/bin/caddy/caddy run --environ --config /etc/caddy/Caddyfile
+ExecReload=/usr/local/bin/caddy/caddy reload --config /etc/caddy/Caddyfile
+TimeoutStopSec=5s
+LimitNOFILE=1048576
+LimitNPROC=512
+PrivateTmp=true
+ProtectSystem=full
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target
+EOF
 
 # set Caddyfile 
 read -p "请输入需要设置的网站host:" host
