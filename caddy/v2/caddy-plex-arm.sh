@@ -91,7 +91,7 @@ cat <<EOF >/usr/local/etc/caddy/Caddyfile
 		header {
 			Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" #启用HSTS
 		}
-      reverse_proxy 127.0.0.1:$port
+        reverse_proxy 127.0.0.1:$port
 	}
 }
 
@@ -123,13 +123,13 @@ cat <<EOF >/usr/local/etc/caddy/Caddyfile
 	route @plex {
 		header {
 			Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" #启用HSTS
-      X-Content-Type-Options nosniff
-      X-Frame-Options DENY
-      Referrer-Policy no-referrer-when-downgrade
-      X-XSS-Protection 1
+                        X-Content-Type-Options nosniff
+                        X-Frame-Options DENY
+                        Referrer-Policy no-referrer-when-downgrade
+                        X-XSS-Protection 1
 		}
 		reverse_proxy 127.0.0.1:32400
-    encode gzip
+                encode gzip
 	}
 
 }
