@@ -33,14 +33,8 @@ jobs:
           --with github.com/mholt/caddy-dynamicdns \
           --with github.com/caddy-dns/cloudflare
 
-    - name: Commit
-      run: |
-        git config --global user.email ssfun@github.com
-        git config --global user.name ssfun
-        git add ./caddy/
-        git commit -m "Update caddy files" -a
-    
-    - name: Push
-      uses: ad-m/github-push-action@master
+    - name: upload
+      uses: actions/upload-artifact@master
       with:
-        github_token: ${{ secrets.GT_TOKEN }}
+        name: caddy-linux-amd64
+        path: ./caddy
