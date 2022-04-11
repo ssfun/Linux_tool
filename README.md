@@ -3,11 +3,11 @@
 ## caddy
 - amd
 ```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/caddy/caddy-amd.sh)
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/caddy/v2/caddy-amd.sh)
 ```
 - arm
 ```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/caddy/caddy-arm.sh)
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/caddy/v2/caddy-arm.sh)
 ```
 
 ## filebrowser
