@@ -17,7 +17,7 @@ mkdir -p "/var/www/404"
 mkdir -p "/var/log/caddy"
 
 # get 404.html
-curl -s  https://raw.githubusercontent.com/ssfun/Linux_tool/main/caddy/index.html  -o /var/www/404/index.html
+curl -s  https://raw.githubusercontent.com/ssfun/Linux_tool/main/caddy/404/index.html  -o /var/www/404/index.html
 
 # set caddy.service
 cat <<EOF >/etc/systemd/system/caddy.service
