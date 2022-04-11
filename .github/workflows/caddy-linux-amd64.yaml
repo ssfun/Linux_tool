@@ -19,7 +19,7 @@ jobs:
     
     - name: install xcaddy
       run: |
-        latest_version="$(wget -qO- -t1 -T2 "https://api.github.com/repos/ginuerzh/gost/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
+        latest_version="$(wget -qO- -t1 -T2 "https://api.github.com/repos/caddyserver/xcaddy/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
         echo "${latest_version}"
         latest_name="$(wget -qO- -t1 -T2 "https://api.github.com/repos/caddyserver/xcaddy/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/v//g;s/,//g;s/ //g')"
         echo "${latest_name}"
