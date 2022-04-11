@@ -16,14 +16,11 @@ jobs:
     
     - name: install xcaddy
       run: |
-        tag_name=`curl -s https://api.github.com/repos/caddyserver/xcaddy/releases | grep 'tag_name' | sed -n '1p' | cut -d\" -f4`
-        wget -O ./xcaddy https://github.com/caddyserver/xcaddy/releases/download/${tag_name}/xcaddy_${tag_name}_linux_amd64
-        chmod 777 ./xcaddy
+        go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
+        go get -v github.com/caddyserver/xcaddy/cmd/xcaddy@latest
 
     - name: build caddy
       run: |
-        export GOARCH=amd64
-        export GOOS=linux
         ./xcaddy build \
           --with github.com/mholt/caddy-l4 \
           --with github.com/mholt/caddy-dynamicdns \
