@@ -51,7 +51,7 @@ read -p "请输入 trojan 密码:" pswd
     [ -z "${pswd}" ]
 read -p "请输入 filebrowser 端口:" port
     [ -z "${port}" ]
-cat <<EOF >/etc/caddy/Caddyfile
+cat <<EOF >/usr/local/etc/caddy/Caddyfile
 {
 	order trojan before route
 	admin off
