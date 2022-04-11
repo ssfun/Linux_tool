@@ -34,4 +34,4 @@ jobs:
       uses: actions/upload-artifact@master
       with:
         name: caddy-linux-amd64
-        path: ./caddy2
+        path: ./caddy
