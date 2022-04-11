@@ -31,8 +31,8 @@ Requires=network-online.target
 Type=notify
 User=root
 Group=root
-ExecStart=/usr/local/bin/caddy run --environ --config /etc/caddy/Caddyfile
-ExecReload=/usr/local/bin/caddy reload --config /etc/caddy/Caddyfile
+ExecStart=/usr/local/bin/caddy run --environ --config /usr/local/etc/caddy/Caddyfile
+ExecReload=/usr/local/bin/caddy reload --config /usr/local/etc/caddy/Caddyfile
 TimeoutStopSec=5s
 LimitNOFILE=1048576
 LimitNPROC=512
@@ -51,7 +51,7 @@ read -p "请输入 trojan 密码:" pswd
     [ -z "${pswd}" ]
 read -p "请输入 filebrowser 端口:" port
     [ -z "${port}" ]
-cat <<EOF >/etc/caddy/Caddyfile
+cat <<EOF >/usr/local/etc/caddy/Caddyfile
 {
 	order trojan before route
 	admin off
@@ -132,6 +132,7 @@ EOF
 systemctl daemon-reload
 systemctl reset-failed
 systemctl enable caddy
+systemctl start caddy
 
-echo "caddy is installed. use 'systemctl start caddy' start caddy."
-echo "use '/etc/caddy/Caddyfile' edit caddy config."
+echo "caddy is installed, and started."
+echo "use 'nano /usr/local/etc/caddy/Caddyfile' edit caddy Caddyfile."
