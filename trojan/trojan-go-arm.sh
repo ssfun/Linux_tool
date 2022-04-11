@@ -5,15 +5,15 @@ latest_version="$(wget -qO- -t1 -T2 "https://api.github.com/repos/p4gefau1t/troj
 echo "${latest_version}"
 trojango_link="https://github.com/p4gefau1t/trojan-go/releases/download/${latest_version}/trojan-go-linux-arm.zip"
 
-mkdir -p "/etc/trojan-go"
+mkdir -p "/usr/local/etc/trojan-go"
 
 cd `mktemp -d`
 wget -nv "${trojango_link}" -O trojan-go.zip
 unzip -q trojan-go.zip && rm -rf trojan-go.zip
 
 mv trojan-go /usr/local/bin/trojan-go
-mv geoip.dat /etc/trojan-go/geoip.dat
-mv geosite.dat /etc/trojan-go/geosite.dat
+mv geoip.dat /usr/local/etc/trojan-go/geoip.dat
+mv geosite.dat /usr/local/etc/trojan-go/geosite.dat
 
 # set trojan-go.service
 cat <<EOF >/etc/systemd/system/trojan-go.service
@@ -27,7 +27,7 @@ User=root
 CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
 AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
 NoNewPrivileges=true
-ExecStart=/usr/local/bin/trojan-go -config /etc/trojan-go/config.json
+ExecStart=/usr/local/bin/trojan-go -config /usr/local/etc/trojan-go/config.json
 Restart=on-failure
 RestartSec=10s
 LimitNOFILE=infinity
@@ -86,8 +86,8 @@ cat <<EOF >/etc/trojan-go/config.json
         "block": [
             "geoip:private"
         ],
-        "geoip": "/etc/trojan-go/geoip.dat",
-        "geosite": "/etc/trojan-go/geosite.dat"
+        "geoip": "/usr/local/etc/trojan-go/geoip.dat",
+        "geosite": "/usr/local/etc/trojan-go/geosite.dat"
     }
 }
 EOF
@@ -96,5 +96,6 @@ EOF
 systemctl daemon-reload
 systemctl reset-failed
 systemctl enable trojan-go
+systemctl start trojan-go
 
-echo "trojan-go is installed. use 'systemctl start trojan-go' start trojan-go."
+echo "trojan-go is installed, and started."
