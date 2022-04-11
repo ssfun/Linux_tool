@@ -12,15 +12,18 @@ jobs:
 
     steps:
     - name: install go
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3
       with: 
-        go-version: 1.16
+        go-version: '1.16'
+        check-latest: true
     
     - name: install xcaddy
       run: |
-        tag_name=`curl -s https://api.github.com/repos/caddyserver/xcaddy/releases | grep 'tag_name' | sed -n '1p' | cut -d\" -f4`
-        name="$(wget -qO- -t1 -T2 "https://api.github.com/repos/caddyserver/xcaddy/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/v//g;s/,//g;s/ //g')"
-        wget https://github.com/caddyserver/xcaddy/releases/download/${tag_name}/xcaddy_${name}_linux_amd64.tar.gz
+        latest_version="$(wget -qO- -t1 -T2 "https://api.github.com/repos/ginuerzh/gost/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
+        echo "${latest_version}"
+        latest_name="$(wget -qO- -t1 -T2 "https://api.github.com/repos/caddyserver/xcaddy/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/v//g;s/,//g;s/ //g')"
+        echo "${latest_name}"
+        wget https://github.com/caddyserver/xcaddy/releases/download/${latest_version}/xcaddy_${latest_name}_linux_amd64.tar.gz
         tar -zxvf xcaddy_*_linux_amd64.tar.gz
 
     - name: build caddy
@@ -30,8 +33,14 @@ jobs:
           --with github.com/mholt/caddy-dynamicdns \
           --with github.com/caddy-dns/cloudflare
 
-    - name: upload
-      uses: actions/upload-artifact@master
+    - name: Commit
+      run: |
+        git config --global user.email ssfun@github.com
+        git config --global user.name ssfun
+        git add ./caddy/
+        git commit -m "Update caddy files" -a
+    
+    - name: Push
+      uses: ad-m/github-push-action@master
       with:
-        name: caddy-linux-amd64
-        path: ./caddy
+        github_token: ${{ secrets.GT_TOKEN }}
