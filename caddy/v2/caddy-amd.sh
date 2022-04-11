@@ -11,7 +11,7 @@ tar -zxvf caddy.tar.gz
 
 mv caddy /usr/local/bin/caddy && chmod +x /usr/local/bin/caddy
 
-mkdir -p "/etc/caddy"
+mkdir -p "/usr/local/etc/caddy"
 mkdir -p "/var/www"
 mkdir -p "/var/www/404"
 mkdir -p "/var/log/caddy"
