@@ -13,7 +13,7 @@ echo "remove filebrowser config file"
 rm -rf /etc/filebrowser
 rm -rf /usr/local/etc/filebrowser
 
-echo "remove trojan-go log file"
+echo "remove filebrowser log file"
 rm -rf /var/log/filebrowser
 
 echo "remove filebrowser file"
