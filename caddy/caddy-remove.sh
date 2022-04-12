@@ -9,6 +9,10 @@ systemctl disable caddy
 echo "remove caddy.service"
 rm -f /etc/systemd/system/caddy.service
 
+echo "remove caddy"
+rm -f /usr/local/bin/caddy
+rm -f /usr/bin/caddy
+
 echo "remove caddy config file"
 rm -rf /etc/caddy
 rm -rf /usr/local/etc/caddy
