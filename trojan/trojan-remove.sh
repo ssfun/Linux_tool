@@ -9,7 +9,7 @@ systemctl disable trojan-go
 echo "remove trojan-go.service"
 rm -f /etc/systemd/system/trojan-go.service
 
-echo "remove caddy"
+echo "remove trojan-go"
 rm -f /usr/local/bin/trojan-go
 rm -f /usr/bin/trojan-go
 
