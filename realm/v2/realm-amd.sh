@@ -27,7 +27,6 @@ Type=simple
 User=root
 Restart=on-failure
 RestartSec=5s
-DynamicUser=true
 ExecStart=/usr/local/bin/realm -c /usr/local/etc/realm/config.toml
 
 [Install]
