@@ -45,8 +45,12 @@ cat <<EOF >/usr/local/etc/realm/config.toml
 level = "warn"
 output = "/var/log/realm/realm.log"
 
+[network]
+use_udp = true
+zero_copy = true
+
 [[endpoints]]
-listen = "[::/0]:$lport"
+listen = "[::0]:$lport"
 remote = "$rhost:$rport"
 EOF
 
@@ -57,4 +61,4 @@ systemctl enable realm
 systemctl start realm
 
 echo "realm is installed, and started."
-echo "use 'nano /usr/local/etc/realm/config.toml' edit caddy config."
+echo "use 'nano /usr/local/etc/realm/config.toml' edit realm config."
