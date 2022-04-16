@@ -34,6 +34,8 @@ WantedBy=multi-user.target
 EOF
 
 # set realm.toml 
+read -p "请输入本地需要监听的地址,(ipv6:"[::0]";ipv4:"0.0.0.0"):" lhost
+    [ -z "${lhost}" ]
 read -p "请输入本地需要监听的端口:" lport
     [ -z "${lport}" ]
 read -p "请输入需要转发的地址:" rhost
@@ -50,7 +52,7 @@ use_udp = true
 zero_copy = true
 
 [[endpoints]]
-listen = "[::0]:$lport"
+listen = "$lhost:$lport"
 remote = "$rhost:$rport"
 
 EOF
