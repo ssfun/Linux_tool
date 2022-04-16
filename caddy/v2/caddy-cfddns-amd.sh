@@ -53,7 +53,7 @@ cat <<EOF >/usr/local/etc/caddy/Caddyfile
 		level ERROR
 		output file /var/log/caddy/access.log
 	}
-  dynamic_dns { #加了caddy-dynamicdns插件编译的才支持DDNS应用
+        dynamic_dns { #加了caddy-dynamicdns插件编译的才支持DDNS应用
 		provider cloudflare $apikey #可修改为其它caddy-dns插件（必须加了对应插件编译的才支持）及对应caddy-dns插件的token
 		domains {
 			$host #修改为关联的域名
