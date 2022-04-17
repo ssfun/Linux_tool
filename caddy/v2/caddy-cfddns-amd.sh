@@ -47,8 +47,6 @@ read -p "请输入cloudflare api key:" apikey
     [ -z "${apikey}" ]
 cat <<EOF >/usr/local/etc/caddy/Caddyfile
 {
-	order trojan before route
-	admin off
 	log { #注意：版本不小于v2.4.0才支持日志全局配置，否则各自配置。
 		level ERROR
 		output file /var/log/caddy/access.log
@@ -58,6 +56,8 @@ cat <<EOF >/usr/local/etc/caddy/Caddyfile
 		domains {
 			$host #修改为关联的域名
 		}
+		check_interval 5m
+		ip_source simple_http https://icanhazip.com
 	}
 }
 
