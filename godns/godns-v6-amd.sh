@@ -5,7 +5,7 @@ latest_version="$(wget -qO- -t1 -T2 "https://api.github.com/repos/TimothyYe/godn
 echo "${latest_version}"
 latest_name="$(wget -qO- -t1 -T2 "https://api.github.com/repos/TimothyYe/godns/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/v//g;s/,//g;s/ //g')"
 echo "${latest_name}"
-godns_link="https://github.com/TimothyYe/godns/releases/download/${latest_version}/godns_${latest_name}_Linux_x86_64.tar.gz"
+godns_link="https://cdn.jsdelivr.net/gh/TimothyYe/godns@releases/download/${latest_version}/godns_${latest_name}_Linux_x86_64.tar.gz"
 
 cd `mktemp -d`
 wget -nv "${godns_link}" -O godns.tar.gz
