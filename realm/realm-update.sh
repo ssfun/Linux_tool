@@ -37,5 +37,5 @@ mv realm /usr/local/bin/realm && chmod +x /usr/local/bin/realm
 systemctl daemon-reload
 systemctl restart realm
 
-echo "realm is updated, and started."
-echo "use 'nano /usr/local/etc/realm/config.toml' edit realm config."
+echo -e "realm is updated, and started."
+echo -e "use 'nano /usr/local/etc/realm/config.toml' edit realm config."
