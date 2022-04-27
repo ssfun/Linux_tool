@@ -1,10 +1,25 @@
-#!/bin/sh
+#!/usr/bin
 
-echo "Getting the latest version of caddy"
+echo -e "check root user"
+[[ $EUID -ne 0 ]] && echo -e "Error: You must run this script as root!" && exit 1
+
+arch=$(arch)
+echo -e "get operating system: $(arch)"
+if [[ $arch == "x86_64" || $arch == "x64" || $arch == "amd64" ]]; then
+    arch="amd64"
+elif [[ $arch == "aarch64" || $arch == "arm64" ]]; then
+    arch="arm64"
+else
+    echo -e "Error: The operating system is not supported."
+    exit 1
+fi
+
+# getting the latest version of caddy
 latest_version="$(wget -qO- -t1 -T2 "https://api.github.com/repos/lxhao61/integrated-examples/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
-echo "${latest_version}"
-caddy_link="https://github.com/lxhao61/integrated-examples/releases/download/${latest_version}/caddy_linux_amd64.tar.gz"
+echo -e "get the latest version of caddy: ${latest_version}"
+caddy_link="https://github.com/lxhao61/integrated-examples/releases/download/${latest_version}/caddy_linux_${arch}.tar.gz"
 
+echo -e "installing the latest version of caddy"
 cd `mktemp -d`
 wget -nv "${caddy_link}" -O caddy.tar.gz
 tar -zxvf caddy.tar.gz
