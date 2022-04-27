@@ -23,4 +23,4 @@ echo -e "remove filebrowser file"
 rm -rf /opt/filebrowser
 rm -rf /home/filebrowser
 
-echo -e "filebrowser is removed"
+echo -e "filebrowser is removed."
