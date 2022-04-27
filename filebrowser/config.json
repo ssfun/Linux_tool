@@ -1,8 +1,0 @@
-{
-    "address":"127.0.0.1",
-    "database":"/opt/filebrowser/filebrowser.db",
-    "log":"/var/log/filebrowser.log",
-    "port":40333,
-    "root":"/home/filebrowser",
-    "username":"admin"
-}
