@@ -1,7 +1,7 @@
 #!/usr/bin
 
-echo "check root user"
-[[ $EUID -ne 0 ]] && echo "Error: You must run this script as root!" && exit 1
+echo -e "check root user"
+[[ $EUID -ne 0 ]] && echo -e "Error: You must run this script as root!" && exit 1
 
 arch=$(arch)
 echo "operating system: $(arch)"
@@ -14,12 +14,12 @@ else
     exit 1
 fi
 
-echo "Getting the latest version of caddy"
+# Getting the latest version of caddy
 latest_version="$(wget -qO- -t1 -T2 "https://api.github.com/repos/lxhao61/integrated-examples/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
-echo "${latest_version}"
+echo -e "Get the latest version of caddy: ${latest_version}"
 caddy_link="https://github.abskoop.workers.dev/https://github.com/lxhao61/integrated-examples/releases/download/${latest_version}/caddy_linux_${arch}.tar.gz"
 
-echo "install the latest version"
+echo -e "installing the latest version"
 cd `mktemp -d`
 wget -nv "${caddy_link}" -O caddy.tar.gz
 tar -zxvf caddy.tar.gz
@@ -29,7 +29,7 @@ mv caddy /usr/local/bin/caddy && chmod +x /usr/local/bin/caddy
 mkdir -p "/usr/local/etc/caddy"
 mkdir -p "/var/log/caddy"
 
-echo "set caddy.service"
+echo -e "set caddy.service"
 cat <<EOF >/etc/systemd/system/caddy.service
 [Unit]
 Description=Caddy
@@ -74,11 +74,11 @@ cat <<EOF >/usr/local/etc/caddy/Caddyfile
 }
 EOF
 
-echo "start caddy"
+echo -e "start caddy"
 systemctl daemon-reload
 systemctl reset-failed
 systemctl enable caddy
 systemctl start caddy
 
-echo "caddy is installed, and started."
-echo "use 'nano /usr/local/etc/caddy/Caddyfile' edit caddy Caddyfile."
+echo -e "caddy is installed, and started."
+echo -e "use 'nano /usr/local/etc/caddy/Caddyfile' edit caddy Caddyfile."
