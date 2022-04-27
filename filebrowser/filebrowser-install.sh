@@ -1,9 +1,23 @@
-#!/bin/sh
+#!/usr/bin
 
-echo "Getting the latest version of filebrowser"
+echo -e "check root user"
+[[ $EUID -ne 0 ]] && echo -e "Error: You must run this script as root!" && exit 1
+
+arch=$(arch)
+echo -e "get operating system: $(arch)"
+if [[ $arch == "x86_64" || $arch == "x64" || $arch == "amd64" ]]; then
+    arch="amd64"
+elif [[ $arch == "aarch64" || $arch == "arm64" ]]; then
+    arch="arm64"
+else
+    echo -e "Error: The operating system is not supported."
+    exit 1
+fi
+
+# getting the latest version of filebrowser"
 latest_version="$(wget -qO- -t1 -T2 "https://api.github.com/repos/filebrowser/filebrowser/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
-echo "${latest_version}"
-filebrowser_link="https://github.com/filebrowser/filebrowser/releases/download/${latest_version}/linux-arm64-filebrowser.tar.gz"
+echo -e "get the latest version of filebrowser: ${latest_version}"
+filebrowser_link="https://github.com/filebrowser/filebrowser/releases/download/${latest_version}/linux-${arch}-filebrowser.tar.gz"
 
 mkdir -p "/usr/local/etc/filebrowser"
 mkdir -p "/var/log/filebrowser"
@@ -51,4 +65,4 @@ systemctl reset-failed
 systemctl enable filebrowser
 systemctl start filebrowser
 
-echo "filebrowser is installed,and started."
+echo -e "filebrowser is installed,and started."
