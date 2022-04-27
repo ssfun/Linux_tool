@@ -27,7 +27,12 @@ tar -zxvf caddy.tar.gz
 mv caddy /usr/local/bin/caddy && chmod +x /usr/local/bin/caddy
 
 mkdir -p "/usr/local/etc/caddy"
+mkdir -p "/var/www"
+mkdir -p "/var/www/404"
 mkdir -p "/var/log/caddy"
+
+# get 404.html
+curl -s  https://raw.githubusercontent.com/ssfun/Linux_tool/main/caddy/404/index.html  -o /var/www/404/index.html
 
 echo -e "set caddy.service"
 cat <<EOF >/etc/systemd/system/caddy.service
@@ -52,25 +57,81 @@ AmbientCapabilities=CAP_NET_BIND_SERVICE
 WantedBy=multi-user.target
 EOF
 
-# set Caddyfile 
-read -p "请输入需要设置的ddns host:" host
+echo -e "set Caddyfile"
+read -p "请输入需要设置的网站host:" host
     [ -z "${host}" ]
-read -p "请输入cloudflare api key:" apikey
-    [ -z "${apikey}" ]
+read -p "请输入 trojan 密码:" pswd
+    [ -z "${pswd}" ]
+read -p "请输入 filebrowser 端口:" port
+    [ -z "${port}" ]
 cat <<EOF >/usr/local/etc/caddy/Caddyfile
 {
+	order trojan before route
+	admin off
 	log { #注意：版本不小于v2.4.0才支持日志全局配置，否则各自配置。
-		output file /var/log/caddy/access.log
 		level ERROR
+		output file /var/log/caddy/access.log
 	}
-        dynamic_dns { #加了caddy-dynamicdns插件编译的才支持DDNS应用
-		provider cloudflare $apikey #可修改为其它caddy-dns插件（必须加了对应插件编译的才支持）及对应caddy-dns插件的token
-		domains {
-			$host #修改为关联的域名
+	storage file_system /home/tls #自定义证书目录
+	servers :443 {
+		listener_wrappers {
+			trojan #caddy-trojan插件应用必须配置
 		}
-		check_interval 5m
-		ip_source simple_http https://icanhazip.com
+		protocol {
+			allow_h2c #caddy-trojan插件应用必须启用
+		}
 	}
+	auto_https off #禁用自动https
+	servers 127.0.0.1:88 { #与下边本地监听端口对应
+		protocol {
+			allow_h2c #开启h2c server支持
+		}
+	}
+}
+:80 { #http默认监听端口
+	redir https://{host}{uri} permanent #http自动跳转https,让网站看起来更真实。
+}
+:88 { #http/1.1与h2c server监听端口
+	bind 127.0.0.1 #绑定本地主机，避免本机外的机器探测到上面端口。
+	@host {
+		host $host #限定域名访问（禁止以ip方式访问网站），修改为自己的域名。
+	}
+	route @host {
+		header {
+			Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" #启用HSTS
+		}
+      reverse_proxy 127.0.0.1:$port
+	}
+}
+:443, $host { #xx.yy修改为自己的域名。注意：逗号与域名之间有一个空格。
+	tls {
+		ciphers TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256
+		alpn h2 http/1.1
+	}
+	trojan {
+		user $pswd #修改为自己的密码。密码可多组，用空格隔开。
+		connect_method
+		websocket #开启WebSocket支持
+	}
+	@host {
+		host $host #限定域名访问（禁止以ip方式访问网站），修改为自己的域名。
+	}
+	route @host {
+		header {
+			Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" #启用HSTS
+		}
+		reverse_proxy 127.0.0.1:$port
+	}
+}
+http://$host:404 {
+        @host {
+                host $host #限定域名访问（禁止以ip方式访问网站），修改为自己的域名。
+        }
+        route @host {
+		file_server {
+	                root /var/www/404 #修改为自己存放的WEB文件路径
+		}
+        }
 }
 EOF
 
