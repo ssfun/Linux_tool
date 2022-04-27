@@ -1,28 +1,28 @@
 #!/bin/sh
 
-echo "stop caddy"
+echo -e "stop caddy"
 systemctl stop caddy
 
-echo "disable caddy"
+echo -e "disable caddy"
 systemctl disable caddy
 
-echo "remove caddy.service"
+echo -e "remove caddy.service"
 rm -f /etc/systemd/system/caddy.service
+systemctl daemon-reload
 
-echo "remove caddy"
+echo -e "remove caddy"
 rm -f /usr/local/bin/caddy
-rm -f /usr/bin/caddy
 
-echo "remove caddy config file"
-rm -rf /etc/caddy
+echo -e "remove caddy config file"
 rm -rf /usr/local/etc/caddy
 
-echo "remove caddy log file"
+echo -e "remove caddy log file"
 rm -rf /var/log/caddy
 
-echo "remove caddy ssl file"
-rm -rf /etc/ssl/caddy
+echo -e "remove caddy ssl file"
 rm -rf /home/tls
 
-echo "remove caddy www file"
+echo -e "remove caddy www file"
 rm -rf /var/www
+
+echo -e "caddy is removed"
