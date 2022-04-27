@@ -1,46 +1,25 @@
-#!/usr/bin/env bash
+#!/usr/bin
 
 echo "check root user"
-check_if_running_as_root() {
-  # If you want to run as another user, please modify $EUID to be owned by this user
-  if [[ "$EUID" -ne '0' ]]; then
-    echo "error: You must run this script as root!"
-    exit 1
-  fi
-}
+[[ $EUID -ne 0 ]] && echo "Error: You must run this script as root!" && exit 1
 
-echo "check operating system"
-identify_the_operating_system() {
-  if [[ "$(uname)" == 'Linux' ]]; then
-    case "$(uname -m)" in
-      'amd64' | 'x86_64')
-        MACHINE='amd64'
-        ;;
-      'armv8' | 'aarch64')
-        MACHINE='arm64'
-        ;;
-      *)
-        echo "error: The architecture is not supported."
-        exit 1
-        ;;
-    esac
-    if [[ ! -f '/etc/os-release' ]]; then
-      echo "error: Don't use outdated Linux distributions."
-      exit 1
-    fi
-  else
-    echo "error: This operating system is not supported."
+arch=$(arch)
+echo "operating system: $(arch)"
+if [[ $arch == "x86_64" || $arch == "x64" || $arch == "amd64" ]]; then
+    arch="amd64"
+elif [[ $arch == "aarch64" || $arch == "arm64" ]]; then
+    arch="arm64"
+else
+    echo -e "Error: The architecture is not supported."
     exit 1
-  fi
-}
-echo "$MACHINE"
+fi
 
 echo "Getting the latest version of caddy"
 latest_version="$(wget -qO- -t1 -T2 "https://api.github.com/repos/lxhao61/integrated-examples/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
 echo "${latest_version}"
-caddy_link="https://github.abskoop.workers.dev/https://github.com/lxhao61/integrated-examples/releases/download/${latest_version}/caddy_linux_$MACHINE.tar.gz"
+caddy_link="https://github.abskoop.workers.dev/https://github.com/lxhao61/integrated-examples/releases/download/${latest_version}/caddy_linux_$(arch).tar.gz"
 
-echo "download latest version"
+echo "install the latest version"
 cd `mktemp -d`
 wget -nv "${caddy_link}" -O caddy.tar.gz
 tar -zxvf caddy.tar.gz
