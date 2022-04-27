@@ -25,4 +25,4 @@ rm -rf /home/tls
 echo -e "remove caddy www file"
 rm -rf /var/www
 
-echo -e "caddy is removed"
+echo -e "caddy is removed."
