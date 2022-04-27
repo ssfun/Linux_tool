@@ -13,10 +13,10 @@ systemctl daemon-reload
 echo -e "remove realm"
 rm -f /usr/local/bin/realm
 
-echo "remove realm config file"
+echo -e "remove realm config file"
 rm -rf /usr/local/etc/realm
 
-echo "remove realm log file"
+echo -e "remove realm log file"
 rm -rf /var/log/realm
 
-echo "realm is removed."
+echo -e "realm is removed."
