@@ -19,7 +19,7 @@ latest_version="$(wget -qO- -t1 -T2 "https://api.github.com/repos/shadowsocks/sh
 echo -e "get the latest version of ss-rust: ${latest_version}"
 ss_link="https://github.com/shadowsocks/shadowsocks-rust/releases/download/${latest_version}/shadowsocks-${latest_version}.${arch}-unknown-linux-gnu.tar.xz"
 
-echo -e "installing the latest version of plexdrive"
+echo -e "installing the latest version of shadowsocks-rust"
 cd `mktemp -d`
 wget -nv "${ss_link}" -O ss.tar.xz
 xz -d ss.tar.xz && tar -xf ss.tar
