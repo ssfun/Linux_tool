@@ -1,61 +1,99 @@
 # Linux_tool
 
 ## caddy
-- amd
+- install
 ```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/caddy/v2/caddy-amd.sh)
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/caddy/caddy-install.sh)
 ```
-- arm
+- update
 ```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/caddy/v2/caddy-arm.sh)
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/caddy/caddy-update.sh)
+```
+- remove
+```
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/caddy/caddy-remove.sh)
 ```
 
 ## filebrowser
-- amd
+- install
 ```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/filebrowser/filebrowser-amd.sh)
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/filebrowser/filebrowser-install.sh)
 ```
-- arm
+- update
 ```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/filebrowser/filebrowser-arm.sh)
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/filebrowser/filebrowser-update.sh)
+```
+- remove
+```
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/filebrowser/filebrowser-remove.sh)
 ```
 
 ## trojan-go
-- amd
+- install
 ```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/trojan/trojan-go-amd.sh)
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/trojan/trojan-go-install.sh)
 ```
-- arm
+- update
 ```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/trojan/trojan-go-arm.sh)
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/trojan/trojan-go-update.sh)
+```
+- update
+```
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/trojan/trojan-go-remove.sh)
+```
+
+## realm
+- install
+```
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/realm/realm-install.sh)
+```
+- update
+```
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/realm/realm-update.sh)
+```
+- update
+```
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/realm/realm-remove.sh)
 ```
 
 ## gost
-- amd
+- install
 ```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/gost/gost-amd.sh)
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/gost/gost-install.sh)
 ```
-- arm
+- update
 ```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/gost/gost-arm.sh)
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/gost/gost-update.sh)
+```
+- remove
+```
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/gost/gost-remove.sh)
 ```
 
 ## plexdrive
-- amd
+- install
 ```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/plexdrive/plexdrive-amd.sh)
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/plexdrive/plexdrive-install.sh)
 ```
-- arm
+- update
 ```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/plexdrive/plexdrive-arm.sh)
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/plexdrive/plexdrive-update.sh)
+```
+- remove
+```
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/plexdrive/plexdrive-remove.sh)
 ```
 
 ## oci-help
-- amd
+- install
 ```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/oci-help/oci-help-amd.sh)
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/oci-help/oci-help-install.sh)
 ```
-- arm
+- update
 ```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/oci-help/oci-help-arm.sh)
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/oci-help/oci-help-update.sh)
+```
+- remove
+```
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/oci-help/oci-help-remove.sh)
 ```
