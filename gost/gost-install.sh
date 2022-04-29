@@ -19,7 +19,7 @@ latest_version="$(wget -qO- -t1 -T2 "https://api.github.com/repos/go-gost/gost/r
 echo "${latest_version}"
 latest_name="$(wget -qO- -t1 -T2 "https://api.github.com/repos/go-gost/gost/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/v//g;s/,//g;s/ //g')"
 echo "${latest_name}"
-gost_link="https://github.com/go-gost/gost/releases/download/${latest_version}/gost-linux-${arch}-${latest_name}.gz"
+gost_link="https://github.abskoop.workers.dev/https://github.com/go-gost/gost/releases/download/${latest_version}/gost-linux-${arch}-${latest_name}.gz"
 
 echo -e "installing the latest version of gost"
 mkdir -p "/usr/local/etc/gost"
