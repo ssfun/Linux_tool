@@ -65,7 +65,6 @@ services:
   forwarder:
     targets:
     - $rhost:$rport
-services:
 - name: service-udp
   addr: :$lport
   handler:
