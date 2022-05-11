@@ -37,7 +37,7 @@ bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/trojan/t
 ```
 bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/trojan/trojan-go-update.sh)
 ```
-- update
+- remove
 ```
 bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/trojan/trojan-go-remove.sh)
 ```
@@ -51,7 +51,7 @@ bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/realm/re
 ```
 bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/realm/realm-update.sh)
 ```
-- update
+- remove
 ```
 bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/realm/realm-remove.sh)
 ```
