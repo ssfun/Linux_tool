@@ -97,3 +97,18 @@ bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/oci-help
 ```
 bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/oci-help/oci-help-remove.sh)
 ```
+
+
+## ServerStatus Client
+- install
+```
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/serverstatus/client-install.sh)
+```
+- update
+```
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/serverstatus/client-update.sh)
+```
+- remove
+```
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/serverstatus/client-remove.sh)
+```
