@@ -44,7 +44,7 @@ User=root
 Group=root
 Environment="RUST_BACKTRACE=1"
 WorkingDirectory=/opt/ServerStatus
-ExecStart=/opt/ServerStatus/stat_client -a "http://$host/report" -u $user -p $pswd --disable-ping --disable-tupd
+ExecStart=/opt/ServerStatus/stat_client -a "https://$host/report" -u $user -p $pswd --disable-ping --disable-tupd
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 
