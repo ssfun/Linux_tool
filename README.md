@@ -98,7 +98,6 @@ bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/oci-help
 bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/oci-help/oci-help-remove.sh)
 ```
 
-
 ## ServerStatus Client
 - install
 ```
@@ -111,4 +110,10 @@ bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/serverst
 - remove
 ```
 bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/serverstatus/client-remove.sh)
+```
+
+## Plex media server
+- install & update
+```
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/plex/plex-install.sh)
 ```
