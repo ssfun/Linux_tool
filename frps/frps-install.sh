@@ -25,9 +25,8 @@ echo -e "installing the latest version of frps"
 cd `mktemp -d`
 wget -nv "${frps_link}" -O frps.tar.gz
 tar -zxvf frps.tar.gz
-
+cd frp_${latest_name}_linux_${arch}
 mv frps /usr/local/bin/frps && chmod +x /usr/local/bin/frps
-
 mkdir -p "/usr/local/etc/frps"
 
 echo -e "set frps.service"
