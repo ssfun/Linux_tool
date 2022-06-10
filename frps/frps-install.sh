@@ -51,7 +51,7 @@ read -p "请输入连接的 token:" token
     [ -z "${token}" ]
 cat <<EOF >/usr/local/etc/frps/frps.ini
 [common]
-bind_port = $lport
+bind_port = $port
 authentication_method = token
 token = $token
 EOF
