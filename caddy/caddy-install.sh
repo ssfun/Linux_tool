@@ -85,8 +85,6 @@ cat <<EOF >/usr/local/etc/caddy/Caddyfile
 	}
 	auto_https off #禁用自动https
 	servers 127.0.0.1:88 { #与下边本地监听端口对应
-		protocol {
-			allow_h2c #开启h2c server支持
 		}
 	}
 }
