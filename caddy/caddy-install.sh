@@ -64,6 +64,8 @@ read -p "请输入 trojan 密码:" pswd
     [ -z "${pswd}" ]
 read -p "请输入 filebrowser 端口:" port
     [ -z "${port}" ]
+read -p "请输入申请证书mail:" mail
+    [ -z "${mail}" ]    
 cat <<EOF >/usr/local/etc/caddy/Caddyfile
 {
         order trojan before route
@@ -79,7 +81,7 @@ cat <<EOF >/usr/local/etc/caddy/Caddyfile
         }
 
         cert_issuer acme #acme表示从Let's Encrypt申请TLS证书，zerossl表示从ZeroSSL申请TLS证书。必须acme与zerossl二选一（固定TLS证书的目录便于引用）。注意：版本不小于v2.4.1才支持。
-        email qq1112q@gmx.com #电子邮件地址。选配，推荐。
+        email $mail #电子邮件地址。选配，推荐。
 
         servers 127.0.0.1:88 {
                 #与下边本地监听端口对应
