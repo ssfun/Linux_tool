@@ -77,9 +77,11 @@ cat <<EOF >/usr/local/etc/caddy/Caddyfile
 		listener_wrappers {
 			trojan #caddy-trojan插件应用必须配置
 		}
-		protocol {
-			allow_h2c #caddy-trojan插件应用必须启用
-		}
+	}
+	trojan  {
+	        caddy
+	        no_proxy
+	        user $pswd #修改为自己的密码。密码可多组，用空格隔开。
 	}
 	auto_https off #禁用自动https
 	servers 127.0.0.1:88 { #与下边本地监听端口对应
@@ -109,7 +111,6 @@ cat <<EOF >/usr/local/etc/caddy/Caddyfile
 		alpn h2 http/1.1
 	}
 	trojan {
-		user $pswd #修改为自己的密码。密码可多组，用空格隔开。
 		connect_method
 		websocket #开启WebSocket支持
 	}
