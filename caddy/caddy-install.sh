@@ -17,7 +17,7 @@ fi
 # getting the latest version of caddy
 latest_version="$(wget -qO- -t1 -T2 "https://api.github.com/repos/lxhao61/integrated-examples/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
 echo -e "get the latest version of caddy: ${latest_version}"
-caddy_link="https://github.com/lxhao61/integrated-examples/releases/download/${latest_version}/caddy_linux_${arch}.tar.gz"
+caddy_link="https://github.com/lxhao61/integrated-examples/releases/download/${latest_version}/caddy-linux-${arch}.tar.gz"
 
 echo -e "installing the latest version of caddy"
 cd `mktemp -d`
