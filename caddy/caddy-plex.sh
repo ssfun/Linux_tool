@@ -62,6 +62,8 @@ EOF
 # set Caddyfile 
 read -p "请输入需要设置的网站host:" host
     [ -z "${host}" ]
+read -p "请输入申请证书的mail:" mail
+    [ -z "${mail}" ]
 read -p "请输入 trojan 密码:" pswd
     [ -z "${pswd}" ]
 read -p "请输入 filebrowser 端口:" port
