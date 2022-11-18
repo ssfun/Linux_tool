@@ -123,7 +123,7 @@ cat <<EOF >/usr/local/etc/caddy/Caddyfile
                 header {
                         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" #启用HSTS
                 }
-                reverse_proxy 127.0.0.1:40333
+                reverse_proxy 127.0.0.1:$port
         }
 }
 
