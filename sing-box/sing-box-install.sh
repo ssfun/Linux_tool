@@ -57,56 +57,146 @@ WantedBy=multi-user.target
 EOF
 
 # set config.json
-read -p "请输入需要设置的网站host:" host
-    [ -z "${host}" ]
-read -p "请输入 trojan 端口:" port
-    [ -z "${port}" ]
-read -p "请输入 trojan 密码:" pswd
-    [ -z "${pswd}" ]
-read -p "请输入 trojan path:" path
-    [ -z "${path}" ]
+read -p "请输入 trojan 网站:" trojanhost
+    [ -z "${trojanhost}" ]
+read -p "请输入 trojan 端口:" trojanport
+    [ -z "${trojanport}" ]
+read -p "请输入 trojan 密码:" trojanpswd
+    [ -z "${trojanpswd}" ]
+read -p "请输入 ws path:" wspath
+    [ -z "${wspath}" ]
+read -p "请输入 vmess 端口:" vmessport
+    [ -z "${vmessport}" ]    
+read -p "请输入 vmess UUID:" vmessuuid
+    [ -z "${vmessuuid}" ]  
+read -p "请输入 warp ipv4:" warpipv4
+    [ -z "${warpipv4}" ]  
+read -p "请输入 warp ipv6:" warpipv6
+    [ -z "${warpipv6}" ]  
+read -p "请输入 warp private key:" warpprivatekey
+    [ -z "${warpprivatekey}" ]  
+read -p "请输入 warp public key:" warppublickey
+    [ -z "${warppublickey}" ]  
+read -p "请输入 warp reserved:" warpreserved
+    [ -z "${warpreserved}" ]  
 
 cat <<EOF >/usr/local/etc/sing-gox/config.json
 
 {
-  "log": {
-    "level": "info"
-  },
-  "dns": {
-    "servers": [
-      {
-        "address": "tls://8.8.8.8"
-      }
-    ]
-  },
-  "inbounds": [
-    {
-      "type": "shadowsocks",
-      "listen": "::",
-      "listen_port": 8080,
-      "sniff": true,
-      "network": "tcp",
-      "method": "2022-blake3-aes-128-gcm",
-      "password": "8JCsPssfgS8tiRwiMlhARg=="
-    }
-  ],
-  "outbounds": [
-    {
-      "type": "direct"
+    "log":{
+        "level":"info",
+        "output":"/var/log/sing-box/sing-box.log",
+        "timestamp":true
     },
-    {
-      "type": "dns",
-      "tag": "dns-out"
+    "inbounds":[
+        {
+            "type":"trojan",
+            "tag":"trojan-in",
+            "listen":"0.0.0.0",
+            "listen_port":$trojanport,
+            "tcp_fast_open":true,
+            "udp_fragment":true,
+            "sniff":true,
+            "sniff_override_destination":false,
+            "udp_timeout":300,
+            "proxy_protocol":true,
+            "proxy_protocol_accept_no_header":false,
+            "users":[
+                {
+                    "name":"trojan",
+                    "password":"$trojanpswd"
+                }
+            ],
+            "tls":{
+                "enabled":true,
+                "server_name":"$trojanhost",
+                "alpn":[
+                    "h2",
+                    "http/1.1"
+                ],
+                "min_version":"1.2",
+                "max_version":"1.3",
+                "cipher_suites":[
+                    "TLS_CHACHA20_POLY1305_SHA256",
+                    "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+                    "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256"
+                ],
+                "certificate_path":"/home/tls/certificates/acme-v02.api.letsencrypt.org-directory/$trojanhost/$trojanhost.crt",
+                "key_path":"/home/tls/certificates/acme-v02.api.letsencrypt.org-directory/$trojanhost/$trojanhost.key"
+            },
+            "fallback":{
+                "server":"127.0.0.1",
+                "server_port":404
+            },
+            "transport":{
+                "type":"ws",
+                "path":"/$wspath",
+                "max_early_data":0,
+                "early_data_header_name":"Sec-WebSocket-Protocol"
+            }
+        },
+        {
+            "type":"vmess",
+            "tag":"vmess-in",
+            "listen":"0.0.0.0",
+            "listen_port":$vmessport,
+            "tcp_fast_open":true,
+            "udp_fragment":true,
+            "sniff":true,
+            "sniff_override_destination":false,
+            "proxy_protocol":true,
+            "proxy_protocol_accept_no_header":false,
+            "users":[
+                {
+                    "name":"vmess",
+                    "uuid":"$vmessuuid",
+                    "alterId":0
+                }
+            ],
+            "transport":{
+                "type":"ws",
+                "path":"/$wspath",
+                "max_early_data":0,
+                "early_data_header_name":"Sec-WebSocket-Protocol"
+            }
+        }
+    ],
+    "outbounds":[
+        {
+            "type":"direct",
+            "tag":"direct"
+        },
+        {
+            "type":"wireguard",
+            "tag":"wireguard-out",
+            "server":"engage.cloudflareclient.com",
+            "server_port":2408,
+            "local_address":[
+                "$warpipv4",
+                "$warpipv6"
+            ],
+            "private_key":"$warpprivatekey",
+            "peer_public_key":"$warppublickey",
+            "reserved":[$warpreserved],
+            "mtu":1280
+        }
+    ],
+    "route":{
+        "rules":[
+            {
+                "inbound":[
+                    "trojan-in",
+                    "vmess-in"
+                ],
+                "domain_suffix":[
+                    "openai.com",
+                    "ai.com"
+                ],
+                "outbound":"wireguard-out"
+            }
+        ],
+        "final":"direct"
     }
-  ],
-  "route": {
-    "rules": [
-      {
-        "protocol": "dns",
-        "outbound": "dns-out"
-      }
-    ]
-  }
 }
 
 EOF
