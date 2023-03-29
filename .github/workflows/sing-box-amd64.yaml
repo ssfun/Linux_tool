@@ -16,10 +16,10 @@ jobs:
     
     - name: install sing-box
       run: |
-        go install -v -tags with_wireguard github.com/sagernet/sing-box/cmd/sing-box@latest
+        go install -v -tags with_wireguard with_acme with_acme github.com/sagernet/sing-box/cmd/sing-box@latest
 
     - name: upload
       uses: actions/upload-artifact@master
       with:
         name: sing-box
-        path: ./bin
+        path: /home/runner/go/bin
