@@ -65,7 +65,8 @@ read -p "请输入 trojan 密码:" pswd
     [ -z "${pswd}" ]
 read -p "请输入 trojan path:" path
     [ -z "${path}" ]
-cat <<EOF >/usr/local/etc/trojan-go/config.json
+
+cat <<EOF >/usr/local/etc/sing-gox/config.json
 
 {
   "log": {
