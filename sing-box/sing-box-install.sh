@@ -113,7 +113,7 @@ EOF
 
 systemctl daemon-reload
 systemctl reset-failed
-systemctl enable trojan-go
-systemctl start trojan-go
+systemctl enable sing-box
+systemctl start sing-box
 
-echo "trojan-go is installed, and started."
+echo "sing-box is installed, and started."
