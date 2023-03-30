@@ -1,4 +1,4 @@
-name: Build sing-box-amd64
+name: Build sing-box with wireguard
 
 on:
   workflow_dispatch:
@@ -34,8 +34,7 @@ jobs:
     - name: Packaging...
       run: |
         cd /home/runner/go/bin
-        ls
-        tar czf sing-box-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz sing-box
+        tar czf sing-box-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz ${{ matrix.goos }}-${{ matrix.goarch }}
       
     - name: upload
       uses: actions/upload-artifact@master
