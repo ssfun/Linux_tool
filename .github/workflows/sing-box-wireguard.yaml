@@ -40,10 +40,12 @@ jobs:
         tar czf sing-box-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz sing-box
     
     - name: Upload to GitHub Release
-      uses: softprops/action-gh-release@v1
+      uses: svenstaro/upload-release-action@v2
       with:
+        repo_token: ${{ secrets.GT_TOKEN }}
+        file: /home/runner/go/bin/${{ matrix.goos }}_${{ matrix.goarch }}/sing-box-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+        asset_name: "sing-box with wireguard"
+        tag: ${{ github.ref }}
         body: "sing-box with wireguard"
-        tag_name: ${{ github.ref }}
-        token: ${{ secrets.GT_TOKEN }}
-        files: /home/runner/go/bin/${{ matrix.goos }}_${{ matrix.goarch }}/sing-box-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
-
+        overwrite: true
+   
