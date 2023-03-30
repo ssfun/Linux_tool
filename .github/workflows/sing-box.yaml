@@ -27,6 +27,8 @@ jobs:
 
     - name: Build
       run: |
+        cd /home/runner/work/Linux_tool/Linux_tool
+        go mod init
         GOOS=linux GOARCH=${{ matrix.arch }} go build -ldflags="-s -w" -tags "with_wireguard with_reality_server" -o sing-box
     
     - name: Package
