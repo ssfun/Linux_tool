@@ -45,5 +45,5 @@ jobs:
         body: "sing-box with wireguard"
         tag_name: ${{ github.ref }}
         token: ${{ secrets.GT_TOKEN }}
-        files: /home/runner/go/bin/${{ matrix.goos }}_${{ matrix.goarch }}/sing-box-${{ matrix.goos }}-${{ matrix.goarch }}
+        files: /home/runner/go/bin/${{ matrix.goos }}_${{ matrix.goarch }}/sing-box-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
 
