@@ -25,8 +25,10 @@ jobs:
         check-latest: true
     
     - name: Get the latest release version
-      run: echo "version=$(wget -qO- -t1 -T2 'https://api.github.com/repos/SagerNet/sing-box/releases' | grep 'tag_name' | head -n 1 | awk -F ':' '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')" >> $GITHUB_ENV
-    
+      run: |
+        echo "version=$(wget -qO- -t1 -T2 'https://api.github.com/repos/SagerNet/sing-box/releases' | grep 'tag_name' | head -n 1 | awk -F ':' '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')" >> $GITHUB_ENV
+        echo "myversion=$(wget -qO- -t1 -T2 'https://api.github.com/repos/ssfun/Linux_tool/releases' | grep 'tag_name' | head -n 1 | awk -F ':' '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')" >> $GITHUB_ENV
+   
     - name: install sing-box
       run: |
         GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go install -v -tags with_wireguard github.com/sagernet/sing-box/cmd/sing-box@latest
@@ -44,6 +46,7 @@ jobs:
     
     - name: Upload to GitHub Release
       uses: svenstaro/upload-release-action@v2        
+      if: ${{ env.version }} != ${{ env.myversion }}
       with:
         repo_token: ${{ secrets.GT_TOKEN }}
         file: /home/runner/go/bin/${{ matrix.goos }}_${{ matrix.goarch }}/sing-box-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
