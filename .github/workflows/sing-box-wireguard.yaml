@@ -46,7 +46,7 @@ jobs:
       with:
         repo_token: ${{ secrets.GT_TOKEN }}
         file: /home/runner/go/bin/${{ matrix.goos }}_${{ matrix.goarch }}/sing-box-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
-        tag: ${version}
+        tag: $(wget -qO- -t1 -T2 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
         body: "sing-box with wireguard"
         overwrite: true
    
