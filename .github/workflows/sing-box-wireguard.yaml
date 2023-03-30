@@ -26,7 +26,7 @@ jobs:
     
     - name: install sing-box
       run: |
-        go install -v -tags with_wireguard -tags with_reality_server github.com/sagernet/sing-box/cmd/sing-box@latest
+        go install -v -tags with_wireguard -tags with_reality_server github.com/sagernet/sing-box/cmd/sing-box@latest -o ${{ matrix.goos }}_${{ matrix.goarch }}
       env:
         GOOS: ${{ matrix.goos }}
         GOARCH: ${{ matrix.goarch }}
