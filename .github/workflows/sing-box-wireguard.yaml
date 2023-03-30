@@ -34,6 +34,7 @@ jobs:
     - name: Packaging...
       run: |
         cd /home/runner/go/bin
+        ls
         tar czf sing-box-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz sing-box
       
     - name: upload
