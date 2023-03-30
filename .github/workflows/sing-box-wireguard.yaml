@@ -34,7 +34,8 @@ jobs:
     - name: Packaging...
       run: |
         cd /home/runner/go/bin
-        tar czf sing-box-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz ${{ matrix.goos }}-${{ matrix.goarch }}
+        ls
+        tar czf sing-box-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz ${{ matrix.goos }}_${{ matrix.goarch }}
       
     - name: upload
       uses: actions/upload-artifact@master
