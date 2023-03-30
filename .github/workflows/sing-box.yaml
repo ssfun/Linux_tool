@@ -25,11 +25,6 @@ jobs:
       with:
         go-version: ${{env.GOVERSION}}
 
-    - name: Install Dependencies
-      run: |
-        go mod download
-        go install github.com/wireguard/wgctrl@latest
-
     - name: Build
       run: |
         GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -ldflags="-s -w" -tags "with_wireguard with_reality_server" -o sing-box
