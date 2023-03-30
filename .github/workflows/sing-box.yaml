@@ -1,7 +1,3 @@
-错误提示显示，GOOS=ubuntu-latest 和 GOARCH=arm64 组合不支持。正确的组合为 GOOS=linux 和 GOARCH=arm64。因此，我们需要将 GOOS 的值修改为 linux。
-
-以下是修正后的 GitHub Action 文件：
-
 name: Build and Package Sing-Box with WireGuard
 
 on:
