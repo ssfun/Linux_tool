@@ -2,9 +2,6 @@ name: Build caddy-linux-amd64
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'caddy-linux-amd64.md'
 
 jobs:
   build:
