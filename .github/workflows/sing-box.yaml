@@ -13,7 +13,7 @@ jobs:
         arch: [amd64, arm64]
 
     env:
-      GOVERSION: 1.2.0
+      GOVERSION: 1.18.10
       GOPROXY: https://goproxy.io
 
     steps:
