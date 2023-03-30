@@ -27,12 +27,6 @@ jobs:
     - name: install sing-box
       run: |
         GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go install -v -tags with_wireguard -tags with_reality_server github.com/sagernet/sing-box/cmd/sing-box@latest
-
-    - name: Packaging...
-      run: |
-        cd /home/runner/go/bin/${{ matrix.goos }}_${{ matrix.goarch }}
-        ls
-        tar czf sing-box-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz sing-box
       
     - name: upload
       uses: actions/upload-artifact@master
