@@ -34,11 +34,10 @@ jobs:
         mkdir /home/runner/go/bin/linux_amd64
         mv /home/runner/go/bin/sing-box /home/runner/go/bin/linux_amd64/sing-box
         
-    - name: upload
-      uses: actions/upload-artifact@master
-      with:
-        name: sing-box-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
-        path: /home/runner/go/bin/${{ matrix.goos }}_${{ matrix.goarch }}
+    - name: Generate tar
+      run: |
+        cd /home/runner/go/bin/${{ matrix.goos }}_${{ matrix.goarch }}
+        tar czf sing-box-${{ matrix.os }}-${{ matrix.arch }}.tar.gz sing-box
     
     - name: Upload to GitHub Release
       uses: svenstaro/upload-release-action@v2
