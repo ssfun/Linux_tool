@@ -44,7 +44,7 @@ jobs:
       with:
         repo_token: ${{ secrets.GT_TOKEN }}
         file: /home/runner/go/bin/${{ matrix.goos }}_${{ matrix.goarch }}/sing-box-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
-        tag: sing-box
+        tag: "sing-box"
         body: "sing-box with wireguard"
         overwrite: true
    
