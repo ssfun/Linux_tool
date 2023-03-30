@@ -17,7 +17,7 @@ fi
 # getting the latest version of sing-box"
 latest_version="$(wget -qO- -t1 -T2 "https://api.github.com/repos/ssfun/Linux_tool/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
 echo -e "get the latest version of sing-box: ${latest_version}"
-sing-box_link="https://github.com/ssfun/Linux_tool/releases/download/${latest_version}/sing-box-linux-${arch}.tar.gz"
+link="https://github.com/ssfun/Linux_tool/releases/download/${latest_version}/sing-box-linux-${arch}.tar.gz"
 
 
 mkdir -p "/usr/local/etc/sing-box"
@@ -26,10 +26,10 @@ mkdir -p "/var/lib/sing-box"
 
 
 cd `mktemp -d`
-wget -nv "${sing-box_link}" -O sing-box.tar.gz
+wget -nv "${link}" -O sing-box.tar.gz
 tar -zxvf sing-box.tar.gz
 
-mv sing-gox /usr/local/bin/sing-box && chmod +x /usr/local/bin/sing-box
+mv sing-box /usr/local/bin/sing-box && chmod +x /usr/local/bin/sing-box
 
 # set sing-box.service
 cat <<EOF >/etc/systemd/system/sing-box.service
@@ -78,7 +78,7 @@ read -p "请输入 warp public key:" warppublickey
 read -p "请输入 warp reserved:" warpreserved
     [ -z "${warpreserved}" ]  
 
-cat <<EOF >/usr/local/etc/sing-gox/config.json
+cat <<EOF >/usr/local/etc/sing-box/config.json
 
 {
     "log":{
