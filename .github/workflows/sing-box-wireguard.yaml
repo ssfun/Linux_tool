@@ -27,7 +27,12 @@ jobs:
     - name: install sing-box
       run: |
         GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go install -v -tags with_wireguard -tags with_reality_server github.com/sagernet/sing-box/cmd/sing-box@latest
-      
+    
+    - name: Rename for Windows 
+      if: matrix.goarch == 'amd64'
+      run: |
+        mv /home/runner/go/bin/sing-box /home/runner/go/bin/linux_amd64/sing-box
+        
     - name: upload
       uses: actions/upload-artifact@master
       with:
