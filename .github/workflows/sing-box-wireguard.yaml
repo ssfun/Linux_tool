@@ -24,11 +24,13 @@ jobs:
         go-version: '1.20'
         check-latest: true
     
+    - name: Get the latest release version
+      id: get_version
+      run: echo "::set-output name=version::$(wget -qO- -t1 -T2 'https://api.github.com/repos/SagerNet/sing-box/releases' | grep 'tag_name' | head -n 1 | awk -F ':' '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
+    
     - name: install sing-box
       run: |
         GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go install -v -tags with_wireguard github.com/sagernet/sing-box/cmd/sing-box@latest
-        version="$(wget -qO- -t1 -T2 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
-
     
     - name: Rename for amd64 
       if: matrix.goarch == 'amd64'
@@ -42,11 +44,11 @@ jobs:
         tar czf sing-box-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz sing-box
     
     - name: Upload to GitHub Release
-      uses: svenstaro/upload-release-action@v2
+      uses: svenstaro/upload-release-action@v2        
       with:
         repo_token: ${{ secrets.GT_TOKEN }}
         file: /home/runner/go/bin/${{ matrix.goos }}_${{ matrix.goarch }}/sing-box-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
-        tag: $(wget -qO- -t1 -T2 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
+        tag_name: ${{ steps.get_version.outputs.version }}
         body: "sing-box with wireguard"
         overwrite: true
    
