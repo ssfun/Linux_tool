@@ -6,7 +6,14 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-          
+    strategy:
+      matrix:
+        include:
+          - goarch: amd64
+            goos: linux
+          - goarch: arm64
+            goos: linux
+    
     steps:
     - name: Checkout
       uses: actions/checkout@v3
@@ -19,10 +26,18 @@ jobs:
     
     - name: install sing-box
       run: |
-        go install -v -tags with_wireguard -tags with_acme -tags with_acme github.com/sagernet/sing-box/cmd/sing-box@latest
+        go install -v -tags with_wireguard -tags with_reality_server github.com/sagernet/sing-box/cmd/sing-box@latest
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
 
+    - name: Packaging...
+      run: |
+        cd /home/runner/go/bin
+        tar czf sing-box-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz sing-box
+      
     - name: upload
       uses: actions/upload-artifact@master
       with:
-        name: sing-box
+        name: sing-box-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
         path: /home/runner/go/bin
