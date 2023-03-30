@@ -31,6 +31,7 @@ jobs:
     - name: Rename for Windows 
       if: matrix.goarch == 'amd64'
       run: |
+        mkdir /home/runner/go/bin/linux_amd64
         mv /home/runner/go/bin/sing-box /home/runner/go/bin/linux_amd64/sing-box
         
     - name: upload
