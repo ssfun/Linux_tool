@@ -1,0 +1,45 @@
+name: Build and Package Sing-Box with WireGuard
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        arch: [amd64, arm64]
+
+    env:
+      GOVERSION: 1.2.0
+      GOPROXY: https://goproxy.io
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2.3.4
+
+    - name: Setup Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{env.GOVERSION}}
+
+    - name: Install Dependencies
+      run: |
+        go mod download
+        go install github.com/wireguard/wgctrl@latest
+
+    - name: Build
+      run: |
+        GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -ldflags="-s -w" -tags "with_wireguard with_reality_server" -o sing-box
+    
+    - name: Package
+      run: |
+        tar czf sing-box-${{ matrix.os }}-${{ matrix.arch }}.tar.gz sing-box
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: sing-box-${{ matrix.os }}-${{ matrix.arch }}.tar.gz
+        path: sing-box-${{ matrix.os }}-${{ matrix.arch }}.tar.gz
