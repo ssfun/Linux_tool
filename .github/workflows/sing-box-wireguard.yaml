@@ -37,7 +37,7 @@ jobs:
     - name: Generate tar
       run: |
         cd /home/runner/go/bin/${{ matrix.goos }}_${{ matrix.goarch }}
-        tar czf sing-box-${{ matrix.os }}-${{ matrix.arch }}.tar.gz sing-box
+        tar czf sing-box-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz sing-box
     
     - name: Upload to GitHub Release
       uses: svenstaro/upload-release-action@v2
