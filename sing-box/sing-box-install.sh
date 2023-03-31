@@ -21,24 +21,6 @@ OS_RELEASE=''
 #arch
 OS_ARCH=''
 
-#sing-box version
-SING_BOX_VERSION=''
-
-#package download path
-DOWNLAOD_PATH='/usr/local/sing-box'
-
-#config install path
-CONFIG_FILE_PATH='/usr/local/etc/sing-box'
-
-#binary install path
-BINARY_FILE_PATH='/usr/local/bin/sing-box'
-
-#service install path
-SERVICE_FILE_PATH='/etc/systemd/system/sing-box.service'
-
-#log file save path
-DEFAULT_LOG_FILE_SAVE_PATH='/var/log/sing-box/sing-box.log'
-
 #sing-box status define
 declare -r SING_BOX_STATUS_RUNNING=1
 declare -r SING_BOX_STATUS_NOT_RUNNING=0
@@ -119,19 +101,6 @@ arch_check() {
     LOGI "系统架构检测完毕,当前系统架构为:${OS_ARCH}"
 }
 
-#sing-box status check,-1 means didn't install,0 means failed,1 means running
-status_check() {
-    if [[ ! -f "${SERVICE_FILE_PATH}" ]]; then
-        return ${SING_BOX_STATUS_NOT_INSTALL}
-    fi
-    temp=$(systemctl status sing-box | grep Active | awk '{print $3}' | cut -d "(" -f2 | cut -d ")" -f1)
-    if [[ x"${temp}" == x"running" ]]; then
-        return ${SING_BOX_STATUS_RUNNING}
-    else
-        return ${SING_BOX_STATUS_NOT_RUNNING}
-    fi
-}
-
 #install some common utils
 install_base() {
     if [[ ${OS_RELEASE} == "ubuntu" || ${OS_RELEASE} == "debian" ]]; then
@@ -146,12 +115,10 @@ download_sing-box() {
     LOGD "开始下载sing-box..."
     os_check && arch_check && install_base
      # getting the latest version of sing-box"
-    latest_version="$(wget -qO- -t1 -T2 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
-    echo -e "get the latest version of sing-box: ${latest_version}"
-    latest_name="$(wget -qO- -t1 -T2 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/v//g;s/,//g;s/ //g')"
-    echo "${latest_name}"
-    link="https://github.com/SagerNet/sing-box/releases/download/${latest_version}/sing-box-${latest_name}-linux-${arch}.tar.gz"
-    wget -nv "${link}" -O sing-box.tar.gz
+    LATEST_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
+    LATEST_NUM="$(wget -qO- -t1 -T2 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/v//g;s/,//g;s/ //g')"
+    LINK="https://github.com/SagerNet/sing-box/releases/download/${LATEST_VERSION}/sing-box-${LATEST_NUM}-linux-${OS_ARCH}.tar.gz"
+    wget -nv "${LINK}" -O sing-box.tar.gz
     tar -zxvf sing-box.tar.gz --strip-components=1
     mv sing-box /usr/local/bin/sing-box && chmod +x /usr/local/bin/sing-box
 }
@@ -176,8 +143,8 @@ LimitNOFILE=infinity
 [Install]
 WantedBy=multi-user.target
 EOF
-    chmod 644 ${SERVICE_FILE_PATH}
     systemctl daemon-reload
+    systemctl enable sing-box
     LOGD "安装sing-box systemd服务成功"
 }
 
@@ -331,7 +298,7 @@ EOF
 #install sing-box  
 install_sing-box() {
     LOGD "开始安装sing-box..."
-    if [[ -f "${SERVICE_FILE_PATH}" ]]; then
+    if [[ -f "/etc/systemd/system/sing-box.service" ]]; then
         LOGE "当前系统已安装sing-box,请使用更新命令"
         show_menu
     fi
@@ -343,7 +310,6 @@ install_sing-box() {
     download_sing-box
     install_systemd_service
     configuration_config
-    systemctl enable sing-box
     systemctl start sing-box
     LOGI "sing-box安装成功"
 }
@@ -352,7 +318,7 @@ install_sing-box() {
 #update sing-box
 update_sing-box() {
     LOGD "开始更新sing-box..."
-    if [[ ! -f "${SERVICE_FILE_PATH}" ]]; then
+    if [[ ! -f "/etc/systemd/system/sing-box.service" ]]; then
         LOGE "当前系统未安装sing-box,请在安装sing-box的前提下使用更新命令"
         show_menu
     fi
@@ -381,14 +347,13 @@ uninstall_sing-box() {
 #show menu
 show_menu() {
     echo -e "
-  ${green}sing-box-v${SING_BOX_YES_VERSION} 管理脚本${plain}
+  ${green}sing-box 管理脚本${plain}
   ${green}0.${plain} 退出脚本
 ————————————————
   ${green}1.${plain} 安装 sing-box 服务
   ${green}2.${plain} 更新 sing-box 服务
   ${green}3.${plain} 卸载 sing-box 服务
  "
-    show_status
     echo && read -p "请输入选择[0-3]:" num
 
     case "${num}" in
