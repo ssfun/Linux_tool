@@ -344,6 +344,10 @@ update_sing-box() {
 #uninstall sing-box
 uninstall_sing-box() {
     LOGD "开始卸载sing-box..."
+    if [[ ! -f "/etc/systemd/system/sing-box.service" ]]; then
+        LOGE "当前系统未安装sing-box,无需卸载"
+        show_menu
+    fi
     systemctl stop sing-box
     systemctl disable sing-box
     rm -f /etc/systemd/system/sing-box.service
