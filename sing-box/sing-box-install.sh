@@ -110,6 +110,38 @@ status_check() {
     fi
 }
 
+#show sing-box version
+show_sing_box_version() {
+    LOGI "版本信息:/usr/local/bin/sing-box version)"
+}
+
+#show sing-box enable status,enabled means sing-box can auto start when system boot on
+show_enable_status() {
+    local temp=$(systemctl is-enabled sing-box)
+    if [[ x"${temp}" == x"enabled" ]]; then
+        echo -e "[INF] sing-box是否开机自启: ${green}是${plain}"
+    else
+        echo -e "[INF] sing-box是否开机自启: ${red}否${plain}"
+    fi
+}
+
+#show sing-box running status
+show_running_status() {
+    status_check
+    if [[ $? == ${SING_BOX_STATUS_RUNNING} ]]; then
+        local pid=$(pidof sing-box)
+        local runTime=$(systemctl status sing-box | grep Active | awk '{for (i=5;i<=NF;i++)printf("%s ", $i);print ""}')
+        local memCheck=$(cat /proc/${pid}/status | grep -i vmrss | awk '{print $2,$3}')
+        LOGI "#####################"
+        LOGI "进程ID:${pid}"
+        LOGI "运行时长：${runTime}"
+        LOGI "内存占用:${memCheck}"
+        LOGI "#####################"
+    else
+        LOGE "sing-box未运行"
+    fi
+}
+
 #show sing-box status
 show_status() {
     status_check
