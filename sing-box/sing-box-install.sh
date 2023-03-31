@@ -21,6 +21,11 @@ OS_RELEASE=''
 #arch
 OS_ARCH=''
 
+#sing-box status define
+declare -r SING_BOX_STATUS_RUNNING=1
+declare -r SING_BOX_STATUS_NOT_RUNNING=0
+declare -r SING_BOX_STATUS_NOT_INSTALL=255
+
 #utils
 function LOGE() {
     echo -e "${red}[ERR] $* ${plain}"
@@ -92,6 +97,19 @@ arch_check() {
     LOGI "系统架构检测完毕,当前系统架构为:${OS_ARCH}"
 }
 
+#sing-box status check,-1 means didn't install,0 means failed,1 means running
+status_check() {
+    if [[ ! -f "${SERVICE_FILE_PATH}" ]]; then
+        return ${SING_BOX_STATUS_NOT_INSTALL}
+    fi
+    temp=$(systemctl status sing-box | grep Active | awk '{print $3}' | cut -d "(" -f2 | cut -d ")" -f1)
+    if [[ x"${temp}" == x"running" ]]; then
+        return ${SING_BOX_STATUS_RUNNING}
+    else
+        return ${SING_BOX_STATUS_NOT_RUNNING}
+    fi
+}
+
 #install some common utils
 install_base() {
     if [[ ${OS_RELEASE} == "ubuntu" || ${OS_RELEASE} == "debian" ]]; then
@@ -103,7 +121,7 @@ install_base() {
 
 #download sing-box  binary
 download_sing-box() {
-    LOGD "开始下载sing-box..."
+    LOGD "开始下载 sing-box..."
     os_check && arch_check && install_base
      # getting the latest version of sing-box"
     LATEST_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
@@ -112,11 +130,12 @@ download_sing-box() {
     wget -nv "${LINK}" -O sing-box.tar.gz
     tar -zxvf sing-box.tar.gz --strip-components=1
     mv sing-box /usr/local/bin/sing-box && chmod +x /usr/local/bin/sing-box
+    LOGI "sing-box 下载完毕"
 }
 
 #install systemd service
 install_systemd_service() {
-    LOGD "开始安装sing-box systemd服务..."
+    LOGD "开始安装 sing-box systemd 服务..."
     cat <<EOF >/etc/systemd/system/sing-box.service
 [Unit]
 Description=sing-box service
@@ -136,7 +155,7 @@ WantedBy=multi-user.target
 EOF
     systemctl daemon-reload
     systemctl enable sing-box
-    LOGD "安装sing-box systemd服务成功"
+    LOGD "安装 sing-box systemd 服务成功"
 }
 
 #configuration config
@@ -283,26 +302,26 @@ configuration_config() {
     }
 }
 EOF
-    LOGD "sing-box配置文件完成"
+    LOGD "sing-box 配置文件完成"
 }
 
 #install sing-box  
 install_sing-box() {
-    LOGD "开始安装sing-box..."
+    LOGD "开始安装 sing-box..."
     if [[ -f "/etc/systemd/system/sing-box.service" ]]; then
-        LOGE "当前系统已安装sing-box,请使用更新命令"
+        LOGE "当前系统已安装 sing-box,请使用更新命令"
         show_menu
     fi
     os_check && arch_check && install_base
-    # getting the latest version of sing-box"
     mkdir -p "/usr/local/etc/sing-box"
     mkdir -p "/var/log/sing-box"
     mkdir -p "/var/lib/sing-box"
     download_sing-box
     install_systemd_service
     configuration_config
+    LOGI "sing-box 启动成功"
     systemctl start sing-box
-    LOGI "sing-box安装成功"
+    LOGI "sing-box 已完成安装"
 }
 
 
@@ -317,8 +336,9 @@ update_sing-box() {
     rm -f /usr/local/bin/sing-box
     # getting the latest version of sing-box"
     download_sing-box
+    LOGI "sing-box 启动成功"
     systemctl restart sing-box
-    LOGI "update sing-box success"
+    LOGI "sing-box 已完成升级"
 }
 
 #uninstall sing-box
@@ -339,12 +359,13 @@ uninstall_sing-box() {
 show_menu() {
     echo -e "
   ${green}sing-box 管理脚本${plain}
-  ${green}0.${plain} 退出脚本
+  ${green}0.${plain} 退出 sing-box 脚本
 ————————————————
   ${green}1.${plain} 安装 sing-box 服务
   ${green}2.${plain} 更新 sing-box 服务
   ${green}3.${plain} 卸载 sing-box 服务
  "
+    status_check
     echo && read -p "请输入选择[0-3]:" num
 
     case "${num}" in
@@ -369,4 +390,5 @@ show_menu() {
 main(){
     show_menu
 }
+
 main $*
