@@ -426,7 +426,7 @@ show_menu() {
   ${green}2.${plain} 更新 sing-box 服务
   ${green}3.${plain} 卸载 sing-box 服务
  "
-    status_check
+    show_status
     echo && read -p "请输入选择[0-3]:" num
 
     case "${num}" in
