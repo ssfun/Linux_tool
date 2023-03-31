@@ -97,17 +97,29 @@ arch_check() {
     LOGI "系统架构检测完毕,当前系统架构为:${OS_ARCH}"
 }
 
-#sing-box status check,-1 means didn't install,0 means failed,1 means running
-status_check() {
-    if [[ ! -f "${SERVICE_FILE_PATH}" ]]; then
-        return ${SING_BOX_STATUS_NOT_INSTALL}
-    fi
-    temp=$(systemctl status sing-box | grep Active | awk '{print $3}' | cut -d "(" -f2 | cut -d ")" -f1)
-    if [[ x"${temp}" == x"running" ]]; then
-        return ${SING_BOX_STATUS_RUNNING}
-    else
-        return ${SING_BOX_STATUS_NOT_RUNNING}
-    fi
+#show sing-box status
+show_status() {
+    status_check
+    case $? in
+    0)
+        show_sing_box_version
+        echo -e "[INF] sing-box状态: ${yellow}未运行${plain}"
+        show_enable_status
+        LOGI "配置文件路径:/usr/local/etc/sing-box/config.json"
+        LOGI "可执行文件路径:/usr/local/bin/sing-box"
+        ;;
+    1)
+        show_sing_box_version
+        echo -e "[INF] sing-box状态: ${green}已运行${plain}"
+        show_enable_status
+        show_running_status
+        LOGI "配置文件路径:/usr/local/etc/sing-box/config.json"
+        LOGI "可执行文件路径:/usr/local/bin/sing-box"
+        ;;
+    255)
+        echo -e "[INF] sing-box状态: ${red}未安装${plain}"
+        ;;
+    esac
 }
 
 #install some common utils
