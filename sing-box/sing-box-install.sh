@@ -420,11 +420,13 @@ uninstall_sing-box() {
 show_menu() {
     echo -e "
   ${green}sing-box 管理脚本${plain}
-  ${green}0.${plain} 退出 sing-box 脚本
-————————————————
+  ————————————————
+  
   ${green}1.${plain} 安装 sing-box 服务
   ${green}2.${plain} 更新 sing-box 服务
   ${green}3.${plain} 卸载 sing-box 服务
+  
+  ${green}0.${plain} 退出 sing-box 脚本
  "
     show_status
     echo && read -p "请输入选择[0-3]:" num
