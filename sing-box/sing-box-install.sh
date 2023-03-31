@@ -97,6 +97,19 @@ arch_check() {
     LOGI "系统架构检测完毕,当前系统架构为:${OS_ARCH}"
 }
 
+#sing-box status check,-1 means didn't install,0 means failed,1 means running
+status_check() {
+    if [[ ! -f "/etc/systemd/system/sing-box.service" ]]; then
+        return ${SING_BOX_STATUS_NOT_INSTALL}
+    fi
+    temp=$(systemctl status sing-box | grep Active | awk '{print $3}' | cut -d "(" -f2 | cut -d ")" -f1)
+    if [[ x"${temp}" == x"running" ]]; then
+        return ${SING_BOX_STATUS_RUNNING}
+    else
+        return ${SING_BOX_STATUS_NOT_RUNNING}
+    fi
+}
+
 #show sing-box status
 show_status() {
     status_check
