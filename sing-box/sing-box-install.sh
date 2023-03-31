@@ -21,15 +21,6 @@ OS_RELEASE=''
 #arch
 OS_ARCH=''
 
-#sing-box status define
-declare -r SING_BOX_STATUS_RUNNING=1
-declare -r SING_BOX_STATUS_NOT_RUNNING=0
-declare -r SING_BOX_STATUS_NOT_INSTALL=255
-
-#log file size which will trigger log clear
-#here we set it as 25M
-declare -r DEFAULT_LOG_FILE_DELETE_TRIGGER=25
-
 #utils
 function LOGE() {
     echo -e "${red}[ERR] $* ${plain}"
