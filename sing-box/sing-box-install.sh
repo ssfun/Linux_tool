@@ -386,7 +386,7 @@ install_sing-box() {
 update_sing-box() {
     LOGD "开始更新sing-box..."
     if [[ ! -f "/etc/systemd/system/sing-box.service" ]]; then
-        LOGE "当前系统未安装sing-box,请在安装sing-box的前提下使用更新命令"
+        LOGE "当前系统未安装sing-box,更新失败"
         show_menu
     fi
     systemctl stop sing-box
