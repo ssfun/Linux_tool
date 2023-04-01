@@ -277,7 +277,7 @@ download_filebrowser() {
     LOGD "开始下载 filebrowser..."
     os_check && arch_check
     # getting the latest version of filebrowser"
-    LATEST_FILE_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/filebrowser/filebrowser/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}'
+    LATEST_FILE_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/filebrowser/filebrowser/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}')
     FILE_LINK="https://github.com/filebrowser/filebrowser/releases/download/${LATEST_FILE_VERSION}/linux-${ARCH}-filebrowser.tar.gz"
     wget -nv "${FILE_LINK}" -O filebrowser.tar.gz
     mv filebrowser /usr/local/bin/filebrowser && chmod +x /usr/local/bin/filebrowser
