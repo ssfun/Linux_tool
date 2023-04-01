@@ -21,6 +21,7 @@ OS=''
 #arch
 ARCH=''
 
+# CADDY ENV ##############################
 #caddy version
 CADDY_VERSION=''
 #config install path
@@ -36,7 +37,9 @@ CADDY_LOG_PATH='/usr/local/caddy/caddy.log'
 declare -r CADDY_STATUS_RUNNING=1
 declare -r CADDY_STATUS_NOT_RUNNING=0
 declare -r CADDY_STATUS_NOT_INSTALL=255
+#########################################
 
+# SING-BOX ENV ###########################
 #sing-box version
 SING_BOX_VERSION=''
 #config install path
@@ -52,8 +55,9 @@ SING_BOX_LOG_PATH='/usr/local/sing-box/sing-box.log'
 declare -r SING_BOX_STATUS_RUNNING=1
 declare -r SING_BOX_STATUS_NOT_RUNNING=0
 declare -r SING_BOX_STATUS_NOT_INSTALL=255
+##########################################
 
-#utils
+# UTILS #####################################
 function LOGE() {
     echo -e "${red}[ERR] $* ${plain}"
 }
@@ -81,7 +85,9 @@ confirm() {
         return 1
     fi
 }
+###########################################
 
+# SYSTEM ##################################
 #Root check
 [[ $EUID -ne 0 ]] && LOGE "请使用root用户运行该脚本" && exit 1
 
@@ -113,7 +119,6 @@ arch_check() {
     LOGI "检测当前系统架构中..."
     ARCH=$(arch)
     LOGI "当前系统架构为 ${ARCH}"
-
     if [[ ${ARCH} == "x86_64" || ${ARCH} == "x64" || ${ARCH} == "amd64" ]]; then
         ARCH="amd64"
     elif [[ ${ARCH} == "aarch64" || ${ARCH} == "arm64" ]]; then
@@ -124,6 +129,17 @@ arch_check() {
     LOGI "系统架构检测完毕,当前系统架构为:${ARCH}"
 }
 
+#install some common utils
+install_base() {
+    if [[ ${OS} == "ubuntu" || ${OS} == "debian" ]]; then
+        apt install wget tar -y
+    elif [[ ${OS} == "centos" ]]; then
+        yum install wget tar -y
+    fi
+}
+###########################################################
+
+# CADDY STATUS ############################################
 #caddy status check,-1 means didn't install,0 means failed,1 means running
 caddy_status_check() {
     if [[ ! -f "${CADDY_SERVICE_PATH}" ]]; then
@@ -187,7 +203,9 @@ show_caddy_enable_status() {
         echo -e "[INF] caddy是否开机自启: ${red}否${plain}"
     fi
 }
+#############################################################
 
+# SING-BOX STATUS ###########################################
 #sing-box status check,-1 means didn't install,0 means failed,1 means running
 sing_box_status_check() {
     if [[ ! -f "${SING_BOX_SERVICE_PATH}" ]]; then
@@ -251,20 +269,151 @@ show_sing_box_enable_status() {
         echo -e "[INF] sing-box是否开机自启: ${red}否${plain}"
     fi
 }
+###################################################
 
-#install some common utils
-install_base() {
-    if [[ ${OS} == "ubuntu" || ${OS} == "debian" ]]; then
-        apt install wget tar -y
-    elif [[ ${OS} == "centos" ]]; then
-        yum install wget tar -y
-    fi
+# FILEBROWSER ###############################
+#download filebrowser  binary
+download_filebrowser() {
+    LOGD "开始下载 filebrowser..."
+    os_check && arch_check
+     # getting the latest version of filebrowser"
+    LATEST_FILE_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/filebrowser/filebrowser/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}'
+    FILE_LINK="https://github.com/filebrowser/filebrowser/releases/download/${LATEST_FILE_VERSION}/linux-${ARCH}-filebrowser.tar.gz"
+    wget -nv "${FILE_LINK}" -O filebrowser.tar.gz
+    mv filebrowser /usr/local/bin/filebrowser && chmod +x /usr/local/bin/filebrowser
+    LOGI "filebrowser 下载完毕"
 }
 
+#install filebrowser systemd service
+install_filebrowser_systemd_service() {
+    LOGD "开始安装 filebrowser systemd 服务..."
+    cat <<EOF >/etc/systemd/system/filebrowser.service
+[Unit]
+Description=filebrowser
+After=network-online.target
+Wants=network-online.target systemd-networkd-wait-online.service
+[Service]
+User=root
+Restart=on-failure
+RestartSec=5s
+ExecStart=/usr/local/bin/filebrowser -c /usr/local/etc/filebrowser/config.json
+[Install]
+WantedBy=multi-user.target
+EOF
+    systemctl daemon-reload
+    systemctl enable filebrowser
+    LOGD "安装 filebrowser systemd 服务成功"
+}
+
+#configuration filebrowser config
+configuration_filebrowser_config() {
+    LOGD "开始配置filebrowser配置文件..."
+    # set config
+    cat <<EOF >/usr/local/etc/filebrowser/config.json
+{
+    "address":"127.0.0.1",
+    "database":"/opt/filebrowser/filebrowser.db",
+    "log":"/var/log/filebrowser/filebrowser.log",
+    "port":40333,
+    "root":"/home/filebrowser",
+    "username":"admin"
+}
+EOF
+    LOGD "filebrowser 配置文件完成"
+}
+
+#install filebrowser
+install_filebrowser() {
+    LOGD "开始安装 filebrowser..."
+    mkdir -p "/usr/local/etc/filebrowser"
+    mkdir -p "/var/log/filebrowser"
+    mkdir -p "/opt/filebrowser"
+    mkdir -p "/home/filebrowser"
+    download_filebrowser
+    install_filebrowser_systemd_service
+    configuration_filebrowser_config
+    LOGI "filebrowser 已完成安装"
+}
+
+#update filebrowser
+update_filebrowser() {
+    LOGD "开始更新filebrowser..."
+    if [[ ! -f "/etc/systemd/system/filebrowser.service" ]]; then
+        LOGE "当前系统未安装filebrowser,更新失败"
+        show_menu
+    fi
+    systemctl stop filebrowser
+    rm -f /usr/local/bin/filebrowser
+    # getting the latest version of filebrowser"
+    download_filebrowser
+    LOGI "caddy 启动成功"
+    systemctl restart filebrowser
+    LOGI "caddy 已完成升级"
+}
+
+#uninstall filebrowser
+uninstall_filebrowser() {
+    LOGD "开始卸载filebrowser..."
+    if [[ ! -f "/etc/systemd/system/filebrowser.service" ]]; then
+        LOGE "当前系统未安装filebrowser,无需卸载"
+        show_menu
+    fi
+    systemctl stop filebrowser
+    systemctl disable filebrowser
+    rm -f /etc/systemd/system/filebrowser.service
+    systemctl daemon-reload
+    rm -f /usr/local/bin/filebrowser
+    rm -rf /usr/local/etc/filebrowser
+    rm -rf /var/log/filebrowser
+    rm -rf /opt/filebrowser
+    rm -rf /home/filebrowser
+    LOGI "卸载filebrowser成功"
+}
+######################################
+
+# PLEX ################################
+#install plex
+install_plex() {
+    LOGD "开始下载 plex..."
+    os_check && arch_check
+     # getting the latest version of plex"
+    LATEST_PLEX_VERSION="$(wget -qO- -t1 -T2 "https://plex.tv/api/downloads/5.json" | grep -o '"version":"[^"]*' | grep -o '[^"]*$' | head -n 1)"
+    PLEX_LINK="https://downloads.plex.tv/plex-media-server-new/${LATEST_PLEX_VERSION}/debian/plexmediaserver_${LATEST_PLEX_VERSION}_${ARCH}.deb"
+    wget -nv "${PLEX_LINK}" -O plexmediaserver.deb
+    dpkg -i plexmediaserver.deb
+    LOGI "plex 已完成安装"
+}
+
+#update plex
+update_plex() {
+    LOGD "开始更新filebrowser..."
+    if [[ ! -f "/etc/systemd/system/plexmediaserver.service" ]]; then
+        LOGE "当前系统未安装plex,更新失败"
+        show_menu
+    fi
+    install_plex
+    LOGI "plex 已完成升级"
+}
+
+#uninstall plex
+uninstall_plex() {
+    LOGD "开始卸载plex..."
+    if [[ ! -f "/etc/systemd/system/plexmediaserver.service" ]]; then
+        LOGE "当前系统未安装plexmediaserver,无需卸载"
+        show_menu
+    fi
+    dpkg -r plexmediaserver
+    rm -rf /var/lib/plexmediaserver/Library/Application Support/Plex Media Server/
+    LOGI "卸载plex成功"
+}
+
+#######################################
+
+# CADDY TOOL #################################
 #download caddy  binary
 download_caddy() {
     LOGD "开始下载 caddy..."
-    os_check && arch_check && install_base
+    os_check && arch_check
      # getting the latest version of caddy"
     LATEST_CADDY_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/lxhao61/integrated-examples/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
     CADDY_LINK="https://github.com/lxhao61/integrated-examples/releases/download/${LATEST_CADDY_VERSION}/caddy-linux-${ARCH}.tar.gz"
@@ -286,8 +435,8 @@ Requires=network-online.target
 Type=notify
 User=root
 Group=root
-ExecStart=${CADDY_BINARY_PATH} run --environ --config ${CADDY_CONFIG_PATH}
-ExecReload=${CADDY_BINARY_PATH} reload --config ${CADDY_CONFIG_PATH}
+ExecStart=${CADDY_BINARY_PATH} run --environ --config ${CADDY_CONFIG_PATH}/Caddyfile
+ExecReload=${CADDY_BINARY_PATH} reload --config ${CADDY_CONFIG_PATH}/Caddyfile
 TimeoutStopSec=5s
 LimitNOFILE=1048576
 LimitNPROC=512
@@ -306,17 +455,9 @@ EOF
 configuration_caddy_config() {
     LOGD "开始配置caddy配置文件..."
     # set Caddyfile
-    read -p "请输入需要设置的网站host:" host
-        [ -z "${host}" ]
-    read -p "请输入 trojan 密码:" pswd
-        [ -z "${pswd}" ]
-    read -p "请输入申请证书mail:" mail
-        [ -z "${mail}" ]    
     cat <<EOF >${CADDY_CONFIG_PATH}
 {
-        order trojan before route
-        order forward_proxy before trojan
-        order reverse_proxy before forward_proxy
+        order reverse_proxy before route
         admin off
         log {
                 output file ${CADDY_LOG_PATH}
@@ -327,55 +468,22 @@ configuration_caddy_config() {
         }
         cert_issuer acme #acme表示从Let's Encrypt申请TLS证书，zerossl表示从ZeroSSL申请TLS证书。必须acme与zerossl二选一（固定TLS证书的目录便于引用）。注意：版本不小于v2.4.1才支持。
         email $mail #电子邮件地址。选配，推荐。
-        servers 127.0.0.1:88 {
-                #与下边本地监听端口对应
-                listener_wrappers {
-                        proxy_protocol #开启PROXY protocol接收
-                }
-                protocols h1 h2c #开启HTTP/1.1 server与H2C server支持
-        }
-        servers :443 {
-                #与下边本地监听端口对应
-                listener_wrappers {
-                        trojan #caddy-trojan插件应用必须配置
-                }
-                protocols h1 h2 h3 #开启HTTP/3 server支持（默认，此条参数可以省略不写。）。若采用HAProxy SNI分流（目前不支持UDP转发），推荐不开启。
-        }
-        trojan {
-                caddy
-                no_proxy
-                users $pswd #修改为自己的密码。密码可多组，用空格隔开。
-        }
 }
-:80 {
-        #HTTP默认监听端口
-        redir https://{host}{uri} permanent #HTTP自动跳转HTTPS，让网站看起来更真实。
-}
-:88 {
-        #HTTP/1.1 server及H2C server监听端口
-        bind 127.0.0.1 #绑定本地主机，避免本机外的机器探测到上面端口。
-        @host {
-                host $host #限定域名访问（禁止以ip方式访问网站），修改为自己的域名。
-        }
-        route @host {
-                header {
-                        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" #启用HSTS
-                }
-                reverse_proxy 127.0.0.1:40333
-        }
-}
-:443, $host:443 {
+:443, $thost:443 {
         #HTTPS server监听端口。注意：逗号与域名（或含端口）之间有一个空格。
         tls {
                 ciphers TLS_AES_256_GCM_SHA384 TLS_AES_128_GCM_SHA256 TLS_CHACHA20_POLY1305_SHA256 TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256
                 curves x25519 secp521r1 secp384r1 secp256r1
         }
-        trojan {
-                connect_method
-                websocket #开启WebSocket支持
+        @tws {
+                path /$wspath #与Trojan+WebSocket应用中path对应
+                header Connection *Upgrade*
+                header Upgrade websocket
         }       #此部分配置为caddy-trojan插件的WebSocket应用，若删除就仅支持Trojan应用。
+        reverse_proxy @tws 127.0.0.1:2007 #转发给本机Trojan+WebSocket监听端口
+        
         @host {
-                host $host #限定域名访问（禁止以ip方式访问网站），修改为自己的域名。
+                host $thost #限定域名访问（禁止以ip方式访问网站），修改为自己的域名。
         }
         route @host {
                 header {
@@ -384,14 +492,64 @@ configuration_caddy_config() {
                 reverse_proxy 127.0.0.1:40333
         }
 }
-http://$host:404 {
+EOF
+    LOGD "caddy 配置文件完成"
+}
+
+#configuration caddy Caddyfile with plex
+configuration_caddy_config_with_plex() {
+    LOGD "开始配置caddy配置文件..."
+    # set Caddyfile
+    cat <<EOF >${CADDY_CONFIG_PATH}
+{
+        order reverse_proxy before route
+        admin off
+        log {
+                output file ${CADDY_LOG_PATH}
+                level ERROR
+        }       #版本不小于v2.4.0才支持日志全局配置，否则各自配置。
+        storage file_system {
+                root /home/tls #存放TLS证书的基本路径
+        }
+        cert_issuer acme #acme表示从Let's Encrypt申请TLS证书，zerossl表示从ZeroSSL申请TLS证书。必须acme与zerossl二选一（固定TLS证书的目录便于引用）。注意：版本不小于v2.4.1才支持。
+        email $mail #电子邮件地址。选配，推荐。
+}
+:443, $thost:443, $phost:443 {
+        #HTTPS server监听端口。注意：逗号与域名（或含端口）之间有一个空格。
+        tls {
+                ciphers TLS_AES_256_GCM_SHA384 TLS_AES_128_GCM_SHA256 TLS_CHACHA20_POLY1305_SHA256 TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256
+                curves x25519 secp521r1 secp384r1 secp256r1
+        }
+        @tws {
+                path /$wspath #与Trojan+WebSocket应用中path对应
+                header Connection *Upgrade*
+                header Upgrade websocket
+        }       #此部分配置为caddy-trojan插件的WebSocket应用，若删除就仅支持Trojan应用。
+        reverse_proxy @tws 127.0.0.1:$tport #转发给本机Trojan+WebSocket监听端口
+        
         @host {
-                host $host #限定域名访问（禁止以ip方式访问网站），修改为自己的域名。
+                host $thost #限定域名访问（禁止以ip方式访问网站），修改为自己的域名。
         }
         route @host {
-                file_server {
-                        root /var/www/404 #修改为自己存放的WEB文件路径
+                header {
+                        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" #启用HSTS
                 }
+                reverse_proxy 127.0.0.1:40333
+        }
+        
+        @plex {
+                host $phost #限定域名访问（禁止以ip方式访问网站），修改为自己的域名。
+        }
+        route @plex {
+                header {
+                        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" #启用HSTS
+                        X-Content-Type-Options nosniff
+                        X-Frame-Options DENY
+                        Referrer-Policy no-referrer-when-downgrade
+                        X-XSS-Protection 1
+                }
+                reverse_proxy 127.0.0.1:32400
+                encode gzip
         }
 }
 EOF
@@ -399,22 +557,25 @@ EOF
 }
 
 #install caddy
-install_caddy() {
-    LOGD "开始安装 caddy..."
-    if [[ -f "${CADDY_SERVICE_PATH}" ]]; then
-        LOGE "当前系统已安装 caddy,请使用更新命令"
-        show_menu
-    fi
-    os_check && arch_check && install_base
+install_caddy_without_plex() {
     mkdir -p "/usr/local/etc/caddy"
     mkdir -p "/var/www"
-    mkdir -p "/var/www/404"
     mkdir -p "/var/log/caddy"
     download_caddy
     install_caddy_systemd_service
     configuration_caddy_config
-    LOGI "caddy 启动成功"
-    systemctl start caddy
+    LOGI "caddy 已完成安装"
+}
+
+#install caddy with plex
+install_caddy_with_plex() {
+    LOGD "开始安装 caddy..."
+    mkdir -p "/usr/local/etc/caddy"
+    mkdir -p "/var/www"
+    mkdir -p "/var/log/caddy"
+    download_caddy
+    install_caddy_systemd_service
+    configuration_caddy_config_with_plex
     LOGI "caddy 已完成安装"
 }
 
@@ -450,11 +611,13 @@ uninstall_caddy() {
     rm -rf /var/log/caddy
     LOGI "卸载caddy成功"
 }
+#################################
 
+# SING-BOX TOOL ######################
 #download sing-box  binary
 download_sing-box() {
     LOGD "开始下载 sing-box..."
-    os_check && arch_check && install_base
+    os_check && arch_check
      # getting the latest version of sing-box"
     LATEST_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
     LATEST_NUM="$(wget -qO- -t1 -T2 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/v//g;s/,//g;s/ //g')"
@@ -493,29 +656,6 @@ EOF
 #configuration sing-box config
 configuration_sing_box_config() {
     LOGD "开始配置sing-box配置文件..."
-    # set config.json
-    read -p "请输入 trojan 网站:" trojanhost
-        [ -z "${trojanhost}" ]
-    read -p "请输入 trojan 端口:" trojanport
-        [ -z "${trojanport}" ]
-    read -p "请输入 trojan 密码:" trojanpswd
-        [ -z "${trojanpswd}" ]
-    read -p "请输入 ws path:" wspath
-        [ -z "${wspath}" ]
-    read -p "请输入 vmess 端口:" vmessport
-        [ -z "${vmessport}" ]    
-    read -p "请输入 vmess UUID:" vmessuuid
-        [ -z "${vmessuuid}" ]  
-    read -p "请输入 warp ipv4:" warpipv4
-        [ -z "${warpipv4}" ]  
-    read -p "请输入 warp ipv6:" warpipv6
-        [ -z "${warpipv6}" ]  
-    read -p "请输入 warp private key:" warpprivatekey
-        [ -z "${warpprivatekey}" ]  
-    read -p "请输入 warp public key:" warppublickey
-        [ -z "${warppublickey}" ]  
-    read -p "请输入 warp reserved:" warpreserved
-        [ -z "${warpreserved}" ]  
     cat <<EOF >${SING_BOX_CONFIG_PATH}
 {
     "log":{
@@ -527,8 +667,8 @@ configuration_sing_box_config() {
         {
             "type":"trojan",
             "tag":"trojan-in",
-            "listen":"0.0.0.0",
-            "listen_port":$trojanport,
+            "listen":"127.0.0.1",
+            "listen_port":$tport,
             "tcp_fast_open":true,
             "udp_fragment":true,
             "sniff":true,
@@ -539,30 +679,9 @@ configuration_sing_box_config() {
             "users":[
                 {
                     "name":"trojan",
-                    "password":"$trojanpswd"
+                    "password":"$tpswd"
                 }
             ],
-            "tls":{
-                "enabled":true,
-                "server_name":"$trojanhost",
-                "alpn":[
-                    "h2",
-                    "http/1.1"
-                ],
-                "min_version":"1.2",
-                "max_version":"1.3",
-                "cipher_suites":[
-                    "TLS_CHACHA20_POLY1305_SHA256",
-                    "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
-                    "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256"
-                ],
-                "certificate_path":"/home/tls/certificates/acme-v02.api.letsencrypt.org-directory/$trojanhost/$trojanhost.crt",
-                "key_path":"/home/tls/certificates/acme-v02.api.letsencrypt.org-directory/$trojanhost/$trojanhost.key"
-            },
-            "fallback":{
-                "server":"127.0.0.1",
-                "server_port":404
-            },
             "transport":{
                 "type":"ws",
                 "path":"/$wspath",
@@ -574,7 +693,7 @@ configuration_sing_box_config() {
             "type":"vmess",
             "tag":"vmess-in",
             "listen":"0.0.0.0",
-            "listen_port":$vmessport,
+            "listen_port":$vport,
             "tcp_fast_open":true,
             "udp_fragment":true,
             "sniff":true,
@@ -584,7 +703,7 @@ configuration_sing_box_config() {
             "users":[
                 {
                     "name":"vmess",
-                    "uuid":"$vmessuuid",
+                    "uuid":"$vuuid",
                     "alterId":0
                 }
             ],
@@ -608,9 +727,9 @@ configuration_sing_box_config() {
             "server_port":2408,
             "local_address":[
                 "172.16.0.2/32",
-                "$warpipv6"
+                "$warpv6"
             ],
-            "private_key":"$warpprivatekey",
+            "private_key":"$warpkey",
             "peer_public_key":"bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
             "reserved":[$warpreserved],
             "mtu":1280
@@ -640,19 +759,12 @@ EOF
 #install sing-box  
 install_sing-box() {
     LOGD "开始安装 sing-box..."
-    if [[ -f "${SING_BOX_SERVICE_PATH}" ]]; then
-        LOGE "当前系统已安装 sing-box,请使用更新命令"
-        show_menu
-    fi
-    os_check && arch_check && install_base
     mkdir -p "/usr/local/etc/sing-box"
     mkdir -p "/var/log/sing-box"
     mkdir -p "/var/lib/sing-box"
     download_sing-box
     install_sing_box_systemd_service
     configuration_sing_box_config
-    LOGI "sing-box 启动成功"
-    systemctl start sing-box
     LOGI "sing-box 已完成安装"
 }
 
@@ -688,47 +800,156 @@ uninstall_sing-box() {
     rm -rf /var/log/sing-box
     LOGI "卸载sing-box成功"
 }
+########################################
 
+# INSTALL ALL ############################
+# install all without plex
+install_all_without_plex() {
+    LOGD "开始安装 caddy + sing-box + filebrowser"
+    if [[ -f "${CADDY_SERVICE_PATH}" ]]; then
+        LOGE "当前系统已安装 caddy,请使用更新命令"
+        show_menu
+    elif [[ -f "${SING_BOX_SERVICE_PATH}" ]]; then
+        LOGE "当前系统已安装 sing-box,请使用更新命令"
+        show_menu
+    elif [[ -f "/etc/systemd/system/filebrowser.service" ]]; then
+        LOGE "当前系统已安装 filebrowser,请使用更新命令"
+        show_menu
+    fi
+    LOGI "开始安装"
+    read -p "请输入 trojan 网站:" thost
+        [ -z "${thost}" ]
+    read -p "请输入 trojan 端口:" tport
+        [ -z "${tport}" ]
+    read -p "请输入 trojan 密码:" tpswd
+        [ -z "${tpswd}" ]
+    read -p "请输入 ws path:" wspath
+        [ -z "${wspath}" ]
+    read -p "请输入 vmess 端口:" vport
+        [ -z "${vport}" ]    
+    read -p "请输入 vmess UUID:" vuuid
+        [ -z "${vuuid}" ]  
+    read -p "请输入 warp ipv6:" warpv6
+        [ -z "${warpv6}" ]  
+    read -p "请输入 warp private key:" warpkey
+        [ -z "${warpkey}" ]  
+    read -p "请输入 warp reserved:" warpreserved
+        [ -z "${warpreserved}" ]  
+    os_check && arch_check && install_base
+    install_caddy_without_caddy
+    install_sing-box
+    install_filebrowser
+    systemctl start caddy
+    systemctl start sing-box
+    systemctl start filebrowser
+    LOGI "caddy + sing-box + filebrowser 已完成安装"
+}
 
+# install all without plex
+install_all_with_plex() {
+    LOGD "开始安装 caddy + sing-box + filebrowser"
+    if [[ -f "${CADDY_SERVICE_PATH}" ]]; then
+        LOGE "当前系统已安装 caddy,请使用更新命令"
+        show_menu
+    elif [[ -f "${SING_BOX_SERVICE_PATH}" ]]; then
+        LOGE "当前系统已安装 sing-box,请使用更新命令"
+        show_menu
+    elif [[ -f "/etc/systemd/system/filebrowser.service" ]]; then
+        LOGE "当前系统已安装 filebrowser,请使用更新命令"
+        show_menu
+    elif [[ -f "/etc/systemd/system/plexmediaserver.service" ]]; then
+        LOGE "当前系统已安装 plex,请使用更新命令"
+        show_menu
+    fi
+    LOGI "开始安装"
+    read -p "请输入 trojan 网站:" thost
+        [ -z "${thost}" ]
+    read -p "请输入 plex 网站:" phost
+        [ -z "${phost}" ]
+    read -p "请输入 trojan 端口:" tport
+        [ -z "${tport}" ]
+    read -p "请输入 trojan 密码:" tpswd
+        [ -z "${tpswd}" ]
+    read -p "请输入 ws path:" wspath
+        [ -z "${wspath}" ]
+    read -p "请输入 vmess 端口:" vport
+        [ -z "${vport}" ]    
+    read -p "请输入 vmess UUID:" vuuid
+        [ -z "${vuuid}" ]  
+    read -p "请输入 warp ipv6:" warpv6
+        [ -z "${warpv6}" ]  
+    read -p "请输入 warp private key:" warpkey
+        [ -z "${warpkey}" ]  
+    read -p "请输入 warp reserved:" warpreserved
+        [ -z "${warpreserved}" ]  
+    os_check && arch_check && install_base
+    install_caddy_with_caddy
+    install_sing-box
+    install_filebrowser
+    install_plex
+    systemctl start caddy
+    systemctl start sing-box
+    systemctl start filebrowser
+    LOGI "caddy + sing-box + plex + filebrowser 已完成安装"
+}
+##########################################
+
+# MENU ####################################
 #show menu
 show_menu() {
     echo -e "
-  ${green}sing-box-v${SING_BOX_YES_VERSION} 管理脚本${plain}
+  ${green}SSFUN Linux TOOL 管理脚本${plain}
   ${green}0.${plain} 退出脚本
 ————————————————
-  ${green}1.${plain} 安装 caddy 服务
-  ${green}2.${plain} 更新 caddy 服务
-  ${green}3.${plain} 卸载 caddy 服务
+  ${green}1.${plain} 安装 caddy + sing-box + filebrowser
+  ${green}2.${plain} 安装 caddy + sing-box + plex + filebrowser
 ————————————————
-  ${green}4.${plain} 安装 sing-box 服务
+  ${green}3.${plain} 更新 caddy 服务
+  ${green}4.${plain} 卸载 caddy 服务
   ${green}5.${plain} 更新 sing-box 服务
   ${green}6.${plain} 卸载 sing-box 服务
+  ${green}7.${plain} 更新 plex 服务
+  ${green}8.${plain} 卸载 plex 服务
+  ${green}9.${plain} 更新 filebrowser 服务
+  ${green}10.${plain} 卸载 filebrowser 服务
  "
     show_caddy_status
     show_sing_box_status
-    echo && read -p "请输入选择[0-6]:" num
+    echo && read -p "请输入选择[0-10]:" num
 
     case "${num}" in
     0)
         exit 0
         ;;
     1)
-        install_caddy && show_menu
+        install_all_without_plex && show_menu
         ;;
     2)
-        update_caddy && show_menu
+        install_all_with_plex && show_menu
         ;;
     3)
-        uninstall_caddy && show_menu
+        update_caddy && show_menu
         ;;
     4)
-        install_sing-box && show_menu
+        uninstall_caddy && show_menu
         ;;
     5)
         update_sing-box && show_menu
         ;;
     6)
         uninstall_sing-box && show_menu
+        ;;
+    7)
+        update_plex && show_menu
+        ;;
+    8)
+        uninstall_plex && show_menu
+        ;;
+    9)
+        update_filebrowser && show_menu
+        ;;
+    10)
+        uninstall_filebrowser && show_menu
         ;;
     *)
         LOGE "请输入正确的选项 [0-6]"
