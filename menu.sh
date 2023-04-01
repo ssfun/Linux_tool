@@ -277,7 +277,7 @@ download_filebrowser() {
     LOGD "开始下载 filebrowser..."
     os_check && arch_check
     # getting the latest version of filebrowser"
-    LATEST_FILE_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/filebrowser/filebrowser/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}')
+    LATEST_FILE_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/filebrowser/filebrowser/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'))
     FILE_LINK="https://github.com/filebrowser/filebrowser/releases/download/${LATEST_FILE_VERSION}/linux-${ARCH}-filebrowser.tar.gz"
     wget -nv "${FILE_LINK}" -O filebrowser.tar.gz
     mv filebrowser /usr/local/bin/filebrowser && chmod +x /usr/local/bin/filebrowser
@@ -621,7 +621,7 @@ download_sing-box() {
      # getting the latest version of sing-box"
     LATEST_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
     LATEST_NUM="$(wget -qO- -t1 -T2 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/v//g;s/,//g;s/ //g')"
-    LINK="https://github.com/SagerNet/sing-box/releases/download/${LATEST_VERSION}/sing-box-${LATEST_NUM}-linux-${OS_ARCH}.tar.gz"
+    LINK="https://github.com/SagerNet/sing-box/releases/download/${LATEST_VERSION}/sing-box-${LATEST_NUM}-linux-${ARCH}.tar.gz"
     wget -nv "${LINK}" -O sing-box.tar.gz
     tar -zxvf sing-box.tar.gz --strip-components=1
     mv sing-box /usr/local/bin/sing-box && chmod +x /usr/local/bin/sing-box
@@ -640,7 +640,7 @@ After=network.target nss-lookup.target
 WorkingDirectory=/var/lib/sing-box
 CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH
 AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH
-ExecStart=${SING_BOX_BINARY_PATH} run -c ${SING_BOX_CONFIG_PATH}
+ExecStart=${SING_BOX_BINARY_PATH} run -c ${SING_BOX_CONFIG_PATH}/config.json
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 RestartSec=10s
@@ -656,7 +656,7 @@ EOF
 #configuration sing-box config
 configuration_sing_box_config() {
     LOGD "开始配置sing-box配置文件..."
-    cat <<EOF >${SING_BOX_CONFIG_PATH}
+    cat <<EOF >${SING_BOX_CONFIG_PATH}/confgi.json
 {
     "log":{
         "level":"info",
@@ -836,7 +836,7 @@ install_all_without_plex() {
     read -p "请输入 warp reserved:" warpreserved
         [ -z "${warpreserved}" ]  
     os_check && arch_check && install_base
-    install_caddy_without_caddy
+    install_caddy_without_plex
     install_sing-box
     install_filebrowser
     systemctl start caddy
