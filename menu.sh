@@ -983,10 +983,10 @@ install_all_without_plex() {
     read -p "请输入 warp reserved:" warpreserved
         [ -z "${warpreserved}" ]  
     install_caddy_without_plex
-    install_sing-box
-    install_filebrowser
     systemctl start caddy
+    install_sing-box
     systemctl start sing-box
+    install_filebrowser
     systemctl start filebrowser
     LOGI "caddy + sing-box + filebrowser 已完成安装"
 }
@@ -1030,12 +1030,12 @@ install_all_with_plex() {
         [ -z "${warpreserved}" ]  
     os_check && arch_check && install_base
     install_caddy_with_caddy
-    install_sing-box
-    install_filebrowser
-    install_plex
     systemctl start caddy
+    install_sing-box
     systemctl start sing-box
+    install_filebrowser
     systemctl start filebrowser
+    install_plex
     LOGI "caddy + sing-box + plex + filebrowser 已完成安装"
 }
 ##########################################
