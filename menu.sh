@@ -189,19 +189,13 @@ show_caddy_status() {
     caddy_status_check
     case $? in
     0)
-        show_caddy_version
         echo -e "[INF] caddy状态: ${yellow}未运行${plain}"
         show_caddy_enable_status
-        LOGI "配置文件路径:${CADDY_CONFIG_PATH}/Caddyfile"
-        LOGI "可执行文件路径:${CADDY_BINARY}"
         ;;
     1)
-        show_caddy_version
         echo -e "[INF] caddy状态: ${green}已运行${plain}"
         show_caddy_enable_status
         show_caddy_running_status
-        LOGI "配置文件路径:${CADDY_CONFIG_PATH}/Caddyfile"
-        LOGI "可执行文件路径:${CADDY_BINARY}"
         ;;
     255)
         echo -e "[INF] caddy状态: ${red}未安装${plain}"
@@ -218,11 +212,6 @@ show_caddy_running_status() {
     else
         LOGE "caddy未运行"
     fi
-}
-
-#show caddy version
-show_caddy_version() {
-    LOGI "版本信息:$(${CADDY_BINARY} version)"
 }
 
 #show caddy enable status,enabled means caddy can auto start when system boot on
@@ -255,19 +244,13 @@ show_sing_box_status() {
     sing_box_status_check
     case $? in
     0)
-        show_sing_box_version
         echo -e "[INF] sing-box状态: ${yellow}未运行${plain}"
         show_sing_box_enable_status
-        LOGI "配置文件路径:${SING_BOX_CONFIG_PATH}/config.json"
-        LOGI "可执行文件路径:${SING_BOX_BINARY}"
         ;;
     1)
-        show_sing_box_version
         echo -e "[INF] sing-box状态: ${green}已运行${plain}"
         show_sing_box_enable_status
         show_sing_box_running_status
-        LOGI "配置文件路径:${SING_BOX_CONFIG_PATH}/config.json"
-        LOGI "可执行文件路径:${SING_BOX_BINARY}"
         ;;
     255)
         echo -e "[INF] sing-box状态: ${red}未安装${plain}"
@@ -284,11 +267,6 @@ show_sing_box_running_status() {
     else
         LOGE "sing-box未运行"
     fi
-}
-
-#show sing-box version
-show_sing_box_version() {
-    LOGI "版本信息:$(${SING_BOX_BINARY} version)"
 }
 
 #show sing-box enable status,enabled means sing-box can auto start when system boot on
@@ -321,19 +299,13 @@ show_filebrowser_status() {
     filebrowser_status_check
     case $? in
     0)
-        show_caddy_version
         echo -e "[INF] filebrowser状态: ${yellow}未运行${plain}"
         show_caddy_enable_status
-        LOGI "配置文件路径:${FILE_CONFIG_PATH}/config.json"
-        LOGI "可执行文件路径:${FILE_BINARY}"
         ;;
     1)
-        show_filebrowser_version
         echo -e "[INF] filebrowser状态: ${green}已运行${plain}"
         show_caddy_enable_status
         show_caddy_running_status
-        LOGI "配置文件路径:${FILE_CONFIG_PATH}/config.json"
-        LOGI "可执行文件路径:${FILE_BINARY}"
         ;;
     255)
         echo -e "[INF] filebrowser状态: ${red}未安装${plain}"
@@ -350,11 +322,6 @@ show_filebrowser_running_status() {
     else
         LOGE "filebrowser未运行"
     fi
-}
-
-#show filebrowser version
-show_filebrowser_version() {
-    LOGI "版本信息:$(${FILE_BINARY} version)"
 }
 
 #show filebrowser enable status,enabled means caddy can auto start when system boot on
@@ -387,12 +354,10 @@ show_plex_status() {
     plex_status_check
     case $? in
     0)
-        show_plex_version
         echo -e "[INF] plex状态: ${yellow}未运行${plain}"
         show_plex_enable_status
         ;;
     1)
-        show_plex_version
         echo -e "[INF] plex状态: ${green}已运行${plain}"
         show_caddy_enable_status
         show_caddy_running_status
