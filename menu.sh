@@ -432,7 +432,9 @@ download_filebrowser() {
     # getting the latest version of filebrowser"
     LATEST_FILE_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/filebrowser/filebrowser/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'))
     FILE_LINK="https://github.com/filebrowser/filebrowser/releases/download/${LATEST_FILE_VERSION}/linux-${ARCH}-filebrowser.tar.gz"
+    cd `mktemp -d`
     wget -nv "${FILE_LINK}" -O filebrowser.tar.gz
+    tar -zxvf filebrowser.tar.gz
     mv filebrowser ${FILE_BINARY} && chmod +x ${FILE_BINARY}
     LOGI "filebrowser 下载完毕"
 }
@@ -562,7 +564,9 @@ download_caddy() {
     # getting the latest version of caddy"
     LATEST_CADDY_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/lxhao61/integrated-examples/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
     CADDY_LINK="https://github.com/lxhao61/integrated-examples/releases/download/${LATEST_CADDY_VERSION}/caddy-linux-${ARCH}.tar.gz"
+    cd `mktemp -d`
     wget -nv "${CADDY_LINK}" -O caddy.tar.gz
+    tar -zxvf caddy.tar.gz
     mv caddy ${CADDY_BINARY} && chmod +x ${CADDY_BINARY}
     LOGI "caddy 下载完毕"
 }
@@ -765,6 +769,7 @@ download_sing-box() {
     LATEST_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
     LATEST_NUM="$(wget -qO- -t1 -T2 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/v//g;s/,//g;s/ //g')"
     LINK="https://github.com/SagerNet/sing-box/releases/download/${LATEST_VERSION}/sing-box-${LATEST_NUM}-linux-${ARCH}.tar.gz"
+    cd `mktemp -d`
     wget -nv "${LINK}" -O sing-box.tar.gz
     tar -zxvf sing-box.tar.gz --strip-components=1
     mv sing-box ${SING_BOX_BINARY} && chmod +x ${SING_BOX_BINARY}
@@ -958,6 +963,7 @@ install_all_without_plex() {
         show_menu
     fi
     LOGI "开始安装"
+    os_check && arch_check && install_base
     read -p "请输入 trojan 网站:" thost
         [ -z "${thost}" ]
     read -p "请输入 trojan 端口:" tport
@@ -976,7 +982,6 @@ install_all_without_plex() {
         [ -z "${warpkey}" ]  
     read -p "请输入 warp reserved:" warpreserved
         [ -z "${warpreserved}" ]  
-    os_check && arch_check && install_base
     install_caddy_without_plex
     install_sing-box
     install_filebrowser
