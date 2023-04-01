@@ -1,5 +1,10 @@
 # Linux_tool
 
+## caddy + sing-box + filebrowser + plex
+```
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/menu.sh)
+```
+
 ## caddy
 - install
 ```
