@@ -484,7 +484,6 @@ install_filebrowser() {
     mkdir -p "${FILE_LOG_PATH}"
     mkdir -p "${FILE_DATABASE_PATH}"
     mkdir -p "${FILE_DATA_PATH}"
-    chmod 0770 ${FILE_LOG_PATH}
     download_filebrowser
     install_filebrowser_systemd_service
     configuration_filebrowser_config
@@ -840,31 +839,6 @@ configuration_sing_box_config() {
                 "max_early_data":0,
                 "early_data_header_name":"Sec-WebSocket-Protocol"
             }
-        },
-        {
-            "type":"vmess",
-            "tag":"vmess-in",
-            "listen":"0.0.0.0",
-            "listen_port":$vport,
-            "tcp_fast_open":true,
-            "udp_fragment":true,
-            "sniff":true,
-            "sniff_override_destination":false,
-            "proxy_protocol":true,
-            "proxy_protocol_accept_no_header":true,
-            "users":[
-                {
-                    "name":"vmess",
-                    "uuid":"$vuuid",
-                    "alterId":0
-                }
-            ],
-            "transport":{
-                "type":"ws",
-                "path":"/$wspath",
-                "max_early_data":0,
-                "early_data_header_name":"Sec-WebSocket-Protocol"
-            }
         }
     ],
     "outbounds":[
@@ -890,7 +864,7 @@ configuration_sing_box_config() {
     "route":{
         "rules":[
             {
-                "inbound":["trojan-in","vmess-in"],
+                "inbound":["trojan-in"],
                 "domain_suffix":["openai.com","ai.com"],
                 "ip_cidr": ["1.1.1.1/32"],
                 "outbound":"wireguard-out"
@@ -973,10 +947,6 @@ install_all_without_plex() {
         [ -z "${tpswd}" ]
     read -p "请输入 ws path:" wspath
         [ -z "${wspath}" ]
-    read -p "请输入 vmess 端口:" vport
-        [ -z "${vport}" ]    
-    read -p "请输入 vmess UUID:" vuuid
-        [ -z "${vuuid}" ]  
     read -p "请输入 warp ipv6:" warpv6
         [ -z "${warpv6}" ]  
     read -p "请输入 warp private key:" warpkey
@@ -1065,6 +1035,7 @@ show_menu() {
   ————————————————
   ${green}7.${plain} 更新 filebrowser 服务
   ${green}8.${plain} 卸载 filebrowser 服务
+  ${green}9.${plain} 安装 filebrowser 服务
  "
     show_caddy_status
     show_sing_box_status
@@ -1105,6 +1076,9 @@ show_menu() {
         ;;
     8)
         uninstall_filebrowser && show_menu
+        ;;
+    9)
+        install_filebrowser && show_menu
         ;;
     *)
         LOGE "请输入正确的选项 [0-10]"
