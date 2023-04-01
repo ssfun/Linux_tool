@@ -276,7 +276,7 @@ show_sing_box_enable_status() {
 download_filebrowser() {
     LOGD "开始下载 filebrowser..."
     os_check && arch_check
-     # getting the latest version of filebrowser"
+    # getting the latest version of filebrowser"
     LATEST_FILE_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/filebrowser/filebrowser/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}'
     FILE_LINK="https://github.com/filebrowser/filebrowser/releases/download/${LATEST_FILE_VERSION}/linux-${ARCH}-filebrowser.tar.gz"
     wget -nv "${FILE_LINK}" -O filebrowser.tar.gz
@@ -952,7 +952,7 @@ show_menu() {
         uninstall_filebrowser && show_menu
         ;;
     *)
-        LOGE "请输入正确的选项 [0-6]"
+        LOGE "请输入正确的选项 [0-10]"
         ;;
     esac
 }
