@@ -27,7 +27,7 @@ CADDY_VERSION=''
 #config install path
 CADDY_CONFIG_PATH='/usr/local/etc/caddy'
 #log file save path
-CADDY_LOG_PATH='/usr/local/caddy'
+CADDY_LOG_PATH='/var/log/caddy'
 #tls file save path
 CADDY_TLS_PATH='/home/tls'
 #www file save path
@@ -47,7 +47,7 @@ SING_BOX_VERSION=''
 #config install path
 SING_BOX_CONFIG_PATH='/usr/local/etc/sing-box'
 #log file save path
-SING_BOX_LOG_PATH='/usr/local/sing-box/sing-box.log'
+SING_BOX_LOG_PATH='/var/log/sing-box'
 #lib file save path
 SING_BOX_LIB_PATH='/var/lib/sing-box'
 #binary install path
@@ -63,7 +63,7 @@ declare -r SING_BOX_STATUS_NOT_INSTALL=255
 #filebrowser config patch
 FILE_CONFIG_PATH='/usr/local/etc/filebrowser'
 #log file save path
-FILE_LOG_PATH='/usr/local/filebrowser'
+FILE_LOG_PATH='/var/log/filebrowser'
 #file save path
 FILE_DATA_PATH='/home/filebrowser'
 #database file save path
@@ -484,6 +484,7 @@ install_filebrowser() {
     mkdir -p "${FILE_LOG_PATH}"
     mkdir -p "${FILE_DATABASE_PATH}"
     mkdir -p "${FILE_DATA_PATH}"
+    chmod 0770 ${FILE_LOG_PATH}
     download_filebrowser
     install_filebrowser_systemd_service
     configuration_filebrowser_config
@@ -584,7 +585,7 @@ Requires=network-online.target
 Type=notify
 User=root
 Group=root
-ExecStart=${CADDY_BINARY_PATH} run --environ --config ${CADDY_CONFIG_PATH}/Caddyfile
+ExecStart=${CADDY_BINARY} run --environ --config ${CADDY_CONFIG_PATH}/Caddyfile
 ExecReload=${CADDY_BINARY} reload --config ${CADDY_CONFIG_PATH}/Caddyfile
 TimeoutStopSec=5s
 LimitNOFILE=1048576
@@ -618,18 +619,20 @@ configuration_caddy_config() {
         cert_issuer acme #acme表示从Let's Encrypt申请TLS证书，zerossl表示从ZeroSSL申请TLS证书。必须acme与zerossl二选一（固定TLS证书的目录便于引用）。注意：版本不小于v2.4.1才支持。
         email $mail #电子邮件地址。选配，推荐。
 }
-:443, $thost:443 {
+:443, $thost {
         #HTTPS server监听端口。注意：逗号与域名（或含端口）之间有一个空格。
         tls {
                 ciphers TLS_AES_256_GCM_SHA384 TLS_AES_128_GCM_SHA256 TLS_CHACHA20_POLY1305_SHA256 TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256
                 curves x25519 secp521r1 secp384r1 secp256r1
+                alpn http/1.1 h2
         }
+        
         @tws {
                 path /$wspath #与Trojan+WebSocket应用中path对应
                 header Connection *Upgrade*
                 header Upgrade websocket
-        }       #此部分配置为caddy-trojan插件的WebSocket应用，若删除就仅支持Trojan应用。
-        reverse_proxy @tws 127.0.0.1:2007 #转发给本机Trojan+WebSocket监听端口
+        } 
+        reverse_proxy @tws 127.0.0.1:$tport #转发给本机Trojan+WebSocket监听端口
         
         @host {
                 host $thost #限定域名访问（禁止以ip方式访问网站），修改为自己的域名。
@@ -663,17 +666,18 @@ configuration_caddy_config_with_plex() {
         cert_issuer acme #acme表示从Let's Encrypt申请TLS证书，zerossl表示从ZeroSSL申请TLS证书。必须acme与zerossl二选一（固定TLS证书的目录便于引用）。注意：版本不小于v2.4.1才支持。
         email $mail #电子邮件地址。选配，推荐。
 }
-:443, $thost:443, $phost:443 {
+:443, $thost, $phost {
         #HTTPS server监听端口。注意：逗号与域名（或含端口）之间有一个空格。
         tls {
                 ciphers TLS_AES_256_GCM_SHA384 TLS_AES_128_GCM_SHA256 TLS_CHACHA20_POLY1305_SHA256 TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256
                 curves x25519 secp521r1 secp384r1 secp256r1
+                alpn http/1.1 h2
         }
         @tws {
                 path /$wspath #与Trojan+WebSocket应用中path对应
                 header Connection *Upgrade*
                 header Upgrade websocket
-        }       #此部分配置为caddy-trojan插件的WebSocket应用，若删除就仅支持Trojan应用。
+        }  
         reverse_proxy @tws 127.0.0.1:$tport #转发给本机Trojan+WebSocket监听端口
         
         @host {
@@ -804,7 +808,7 @@ EOF
 #configuration sing-box config
 configuration_sing_box_config() {
     LOGD "开始配置sing-box配置文件..."
-    cat <<EOF >${SING_BOX_CONFIG_PATH}/confgi.json
+    cat <<EOF >${SING_BOX_CONFIG_PATH}/config.json
 {
     "log":{
         "level":"info",
@@ -823,7 +827,7 @@ configuration_sing_box_config() {
             "sniff_override_destination":false,
             "udp_timeout":300,
             "proxy_protocol":true,
-            "proxy_protocol_accept_no_header":false,
+            "proxy_protocol_accept_no_header":true,
             "users":[
                 {
                     "name":"trojan",
@@ -847,7 +851,7 @@ configuration_sing_box_config() {
             "sniff":true,
             "sniff_override_destination":false,
             "proxy_protocol":true,
-            "proxy_protocol_accept_no_header":false,
+            "proxy_protocol_accept_no_header":true,
             "users":[
                 {
                     "name":"vmess",
@@ -964,6 +968,8 @@ install_all_without_plex() {
     fi
     LOGI "开始安装"
     os_check && arch_check && install_base
+    read -p "请输入申请证书邮箱:" mail
+        [ -z "${mail}" ]
     read -p "请输入 trojan 网站:" thost
         [ -z "${thost}" ]
     read -p "请输入 trojan 端口:" tport
@@ -1008,6 +1014,8 @@ install_all_with_plex() {
         show_menu
     fi
     LOGI "开始安装"
+    read -p "请输入申请证书邮箱:" mail
+        [ -z "${mail}" ]
     read -p "请输入 trojan 网站:" thost
         [ -z "${thost}" ]
     read -p "请输入 plex 网站:" phost
