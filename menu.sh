@@ -1045,7 +1045,7 @@ show_menu() {
   ————————————————
   ${green}A.${plain} 安装 caddy + sing-box + filebrowser
   ${green}B.${plain} 安装 caddy + sing-box + filebrowser + plex
-————————————————
+  ————————————————
   ${green}1.${plain} 更新 caddy 服务
   ${green}2.${plain} 卸载 caddy 服务
   ————————————————
