@@ -890,14 +890,9 @@ configuration_sing_box_config() {
     "route":{
         "rules":[
             {
-                "inbound":[
-                    "trojan-in",
-                    "vmess-in"
-                ],
-                "domain_suffix":[
-                    "openai.com",
-                    "ai.com"
-                ],
+                "inbound":["trojan-in","vmess-in"],
+                "domain_suffix":["openai.com","ai.com"],
+                "ip_cidr": ["1.1.1.1/32"],
                 "outbound":"wireguard-out"
             }
         ],
