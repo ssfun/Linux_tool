@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #####################################################
-# This shell script is used for sing-box installation
+# ssfun's Linux Tool
 # Author: ssfun
 # Date: 2023-04-01
 # Version: 1.0.0
@@ -166,14 +166,8 @@ show_caddy_status() {
 show_caddy_running_status() {
     caddy_status_check
     if [[ $? == ${CADDY_STATUS_RUNNING} ]]; then
-        local pid=$(pidof sing-box)
         local runTime=$(systemctl status caddy | grep Active | awk '{for (i=5;i<=NF;i++)printf("%s ", $i);print ""}')
-        local memCheck=$(cat /proc/${pid}/status | grep -i vmrss | awk '{print $2,$3}')
-        LOGI "#####################"
-        LOGI "进程ID:${pid}"
-        LOGI "运行时长：${runTime}"
-        LOGI "内存占用:${memCheck}"
-        LOGI "#####################"
+        LOGI "caddy运行时长：${runTime}"
     else
         LOGE "caddy未运行"
     fi
@@ -236,14 +230,8 @@ show_sing_box_status() {
 show_sing_box_running_status() {
     sing_box_status_check
     if [[ $? == ${SING_BOX_STATUS_RUNNING} ]]; then
-        local pid=$(pidof sing-box)
         local runTime=$(systemctl status sing-box | grep Active | awk '{for (i=5;i<=NF;i++)printf("%s ", $i);print ""}')
-        local memCheck=$(cat /proc/${pid}/status | grep -i vmrss | awk '{print $2,$3}')
-        LOGI "#####################"
-        LOGI "进程ID:${pid}"
-        LOGI "运行时长：${runTime}"
-        LOGI "内存占用:${memCheck}"
-        LOGI "#####################"
+        LOGI "sing-box运行时长：${runTime}"
     else
         LOGE "sing-box未运行"
     fi
@@ -278,7 +266,7 @@ download_caddy() {
     LOGD "开始下载 caddy..."
     os_check && arch_check && install_base
      # getting the latest version of caddy"
-    LATEST_CADDY_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
+    LATEST_CADDY_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/lxhao61/integrated-examples/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
     CADDY_LINK="https://github.com/lxhao61/integrated-examples/releases/download/${LATEST_CADDY_VERSION}/caddy-linux-${ARCH}.tar.gz"
     wget -nv "${CADDY_LINK}" -O caddy.tar.gz
     mv caddy ${CADDY_BINARY_PATH} && chmod +x ${CADDY_BINARY_PATH}
