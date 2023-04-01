@@ -429,7 +429,6 @@ show_plex_enable_status() {
 #download filebrowser  binary
 download_filebrowser() {
     LOGD "开始下载 filebrowser..."
-    os_check && arch_check
     # getting the latest version of filebrowser"
     LATEST_FILE_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/filebrowser/filebrowser/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'))
     FILE_LINK="https://github.com/filebrowser/filebrowser/releases/download/${LATEST_FILE_VERSION}/linux-${ARCH}-filebrowser.tar.gz"
@@ -496,6 +495,7 @@ update_filebrowser() {
         LOGE "当前系统未安装filebrowser,更新失败"
         show_menu
     fi
+    os_check && arch_check
     systemctl stop filebrowser
     rm -f ${FILE_BINARY}
     # getting the latest version of filebrowser"
@@ -525,8 +525,7 @@ uninstall_filebrowser() {
 #install plex
 install_plex() {
     LOGD "开始下载 plex..."
-    os_check && arch_check
-     # getting the latest version of plex"
+    # getting the latest version of plex"
     LATEST_PLEX_VERSION="$(wget -qO- -t1 -T2 "https://plex.tv/api/downloads/5.json" | grep -o '"version":"[^"]*' | grep -o '[^"]*$' | head -n 1)"
     PLEX_LINK="https://downloads.plex.tv/plex-media-server-new/${LATEST_PLEX_VERSION}/debian/plexmediaserver_${LATEST_PLEX_VERSION}_${ARCH}.deb"
     wget -nv "${PLEX_LINK}" -O plexmediaserver.deb
@@ -541,6 +540,7 @@ update_plex() {
         LOGE "当前系统未安装plex,更新失败"
         show_menu
     fi
+    os_check && arch_check
     install_plex
     LOGI "plex 已完成升级"
 }
@@ -559,8 +559,7 @@ uninstall_plex() {
 #download caddy  binary
 download_caddy() {
     LOGD "开始下载 caddy..."
-    os_check && arch_check
-     # getting the latest version of caddy"
+    # getting the latest version of caddy"
     LATEST_CADDY_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/lxhao61/integrated-examples/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
     CADDY_LINK="https://github.com/lxhao61/integrated-examples/releases/download/${LATEST_CADDY_VERSION}/caddy-linux-${ARCH}.tar.gz"
     wget -nv "${CADDY_LINK}" -O caddy.tar.gz
@@ -732,6 +731,7 @@ update_caddy() {
         LOGE "当前系统未安装caddy,更新失败"
         show_menu
     fi
+    os_check && arch_check
     systemctl stop caddy
     rm -f ${CADDY_BINARY}
     # getting the latest version of caddy"
@@ -761,8 +761,7 @@ uninstall_caddy() {
 #download sing-box  binary
 download_sing-box() {
     LOGD "开始下载 sing-box..."
-    os_check && arch_check
-     # getting the latest version of sing-box"
+    # getting the latest version of sing-box"
     LATEST_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
     LATEST_NUM="$(wget -qO- -t1 -T2 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/v//g;s/,//g;s/ //g')"
     LINK="https://github.com/SagerNet/sing-box/releases/download/${LATEST_VERSION}/sing-box-${LATEST_NUM}-linux-${ARCH}.tar.gz"
@@ -919,6 +918,7 @@ update_sing-box() {
         LOGE "当前系统未安装sing-box,更新失败"
         show_menu
     fi
+    os_check && arch_check
     systemctl stop sing-box
     rm -f ${SING_BOX_BINARY}
     # getting the latest version of sing-box"
