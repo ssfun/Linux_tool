@@ -336,7 +336,7 @@ show_filebrowser_status() {
         LOGI "可执行文件路径:${FILE_BINARY}"
         ;;
     255)
-        echo -e "[INF] caddy状态: ${red}未安装${plain}"
+        echo -e "[INF] filebrowser状态: ${red}未安装${plain}"
         ;;
     esac
 }
@@ -1039,19 +1039,22 @@ install_all_with_plex() {
 #show menu
 show_menu() {
     echo -e "
-  ${green}SSFUN Linux TOOL 管理脚本${plain}
-  ${green}Caddy | Sing-box | Filebrowser | Plex${plain}
+  ${green}Caddy | Sing-box | Filebrowser | Plex 管理脚本${plain}
+  ————————————————
   ${green}0.${plain} 退出脚本
-————————————————
+  ————————————————
   ${green}A.${plain} 安装 caddy + sing-box + filebrowser
   ${green}B.${plain} 安装 caddy + sing-box + filebrowser + plex
 ————————————————
   ${green}1.${plain} 更新 caddy 服务
   ${green}2.${plain} 卸载 caddy 服务
+  ————————————————
   ${green}3.${plain} 更新 sing-box 服务
   ${green}4.${plain} 卸载 sing-box 服务
+  ————————————————
   ${green}5.${plain} 更新 plex 服务
   ${green}6.${plain} 卸载 plex 服务
+  ————————————————
   ${green}7.${plain} 更新 filebrowser 服务
   ${green}8.${plain} 卸载 filebrowser 服务
  "
