@@ -21,40 +21,61 @@ OS=''
 #arch
 ARCH=''
 
-# CADDY ENV ##############################
+# ENV ##############################
 #caddy version
 CADDY_VERSION=''
 #config install path
 CADDY_CONFIG_PATH='/usr/local/etc/caddy'
-#binary install path
-CADDY_BINARY_PATH='/usr/local/bin/caddy'
-#service install path
-CADDY_SERVICE_PATH='/etc/systemd/system/caddy.service'
 #log file save path
-CADDY_LOG_PATH='/usr/local/caddy/caddy.log'
+CADDY_LOG_PATH='/usr/local/caddy'
+#tls file save path
+CADDY_TLS_PATH='/home/tls'
+#www file save path
+CADDY_WWW_PATH='/var/www'
+#binary install path
+CADDY_BINARY='/usr/local/bin/caddy'
+#service install path
+CADDY_SERVICE='/etc/systemd/system/caddy.service'
 
 #caddy status define
 declare -r CADDY_STATUS_RUNNING=1
 declare -r CADDY_STATUS_NOT_RUNNING=0
 declare -r CADDY_STATUS_NOT_INSTALL=255
-#########################################
 
-# SING-BOX ENV ###########################
 #sing-box version
 SING_BOX_VERSION=''
 #config install path
 SING_BOX_CONFIG_PATH='/usr/local/etc/sing-box'
-#binary install path
-SING_BOX_BINARY_PATH='/usr/local/bin/sing-box'
-#service install path
-SING_BOX_SERVICE_PATH='/etc/systemd/system/sing-box.service'
 #log file save path
 SING_BOX_LOG_PATH='/usr/local/sing-box/sing-box.log'
+#lib file save path
+SING_BOX_LIB_PATH='/var/lib/sing-box'
+#binary install path
+SING_BOX_BINARY='/usr/local/bin/sing-box'
+#service install path
+SING_BOX_SERVICE='/etc/systemd/system/sing-box.service'
 
 #sing-box status define
 declare -r SING_BOX_STATUS_RUNNING=1
 declare -r SING_BOX_STATUS_NOT_RUNNING=0
 declare -r SING_BOX_STATUS_NOT_INSTALL=255
+
+#filebrowser config patch
+FILE_CONFIG_PATH='/usr/local/etc/filebrowser'
+#log file save path
+FILE_LOG_PATH='/usr/local/filebrowser'
+#file save path
+FILE_DATA_PATH='/home/filebrowser'
+#database file save path
+FILE_DATABASE_PATH='/opt/filebrowser'
+#binary install path
+FILE_BINARY='/usr/local/bin/filebrowser'
+#service install path
+FILE_SERVICE='/etc/systemd/system/filebrowser.service'
+
+#plex service
+PLEX_LIBRARY_PATH='/var/lib/plexmediaserver'
+PLEX_SERVICE='/etc/systemd/system/plexmediaserver.service'
 ##########################################
 
 # UTILS #####################################
@@ -142,7 +163,7 @@ install_base() {
 # CADDY STATUS ############################################
 #caddy status check,-1 means didn't install,0 means failed,1 means running
 caddy_status_check() {
-    if [[ ! -f "${CADDY_SERVICE_PATH}" ]]; then
+    if [[ ! -f "${CADDY_SERVICE}" ]]; then
         return ${CADDY_STATUS_NOT_INSTALL}
     fi
     temp=$(systemctl status caddy | grep Active | awk '{print $3}' | cut -d "(" -f2 | cut -d ")" -f1)
@@ -162,7 +183,7 @@ show_caddy_status() {
         echo -e "[INF] sing-box状态: ${yellow}未运行${plain}"
         show_caddy_enable_status
         LOGI "配置文件路径:${CADDY_CONFIG_PATH}/Caddyfile"
-        LOGI "可执行文件路径:${CADDY_BINARY_PATH}"
+        LOGI "可执行文件路径:${CADDY_BINARY}"
         ;;
     1)
         show_caddy_version
@@ -170,7 +191,7 @@ show_caddy_status() {
         show_caddy_enable_status
         show_caddy_running_status
         LOGI "配置文件路径:${CADDY_CONFIG_PATH}/Caddyfile"
-        LOGI "可执行文件路径:${CADDY_BINARY_PATH}"
+        LOGI "可执行文件路径:${CADDY_BINARY}"
         ;;
     255)
         echo -e "[INF] caddy状态: ${red}未安装${plain}"
@@ -191,7 +212,7 @@ show_caddy_running_status() {
 
 #show caddy version
 show_caddy_version() {
-    LOGI "版本信息:$(${CADDY_BINARY_PATH} version)"
+    LOGI "版本信息:$(${CADDY_BINARY} version)"
 }
 
 #show caddy enable status,enabled means caddy can auto start when system boot on
@@ -208,7 +229,7 @@ show_caddy_enable_status() {
 # SING-BOX STATUS ###########################################
 #sing-box status check,-1 means didn't install,0 means failed,1 means running
 sing_box_status_check() {
-    if [[ ! -f "${SING_BOX_SERVICE_PATH}" ]]; then
+    if [[ ! -f "${SING_BOX_SERVICE}" ]]; then
         return ${SING_BOX_STATUS_NOT_INSTALL}
     fi
     temp=$(systemctl status sing-box | grep Active | awk '{print $3}' | cut -d "(" -f2 | cut -d ")" -f1)
@@ -228,7 +249,7 @@ show_sing_box_status() {
         echo -e "[INF] sing-box状态: ${yellow}未运行${plain}"
         show_sing_box_enable_status
         LOGI "配置文件路径:${SING_BOX_CONFIG_PATH}/config.json"
-        LOGI "可执行文件路径:${SING_BOX_BINARY_PATH}"
+        LOGI "可执行文件路径:${SING_BOX_BINARY}"
         ;;
     1)
         show_sing_box_version
@@ -236,7 +257,7 @@ show_sing_box_status() {
         show_sing_box_enable_status
         show_sing_box_running_status
         LOGI "配置文件路径:${SING_BOX_CONFIG_PATH}/config.json"
-        LOGI "可执行文件路径:${SING_BOX_BINARY_PATH}"
+        LOGI "可执行文件路径:${SING_BOX_BINARY}"
         ;;
     255)
         echo -e "[INF] sing-box状态: ${red}未安装${plain}"
@@ -257,7 +278,7 @@ show_sing_box_running_status() {
 
 #show sing-box version
 show_sing_box_version() {
-    LOGI "版本信息:$(${SING_BOX_BINARY_PATH} version)"
+    LOGI "版本信息:$(${SING_BOX_BINARY} version)"
 }
 
 #show sing-box enable status,enabled means sing-box can auto start when system boot on
@@ -280,14 +301,14 @@ download_filebrowser() {
     LATEST_FILE_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/filebrowser/filebrowser/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'))
     FILE_LINK="https://github.com/filebrowser/filebrowser/releases/download/${LATEST_FILE_VERSION}/linux-${ARCH}-filebrowser.tar.gz"
     wget -nv "${FILE_LINK}" -O filebrowser.tar.gz
-    mv filebrowser /usr/local/bin/filebrowser && chmod +x /usr/local/bin/filebrowser
+    mv filebrowser ${FILE_BINARY} && chmod +x ${FILE_BINARY}
     LOGI "filebrowser 下载完毕"
 }
 
 #install filebrowser systemd service
 install_filebrowser_systemd_service() {
     LOGD "开始安装 filebrowser systemd 服务..."
-    cat <<EOF >/etc/systemd/system/filebrowser.service
+    cat <<EOF >${FILE_SERVICE}
 [Unit]
 Description=filebrowser
 After=network-online.target
@@ -296,7 +317,7 @@ Wants=network-online.target systemd-networkd-wait-online.service
 User=root
 Restart=on-failure
 RestartSec=5s
-ExecStart=/usr/local/bin/filebrowser -c /usr/local/etc/filebrowser/config.json
+ExecStart=${FILE_BINARY} -c ${FILE_CONFIG_PATH}/config.json
 [Install]
 WantedBy=multi-user.target
 EOF
@@ -309,13 +330,13 @@ EOF
 configuration_filebrowser_config() {
     LOGD "开始配置filebrowser配置文件..."
     # set config
-    cat <<EOF >/usr/local/etc/filebrowser/config.json
+    cat <<EOF >${FILE_CONFIG_PATH}/config.json
 {
     "address":"127.0.0.1",
-    "database":"/opt/filebrowser/filebrowser.db",
-    "log":"/var/log/filebrowser/filebrowser.log",
+    "database":"${FILE_DATABASE_PATH}/filebrowser.db",
+    "log":"/${FILE_LOG_PATH}/filebrowser.log",
     "port":40333,
-    "root":"/home/filebrowser",
+    "root":"${FILE_DATA_PATH}",
     "username":"admin"
 }
 EOF
@@ -325,10 +346,10 @@ EOF
 #install filebrowser
 install_filebrowser() {
     LOGD "开始安装 filebrowser..."
-    mkdir -p "/usr/local/etc/filebrowser"
-    mkdir -p "/var/log/filebrowser"
-    mkdir -p "/opt/filebrowser"
-    mkdir -p "/home/filebrowser"
+    mkdir -p "${FILE_CONFIG_PATH}"
+    mkdir -p "${FILE_LOG_PATH}"
+    mkdir -p "${FILE_DATABASE_PATH}"
+    mkdir -p "${FILE_DATA_PATH}"
     download_filebrowser
     install_filebrowser_systemd_service
     configuration_filebrowser_config
@@ -338,35 +359,35 @@ install_filebrowser() {
 #update filebrowser
 update_filebrowser() {
     LOGD "开始更新filebrowser..."
-    if [[ ! -f "/etc/systemd/system/filebrowser.service" ]]; then
+    if [[ ! -f "${FILE_SERVICE}" ]]; then
         LOGE "当前系统未安装filebrowser,更新失败"
         show_menu
     fi
     systemctl stop filebrowser
-    rm -f /usr/local/bin/filebrowser
+    rm -f ${FILE_BINARY}
     # getting the latest version of filebrowser"
     download_filebrowser
-    LOGI "caddy 启动成功"
+    LOGI "filebrowser 启动成功"
     systemctl restart filebrowser
-    LOGI "caddy 已完成升级"
+    LOGI "filebrowser 已完成升级"
 }
 
 #uninstall filebrowser
 uninstall_filebrowser() {
     LOGD "开始卸载filebrowser..."
-    if [[ ! -f "/etc/systemd/system/filebrowser.service" ]]; then
+    if [[ ! -f "${FILE_SERVICE}" ]]; then
         LOGE "当前系统未安装filebrowser,无需卸载"
         show_menu
     fi
     systemctl stop filebrowser
     systemctl disable filebrowser
-    rm -f /etc/systemd/system/filebrowser.service
+    rm -f ${FILE_SERVICE}
     systemctl daemon-reload
-    rm -f /usr/local/bin/filebrowser
-    rm -rf /usr/local/etc/filebrowser
-    rm -rf /var/log/filebrowser
-    rm -rf /opt/filebrowser
-    rm -rf /home/filebrowser
+    rm -f ${FILE_BINARY}
+    rm -rf ${FILE_CONFIG_PATH}
+    rm -rf ${FILE_LOG_PATH}
+    rm -rf ${FILE_DATABASE_PATH}
+    rm -rf ${FILE_DATA_PATH}
     LOGI "卸载filebrowser成功"
 }
 ######################################
@@ -386,8 +407,8 @@ install_plex() {
 
 #update plex
 update_plex() {
-    LOGD "开始更新filebrowser..."
-    if [[ ! -f "/etc/systemd/system/plexmediaserver.service" ]]; then
+    LOGD "开始更新plex..."
+    if [[ ! -f "${PLEX_SERVICE}" ]]; then
         LOGE "当前系统未安装plex,更新失败"
         show_menu
     fi
@@ -398,12 +419,12 @@ update_plex() {
 #uninstall plex
 uninstall_plex() {
     LOGD "开始卸载plex..."
-    if [[ ! -f "/etc/systemd/system/plexmediaserver.service" ]]; then
+    if [[ ! -f "${PLEX_SERVICE}" ]]; then
         LOGE "当前系统未安装plexmediaserver,无需卸载"
         show_menu
     fi
     dpkg -r plexmediaserver
-    rm -rf /var/lib/plexmediaserver/Library/Application Support/Plex Media Server/
+    rm -rf ${PLEX_LIBRARY_PATH}
     LOGI "卸载plex成功"
 }
 
@@ -418,14 +439,14 @@ download_caddy() {
     LATEST_CADDY_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/lxhao61/integrated-examples/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
     CADDY_LINK="https://github.com/lxhao61/integrated-examples/releases/download/${LATEST_CADDY_VERSION}/caddy-linux-${ARCH}.tar.gz"
     wget -nv "${CADDY_LINK}" -O caddy.tar.gz
-    mv caddy ${CADDY_BINARY_PATH} && chmod +x ${CADDY_BINARY_PATH}
+    mv caddy ${CADDY_BINARY} && chmod +x ${CADDY_BINARY}
     LOGI "caddy 下载完毕"
 }
 
 #install caddy systemd service
 install_caddy_systemd_service() {
     LOGD "开始安装 caddy systemd 服务..."
-    cat <<EOF >${CADDY_SERVICE_PATH}
+    cat <<EOF >${CADDY_SERVICE}
 [Unit]
 Description=Caddy
 Documentation=https://caddyserver.com/docs/
@@ -436,7 +457,7 @@ Type=notify
 User=root
 Group=root
 ExecStart=${CADDY_BINARY_PATH} run --environ --config ${CADDY_CONFIG_PATH}/Caddyfile
-ExecReload=${CADDY_BINARY_PATH} reload --config ${CADDY_CONFIG_PATH}/Caddyfile
+ExecReload=${CADDY_BINARY} reload --config ${CADDY_CONFIG_PATH}/Caddyfile
 TimeoutStopSec=5s
 LimitNOFILE=1048576
 LimitNPROC=512
@@ -455,16 +476,16 @@ EOF
 configuration_caddy_config() {
     LOGD "开始配置caddy配置文件..."
     # set Caddyfile
-    cat <<EOF >${CADDY_CONFIG_PATH}
+    cat <<EOF >${CADDY_CONFIG_PATH}/Caddyfile
 {
         order reverse_proxy before route
         admin off
         log {
-                output file ${CADDY_LOG_PATH}
+                output file ${CADDY_LOG_PATH}/caddy.log
                 level ERROR
         }       #版本不小于v2.4.0才支持日志全局配置，否则各自配置。
         storage file_system {
-                root /home/tls #存放TLS证书的基本路径
+                root ${CADDY_TLS_PATH} #存放TLS证书的基本路径
         }
         cert_issuer acme #acme表示从Let's Encrypt申请TLS证书，zerossl表示从ZeroSSL申请TLS证书。必须acme与zerossl二选一（固定TLS证书的目录便于引用）。注意：版本不小于v2.4.1才支持。
         email $mail #电子邮件地址。选配，推荐。
@@ -500,16 +521,16 @@ EOF
 configuration_caddy_config_with_plex() {
     LOGD "开始配置caddy配置文件..."
     # set Caddyfile
-    cat <<EOF >${CADDY_CONFIG_PATH}
+    cat <<EOF >${CADDY_CONFIG_PATH}/Caddyfile
 {
         order reverse_proxy before route
         admin off
         log {
-                output file ${CADDY_LOG_PATH}
+                output file ${CADDY_LOG_PATH}/caddy.log
                 level ERROR
         }       #版本不小于v2.4.0才支持日志全局配置，否则各自配置。
         storage file_system {
-                root /home/tls #存放TLS证书的基本路径
+                root ${CADDY_TLS_PATH} #存放TLS证书的基本路径
         }
         cert_issuer acme #acme表示从Let's Encrypt申请TLS证书，zerossl表示从ZeroSSL申请TLS证书。必须acme与zerossl二选一（固定TLS证书的目录便于引用）。注意：版本不小于v2.4.1才支持。
         email $mail #电子邮件地址。选配，推荐。
@@ -558,9 +579,9 @@ EOF
 
 #install caddy
 install_caddy_without_plex() {
-    mkdir -p "/usr/local/etc/caddy"
-    mkdir -p "/var/www"
-    mkdir -p "/var/log/caddy"
+    mkdir -p "${CADDY_CONFIG_PATH}"
+    mkdir -p "${CADDY_WWW_PATH}"
+    mkdir -p "${CADDY_LOG_PATH}"
     download_caddy
     install_caddy_systemd_service
     configuration_caddy_config
@@ -570,9 +591,9 @@ install_caddy_without_plex() {
 #install caddy with plex
 install_caddy_with_plex() {
     LOGD "开始安装 caddy..."
-    mkdir -p "/usr/local/etc/caddy"
-    mkdir -p "/var/www"
-    mkdir -p "/var/log/caddy"
+    mkdir -p "${CADDY_CONFIG_PATH}"
+    mkdir -p "${CADDY_WWW_PATH}"
+    mkdir -p "${CADDY_LOG_PATH}"
     download_caddy
     install_caddy_systemd_service
     configuration_caddy_config_with_plex
@@ -582,12 +603,12 @@ install_caddy_with_plex() {
 #update caddy
 update_caddy() {
     LOGD "开始更新caddy..."
-    if [[ ! -f "${CADDY_SERVICE_PATH}" ]]; then
+    if [[ ! -f "${CADDY_SERVICE}" ]]; then
         LOGE "当前系统未安装caddy,更新失败"
         show_menu
     fi
     systemctl stop caddy
-    rm -f ${CADDY_BINARY_PATH}
+    rm -f ${CADDY_BINARY}
     # getting the latest version of caddy"
     download_caddy
     LOGI "caddy 启动成功"
@@ -598,17 +619,19 @@ update_caddy() {
 #uninstall caddy
 uninstall_caddy() {
     LOGD "开始卸载caddy..."
-    if [[ ! -f "${CADDY_SERVICE_PATH}" ]]; then
+    if [[ ! -f "${CADDY_SERVICE}" ]]; then
         LOGE "当前系统未安装caddy,无需卸载"
         show_menu
     fi
     systemctl stop caddy
     systemctl disable caddy
-    rm -f ${CADDY_SERVICE_PATH}
+    rm -f ${CADDY_SERVICE}
     systemctl daemon-reload
-    rm -f ${CADDY_BINARY_PATH}
-    rm -rf /usr/local/etc/caddy
-    rm -rf /var/log/caddy
+    rm -f ${CADDY_BINARY}
+    rm -rf ${CADDY_CONFIG__PATH}
+    rm -rf ${CADDY_LOG_PATH}
+    rm -rf ${CADDY_WWW_PATH}
+    rm -rf ${CADDY_TLS_PATH}
     LOGI "卸载caddy成功"
 }
 #################################
@@ -624,23 +647,23 @@ download_sing-box() {
     LINK="https://github.com/SagerNet/sing-box/releases/download/${LATEST_VERSION}/sing-box-${LATEST_NUM}-linux-${ARCH}.tar.gz"
     wget -nv "${LINK}" -O sing-box.tar.gz
     tar -zxvf sing-box.tar.gz --strip-components=1
-    mv sing-box /usr/local/bin/sing-box && chmod +x /usr/local/bin/sing-box
+    mv sing-box ${SING_BOX_BINARY} && chmod +x ${SING_BOX_BINARY}
     LOGI "sing-box 下载完毕"
 }
 
 #install sing-box systemd service
 install_sing_box_systemd_service() {
     LOGD "开始安装 sing-box systemd 服务..."
-    cat <<EOF >${SING_BOX_SERVICE_PATH}
+    cat <<EOF >${SING_BOX_SERVICE}
 [Unit]
 Description=sing-box service
 Documentation=https://sing-box.sagernet.org
 After=network.target nss-lookup.target
 [Service]
-WorkingDirectory=/var/lib/sing-box
+WorkingDirectory=${SING_BOX_LIB_PATH}
 CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH
 AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH
-ExecStart=${SING_BOX_BINARY_PATH} run -c ${SING_BOX_CONFIG_PATH}/config.json
+ExecStart=${SING_BOX_BINARY} run -c ${SING_BOX_CONFIG_PATH}/config.json
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 RestartSec=10s
@@ -660,7 +683,7 @@ configuration_sing_box_config() {
 {
     "log":{
         "level":"info",
-        "output":"${SING_BOX_LOG_PATH}",
+        "output":"${SING_BOX_LOG_PATH}/sing-box.log",
         "timestamp":true
     },
     "inbounds":[
@@ -759,9 +782,9 @@ EOF
 #install sing-box  
 install_sing-box() {
     LOGD "开始安装 sing-box..."
-    mkdir -p "/usr/local/etc/sing-box"
-    mkdir -p "/var/log/sing-box"
-    mkdir -p "/var/lib/sing-box"
+    mkdir -p "${SING_BOX_CONFIG_PATH}"
+    mkdir -p "${SING_BOX_LOG_PATH}"
+    mkdir -p "${SING_BOX_LIB_PATH}"
     download_sing-box
     install_sing_box_systemd_service
     configuration_sing_box_config
@@ -771,12 +794,12 @@ install_sing-box() {
 #update sing-box
 update_sing-box() {
     LOGD "开始更新sing-box..."
-    if [[ ! -f "${SING_BOX_SERVICE_PATH}" ]]; then
+    if [[ ! -f "${SING_BOX_SERVICE}" ]]; then
         LOGE "当前系统未安装sing-box,更新失败"
         show_menu
     fi
     systemctl stop sing-box
-    rm -f ${SING_BOX_BINARY_PATH}
+    rm -f ${SING_BOX_BINARY}
     # getting the latest version of sing-box"
     download_sing-box
     LOGI "sing-box 启动成功"
@@ -787,17 +810,18 @@ update_sing-box() {
 #uninstall sing-box
 uninstall_sing-box() {
     LOGD "开始卸载sing-box..."
-    if [[ ! -f "${SING_BOX_SERVICE_PATH}" ]]; then
+    if [[ ! -f "${SING_BOX_SERVICE}" ]]; then
         LOGE "当前系统未安装sing-box,无需卸载"
         show_menu
     fi
     systemctl stop sing-box
     systemctl disable sing-box
-    rm -f ${SING_BOX_SERVICE_PATH}
+    rm -f ${SING_BOX_SERVICE}
     systemctl daemon-reload
-    rm -f ${SING_BOX_BINARY_PATH}
-    rm -rf /usr/local/etc/sing-box
-    rm -rf /var/log/sing-box
+    rm -f ${SING_BOX_BINARY}
+    rm -rf ${SING_BOX_CONFIG_PATH}
+    rm -rf ${SING_BOX_LOG_PATH}
+    rm -rf ${SING_BOX_LIB_PATH}
     LOGI "卸载sing-box成功"
 }
 ########################################
@@ -806,13 +830,13 @@ uninstall_sing-box() {
 # install all without plex
 install_all_without_plex() {
     LOGD "开始安装 caddy + sing-box + filebrowser"
-    if [[ -f "${CADDY_SERVICE_PATH}" ]]; then
+    if [[ -f "${CADDY_SERVICE}" ]]; then
         LOGE "当前系统已安装 caddy,请使用更新命令"
         show_menu
-    elif [[ -f "${SING_BOX_SERVICE_PATH}" ]]; then
+    elif [[ -f "${SING_BOX_SERVICE}" ]]; then
         LOGE "当前系统已安装 sing-box,请使用更新命令"
         show_menu
-    elif [[ -f "/etc/systemd/system/filebrowser.service" ]]; then
+    elif [[ -f "${FILE_SERVICE}" ]]; then
         LOGE "当前系统已安装 filebrowser,请使用更新命令"
         show_menu
     fi
@@ -848,16 +872,16 @@ install_all_without_plex() {
 # install all without plex
 install_all_with_plex() {
     LOGD "开始安装 caddy + sing-box + filebrowser"
-    if [[ -f "${CADDY_SERVICE_PATH}" ]]; then
+    if [[ -f "${CADDY_SERVICE}" ]]; then
         LOGE "当前系统已安装 caddy,请使用更新命令"
         show_menu
-    elif [[ -f "${SING_BOX_SERVICE_PATH}" ]]; then
+    elif [[ -f "${SING_BOX_SERVICE}" ]]; then
         LOGE "当前系统已安装 sing-box,请使用更新命令"
         show_menu
-    elif [[ -f "/etc/systemd/system/filebrowser.service" ]]; then
+    elif [[ -f "${FILE_SERVICE}" ]]; then
         LOGE "当前系统已安装 filebrowser,请使用更新命令"
         show_menu
-    elif [[ -f "/etc/systemd/system/plexmediaserver.service" ]]; then
+    elif [[ -f "${PLEX_SERVICE}" ]]; then
         LOGE "当前系统已安装 plex,请使用更新命令"
         show_menu
     fi
@@ -899,10 +923,11 @@ install_all_with_plex() {
 show_menu() {
     echo -e "
   ${green}SSFUN Linux TOOL 管理脚本${plain}
+  ${green}Caddy | Sing-box | Filebrowser | Plex${plain}
   ${green}0.${plain} 退出脚本
 ————————————————
   ${green}1.${plain} 安装 caddy + sing-box + filebrowser
-  ${green}2.${plain} 安装 caddy + sing-box + plex + filebrowser
+  ${green}2.${plain} 安装 caddy + sing-box + filebrowser + plex
 ————————————————
   ${green}3.${plain} 更新 caddy 服务
   ${green}4.${plain} 卸载 caddy 服务
