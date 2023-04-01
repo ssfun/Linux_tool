@@ -73,9 +73,19 @@ FILE_BINARY='/usr/local/bin/filebrowser'
 #service install path
 FILE_SERVICE='/etc/systemd/system/filebrowser.service'
 
+#filebrowser status define
+declare -r FILE_STATUS_RUNNING=1
+declare -r FILE_STATUS_NOT_RUNNING=0
+declare -r FILE_STATUS_NOT_INSTALL=255
+
 #plex service
 PLEX_LIBRARY_PATH='/var/lib/plexmediaserver'
 PLEX_SERVICE='/etc/systemd/system/plexmediaserver.service'
+
+#plex status define
+declare -r PLEX_STATUS_RUNNING=1
+declare -r PLEX_STATUS_NOT_RUNNING=0
+declare -r PLEX_STATUS_NOT_INSTALL=255
 ##########################################
 
 # UTILS #####################################
@@ -180,7 +190,7 @@ show_caddy_status() {
     case $? in
     0)
         show_caddy_version
-        echo -e "[INF] sing-box状态: ${yellow}未运行${plain}"
+        echo -e "[INF] caddy状态: ${yellow}未运行${plain}"
         show_caddy_enable_status
         LOGI "配置文件路径:${CADDY_CONFIG_PATH}/Caddyfile"
         LOGI "可执行文件路径:${CADDY_BINARY}"
@@ -292,6 +302,129 @@ show_sing_box_enable_status() {
 }
 ###################################################
 
+# FILEBROWSER STATUS ############################################
+#filebrowser status check,-1 means didn't install,0 means failed,1 means running
+filebrowser_status_check() {
+    if [[ ! -f "${FILE_SERVICE}" ]]; then
+        return ${FILE_STATUS_NOT_INSTALL}
+    fi
+    temp=$(systemctl status filebrowser | grep Active | awk '{print $3}' | cut -d "(" -f2 | cut -d ")" -f1)
+    if [[ x"${temp}" == x"running" ]]; then
+        return ${FILE_STATUS_RUNNING}
+    else
+        return ${FILE_STATUS_NOT_RUNNING}
+    fi
+}
+
+#show filebrowser status
+show_filebrowser_status() {
+    filebrowser_status_check
+    case $? in
+    0)
+        show_caddy_version
+        echo -e "[INF] filebrowser状态: ${yellow}未运行${plain}"
+        show_caddy_enable_status
+        LOGI "配置文件路径:${FILE_CONFIG_PATH}/config.json"
+        LOGI "可执行文件路径:${FILE_BINARY}"
+        ;;
+    1)
+        show_filebrowser_version
+        echo -e "[INF] filebrowser状态: ${green}已运行${plain}"
+        show_caddy_enable_status
+        show_caddy_running_status
+        LOGI "配置文件路径:${FILE_CONFIG_PATH}/config.json"
+        LOGI "可执行文件路径:${FILE_BINARY}"
+        ;;
+    255)
+        echo -e "[INF] caddy状态: ${red}未安装${plain}"
+        ;;
+    esac
+}
+
+#show filebrowser running status
+show_filebrowser_running_status() {
+    filebrowser_status_check
+    if [[ $? == ${FILE_STATUS_RUNNING} ]]; then
+        local runTime=$(systemctl status filebrowser | grep Active | awk '{for (i=5;i<=NF;i++)printf("%s ", $i);print ""}')
+        LOGI "filebrowser运行时长：${runTime}"
+    else
+        LOGE "filebrowser未运行"
+    fi
+}
+
+#show filebrowser version
+show_filebrowser_version() {
+    LOGI "版本信息:$(${FILE_BINARY} version)"
+}
+
+#show filebrowser enable status,enabled means caddy can auto start when system boot on
+show_filebrowser_enable_status() {
+    local temp=$(systemctl is-enabled filebrowser)
+    if [[ x"${temp}" == x"enabled" ]]; then
+        echo -e "[INF] filebrowser是否开机自启: ${green}是${plain}"
+    else
+        echo -e "[INF] filebrowser是否开机自启: ${red}否${plain}"
+    fi
+}
+#############################################################
+
+# PLEX STATUS ############################################
+#plex status check,-1 means didn't install,0 means failed,1 means running
+plex_status_check() {
+    if [[ ! -f "${PLEX_SERVICE}" ]]; then
+        return ${CADDY_STATUS_NOT_INSTALL}
+    fi
+    temp=$(systemctl status plexmediaserver | grep Active | awk '{print $3}' | cut -d "(" -f2 | cut -d ")" -f1)
+    if [[ x"${temp}" == x"running" ]]; then
+        return ${PLEX_STATUS_RUNNING}
+    else
+        return ${PLEX_STATUS_NOT_RUNNING}
+    fi
+}
+
+#show plex status
+show_plex_status() {
+    plex_status_check
+    case $? in
+    0)
+        show_plex_version
+        echo -e "[INF] plex状态: ${yellow}未运行${plain}"
+        show_plex_enable_status
+        ;;
+    1)
+        show_plex_version
+        echo -e "[INF] plex状态: ${green}已运行${plain}"
+        show_caddy_enable_status
+        show_caddy_running_status
+        ;;
+    255)
+        echo -e "[INF] plex状态: ${red}未安装${plain}"
+        ;;
+    esac
+}
+
+#show plex running status
+show_plex_running_status() {
+    plex_status_check
+    if [[ $? == ${CADDY_STATUS_RUNNING} ]]; then
+        local runTime=$(systemctl status plexmediaserver | grep Active | awk '{for (i=5;i<=NF;i++)printf("%s ", $i);print ""}')
+        LOGI "plex运行时长：${runTime}"
+    else
+        LOGE "plex未运行"
+    fi
+}
+
+#show plex enable status,enabled means caddy can auto start when system boot on
+show_plex_enable_status() {
+    local temp=$(systemctl is-enabled plexmediaserver)
+    if [[ x"${temp}" == x"enabled" ]]; then
+        echo -e "[INF] plex是否开机自启: ${green}是${plain}"
+    else
+        echo -e "[INF] plex是否开机自启: ${red}否${plain}"
+    fi
+}
+#############################################################
+
 # FILEBROWSER ###############################
 #download filebrowser  binary
 download_filebrowser() {
@@ -375,10 +508,6 @@ update_filebrowser() {
 #uninstall filebrowser
 uninstall_filebrowser() {
     LOGD "开始卸载filebrowser..."
-    if [[ ! -f "${FILE_SERVICE}" ]]; then
-        LOGE "当前系统未安装filebrowser,无需卸载"
-        show_menu
-    fi
     systemctl stop filebrowser
     systemctl disable filebrowser
     rm -f ${FILE_SERVICE}
@@ -419,10 +548,6 @@ update_plex() {
 #uninstall plex
 uninstall_plex() {
     LOGD "开始卸载plex..."
-    if [[ ! -f "${PLEX_SERVICE}" ]]; then
-        LOGE "当前系统未安装plexmediaserver,无需卸载"
-        show_menu
-    fi
     dpkg -r plexmediaserver
     rm -rf ${PLEX_LIBRARY_PATH}
     LOGI "卸载plex成功"
@@ -619,10 +744,6 @@ update_caddy() {
 #uninstall caddy
 uninstall_caddy() {
     LOGD "开始卸载caddy..."
-    if [[ ! -f "${CADDY_SERVICE}" ]]; then
-        LOGE "当前系统未安装caddy,无需卸载"
-        show_menu
-    fi
     systemctl stop caddy
     systemctl disable caddy
     rm -f ${CADDY_SERVICE}
@@ -810,10 +931,6 @@ update_sing-box() {
 #uninstall sing-box
 uninstall_sing-box() {
     LOGD "开始卸载sing-box..."
-    if [[ ! -f "${SING_BOX_SERVICE}" ]]; then
-        LOGE "当前系统未安装sing-box,无需卸载"
-        show_menu
-    fi
     systemctl stop sing-box
     systemctl disable sing-box
     rm -f ${SING_BOX_SERVICE}
@@ -926,54 +1043,56 @@ show_menu() {
   ${green}Caddy | Sing-box | Filebrowser | Plex${plain}
   ${green}0.${plain} 退出脚本
 ————————————————
-  ${green}1.${plain} 安装 caddy + sing-box + filebrowser
-  ${green}2.${plain} 安装 caddy + sing-box + filebrowser + plex
+  ${green}A.${plain} 安装 caddy + sing-box + filebrowser
+  ${green}B.${plain} 安装 caddy + sing-box + filebrowser + plex
 ————————————————
-  ${green}3.${plain} 更新 caddy 服务
-  ${green}4.${plain} 卸载 caddy 服务
-  ${green}5.${plain} 更新 sing-box 服务
-  ${green}6.${plain} 卸载 sing-box 服务
-  ${green}7.${plain} 更新 plex 服务
-  ${green}8.${plain} 卸载 plex 服务
-  ${green}9.${plain} 更新 filebrowser 服务
-  ${green}10.${plain} 卸载 filebrowser 服务
+  ${green}1.${plain} 更新 caddy 服务
+  ${green}2.${plain} 卸载 caddy 服务
+  ${green}3.${plain} 更新 sing-box 服务
+  ${green}4.${plain} 卸载 sing-box 服务
+  ${green}5.${plain} 更新 plex 服务
+  ${green}6.${plain} 卸载 plex 服务
+  ${green}7.${plain} 更新 filebrowser 服务
+  ${green}8.${plain} 卸载 filebrowser 服务
  "
     show_caddy_status
     show_sing_box_status
-    echo && read -p "请输入选择[0-10]:" num
+    show_filebrowser_status
+    show_plex_status
+    echo && read -p "请输入选择[A-B,0-8]:" num
 
     case "${num}" in
     0)
         exit 0
         ;;
-    1)
+    A)
         install_all_without_plex && show_menu
         ;;
-    2)
+    B)
         install_all_with_plex && show_menu
         ;;
-    3)
+    1)
         update_caddy && show_menu
         ;;
-    4)
+    2)
         uninstall_caddy && show_menu
         ;;
-    5)
+    3)
         update_sing-box && show_menu
         ;;
-    6)
+    4)
         uninstall_sing-box && show_menu
         ;;
-    7)
+    5)
         update_plex && show_menu
         ;;
-    8)
+    6)
         uninstall_plex && show_menu
         ;;
-    9)
+    7)
         update_filebrowser && show_menu
         ;;
-    10)
+    8)
         uninstall_filebrowser && show_menu
         ;;
     *)
