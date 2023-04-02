@@ -273,9 +273,9 @@ show_menu() {
   ————————————————
   ${green}0.${plain} 退出脚本
   ————————————————
-  ${green}1.${plain} 更新 filebrowser 服务
-  ${green}2.${plain} 卸载 filebrowser 服务
-  ${green}3.${plain} 安装 filebrowser 服务
+  ${green}1.${plain} 安装 filebrowser 服务
+  ${green}2.${plain} 更新 filebrowser 服务
+  ${green}3.${plain} 卸载 filebrowser 服务
  "
     show_filebrowser_status
     echo && read -p "请输入选择[0-3]:" num
