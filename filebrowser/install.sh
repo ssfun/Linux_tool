@@ -22,32 +22,34 @@ OS=''
 ARCH=''
 
 #filebrowser config patch
-FILE_CONFIG_PATH='/usr/local/etc/filebrowser'
+FILEBROWSER_CONFIG_PATH='/usr/local/etc/filebrowser'
 #log file save path
-FILE_LOG_PATH='/var/log/filebrowser'
+FILEBROWSER_LOG_PATH='/var/log/filebrowser'
 #file save path
-FILE_DATA_PATH='/home/filebrowser'
+FILEBROWSER_DATA_PATH='/home/filebrowser'
 #database file save path
-FILE_DATABASE_PATH='/opt/filebrowser'
+FILEBROWSER_DATABASE_PATH='/opt/filebrowser'
 #binary install path
-FILE_BINARY='/usr/local/bin/filebrowser'
+FILEBROWSER_BINARY='/usr/local/bin/filebrowser'
 #service install path
-FILE_SERVICE='/etc/systemd/system/filebrowser.service'
+FILEBROWSER_SERVICE='/etc/systemd/system/filebrowser.service'
+#filebrowser download url
+FILEBROWSER_URL="https://api.github.com/repos/filebrowser/filebrowser/releases/latest"
 
 #filebrowser status define
-declare -r FILE_STATUS_RUNNING=1
-declare -r FILE_STATUS_NOT_RUNNING=0
-declare -r FILE_STATUS_NOT_INSTALL=255
+declare -r FILEBROWSER_STATUS_NOT_INSTALL=-1
+declare -r FILEBROWSER_STATUS_NOT_RUNNING=0
+declare -r FILEBROWSER_STATUS_RUNNING=1
 
-function LOGE() {
+LOGE() {
     echo -e "${red}[ERR] $* ${plain}"
 }
 
-function LOGI() {
+LOGI() {
     echo -e "${green}[INF] $* ${plain}"
 }
 
-function LOGD() {
+LOGD() {
     echo -e "${yellow}[DEG] $* ${plain}"
 }
 
@@ -111,48 +113,32 @@ arch_check() {
 #install some common utils
 install_base() {
     if [[ ${OS} == "ubuntu" || ${OS} == "debian" ]]; then
-        apt install wget tar -y
+        if ! dpkg -s wget tar >/dev/null 2>&1; then
+            apt install wget tar -y
+        fi
     elif [[ ${OS} == "centos" ]]; then
-        yum install wget tar -y
+        if ! rpm -q wget tar >/dev/null 2>&1; then
+            yum install wget tar -y
+        fi
     fi
 }
 
 #filebrowser status check,-1 means didn't install,0 means failed,1 means running
-function filebrowser_status_check() {
-    if [[ ! -f "${FILE_SERVICE}" ]]; then
-        return ${FILE_STATUS_NOT_INSTALL}
+filebrowser_status_check() {
+    if ! command -v filebrowser >/dev/null 2>&1; then
+        return ${FILEBROWSER_STATUS_NOT_INSTALL}
     fi
-    temp=$(systemctl status filebrowser | grep Active | awk '{print $3}' | cut -d "(" -f2 | cut -d ")" -f1)
-    if [[ x"${temp}" == x"running" ]]; then
-        return ${FILE_STATUS_RUNNING}
+    if ! pgrep filebrowser >/dev/null 2>&1; then
+        return ${FILEBROWSER_STATUS_NOT_RUNNING}
     else
-        return ${FILE_STATUS_NOT_RUNNING}
+        return ${FILEBROWSER_STATUS_RUNNING}
     fi
-}
-
-#show filebrowser status
-function show_filebrowser_status() {
-    filebrowser_status_check
-    case $? in
-    0)
-        echo -e "[INF] filebrowser状态: ${yellow}未运行${plain}"
-        show_filebrowser_enable_status
-        ;;
-    1)
-        echo -e "[INF] filebrowser状态: ${green}已运行${plain}"
-        show_filebrowser_enable_status
-        show_filebrowser_running_status
-        ;;
-    255)
-        echo -e "[INF] filebrowser状态: ${red}未安装${plain}"
-        ;;
-    esac
 }
 
 #show filebrowser running status
-function show_filebrowser_running_status() {
+show_filebrowser_running_status() {
     filebrowser_status_check
-    if [[ $? == ${FILE_STATUS_RUNNING} ]]; then
+    if [[ $? == ${FILEBROWSER_STATUS_RUNNING} ]]; then
         local runTime=$(systemctl status filebrowser | grep Active | awk '{for (i=5;i<=NF;i++)printf("%s ", $i);print ""}')
         LOGI "filebrowser运行时长：${runTime}"
     else
@@ -161,32 +147,52 @@ function show_filebrowser_running_status() {
 }
 
 #show filebrowser enable status,enabled means filebrowser can auto start when system boot on
-function show_filebrowser_enable_status() {
-    local temp=$(systemctl is-enabled filebrowser)
-    if [[ x"${temp}" == x"enabled" ]]; then
+show_filebrowser_enable_status() {
+    local enabled_status=$(systemctl is-enabled filebrowser)
+    if [[ $enabled_status == "enabled" ]]; then
         echo -e "[INF] filebrowser是否开机自启: ${green}是${plain}"
     else
         echo -e "[INF] filebrowser是否开机自启: ${red}否${plain}"
     fi
 }
 
+#show filebrowser status
+show_filebrowser_status() {
+    local status_code=$(filebrowser_status_check)
+    case $status_code in
+    $FILEBROWSER_STATUS_NOT_RUNNING)
+        echo -e "[INF] filebrowser状态: ${yellow}未运行${plain}"
+        show_filebrowser_enable_status
+        ;;
+    $FILEBROWSER_STATUS_RUNNING)
+        echo -e "[INF] filebrowser状态: ${green}已运行${plain}"
+        show_filebrowser_enable_status
+        show_filebrowser_running_status
+        ;;
+    $FILEBROWSER_STATUS_NOT_INSTALL)
+        echo -e "[INF] filebrowser状态: ${red}未安装${plain}"
+        ;;
+    esac
+}
+
+
 #download filebrowser  binary
-function download_filebrowser() {
+download_filebrowser() {
     LOGD "开始下载 filebrowser..."
     # getting the latest version of filebrowser"
-    LATEST_FILE_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/filebrowser/filebrowser/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
-    FILE_LINK="https://github.com/filebrowser/filebrowser/releases/download/${LATEST_FILE_VERSION}/linux-${ARCH}-filebrowser.tar.gz"
+    LATEST_FILEBROWSER_VERSION="$(wget -qO- -t1 -T2 "${FILEBROWSER_URL}" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
+    FILEBROWSER_LINK="https://github.com/filebrowser/filebrowser/releases/download/${LATEST_FILEBROWSER_VERSION}/linux-${ARCH}-filebrowser.tar.gz"
     cd `mktemp -d`
-    wget -nv "${FILE_LINK}" -O filebrowser.tar.gz
+    wget -nv "${FILEBROWSER_LINK}" -O filebrowser.tar.gz
     tar -zxvf filebrowser.tar.gz
-    mv filebrowser ${FILE_BINARY} && chmod +x ${FILE_BINARY}
+    mv filebrowser ${FILEBROWSER_BINARY} && chmod +x ${FILEBROWSER_BINARY}
     LOGI "filebrowser 下载完毕"
 }
 
 #install filebrowser systemd service
-function install_filebrowser_systemd_service() {
+install_filebrowser_systemd_service() {
     LOGD "开始安装 filebrowser systemd 服务..."
-    cat <<EOF >${FILE_SERVICE}
+    cat <<EOF >${FILEBROWSER_SERVICE}
 [Unit]
 Description=filebrowser
 After=network-online.target
@@ -195,7 +201,7 @@ Wants=network-online.target systemd-networkd-wait-online.service
 User=root
 Restart=on-failure
 RestartSec=5s
-ExecStart=${FILE_BINARY} -c ${FILE_CONFIG_PATH}/config.json
+ExecStart=${FILEBROWSER_BINARY} -c ${FILEBROWSER_CONFIG_PATH}/config.json
 [Install]
 WantedBy=multi-user.target
 EOF
@@ -205,16 +211,16 @@ EOF
 }
 
 #configuration filebrowser config
-function configuration_filebrowser_config() {
+configuration_filebrowser_config() {
     LOGD "开始配置filebrowser配置文件..."
     # set config
-    cat <<EOF >${FILE_CONFIG_PATH}/config.json
+    cat <<EOF >${FILEBROWSER_CONFIG_PATH}/config.json
 {
     "address":"127.0.0.1",
-    "database":"${FILE_DATABASE_PATH}/filebrowser.db",
-    "log":"${FILE_LOG_PATH}/filebrowser.log",
+    "database":"${FILEBROWSER_DATABASE_PATH}/filebrowser.db",
+    "log":"${FILEBROWSER_LOG_PATH}/filebrowser.log",
     "port":40333,
-    "root":"${FILE_DATA_PATH}",
+    "root":"${FILEBROWSER_DATA_PATH}",
     "username":"admin"
 }
 EOF
@@ -222,12 +228,12 @@ EOF
 }
 
 #install filebrowser
-function install_filebrowser() {
+install_filebrowser() {
     LOGD "开始安装 filebrowser..."
-    mkdir -p "${FILE_CONFIG_PATH}"
-    mkdir -p "${FILE_LOG_PATH}"
-    mkdir -p "${FILE_DATABASE_PATH}"
-    mkdir -p "${FILE_DATA_PATH}"
+    mkdir -p "${FILEBROWSER_CONFIG_PATH}"
+    mkdir -p "${FILEBROWSER_LOG_PATH}"
+    mkdir -p "${FILEBROWSER_DATABASE_PATH}"
+    mkdir -p "${FILEBROWSER_DATA_PATH}"
     download_filebrowser
     install_filebrowser_systemd_service
     configuration_filebrowser_config
@@ -235,15 +241,15 @@ function install_filebrowser() {
 }
 
 #update filebrowser
-function update_filebrowser() {
+update_filebrowser() {
     LOGD "开始更新filebrowser..."
-    if [[ ! -f "${FILE_SERVICE}" ]]; then
+    if [[ ! -f "${FILEBROWSER_SERVICE}" ]]; then
         LOGE "当前系统未安装filebrowser,更新失败"
         show_menu
     fi
     os_check && arch_check
     systemctl stop filebrowser
-    rm -f ${FILE_BINARY}
+    rm -f ${FILEBROWSER_BINARY}
     # getting the latest version of filebrowser"
     download_filebrowser
     LOGI "filebrowser 启动成功"
@@ -252,17 +258,17 @@ function update_filebrowser() {
 }
 
 #uninstall filebrowser
-function uninstall_filebrowser() {
+uninstall_filebrowser() {
     LOGD "开始卸载filebrowser..."
     systemctl stop filebrowser
     systemctl disable filebrowser
-    rm -f ${FILE_SERVICE}
+    rm -f ${FILEBROWSER_SERVICE}
     systemctl daemon-reload
-    rm -f ${FILE_BINARY}
-    rm -rf ${FILE_CONFIG_PATH}
-    rm -rf ${FILE_LOG_PATH}
-    rm -rf ${FILE_DATABASE_PATH}
-    rm -rf ${FILE_DATA_PATH}
+    rm -f ${FILEBROWSER_BINARY}
+    rm -rf ${FILEBROWSER_CONFIG_PATH}
+    rm -rf ${FILEBROWSER_LOG_PATH}
+    rm -rf ${FILEBROWSER_DATABASE_PATH}
+    rm -rf ${FILEBROWSER_DATA_PATH}
     LOGI "卸载filebrowser成功"
 }
 
