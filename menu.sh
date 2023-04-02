@@ -47,17 +47,13 @@ declare -r SING_BOX_STATUS_NOT_RUNNING=0
 declare -r SING_BOX_STATUS_NOT_INSTALL=-1
 
 #filebrowser env
+FILEBROWSER_VERSION=''
 FILEBROWSER_CONFIG_PATH='/usr/local/etc/filebrowser'
 FILEBROWSER_LOG_PATH='/var/log/filebrowser'
 FILEBROWSER_DATA_PATH='/home/filebrowser'
 FILEBROWSER_DATABASE_PATH='/opt/filebrowser'
 FILEBROWSER_BINARY='/usr/local/bin/filebrowser'
 FILEBROWSER_SERVICE='/etc/systemd/system/filebrowser.service'
-
-#filebrowser status define
-declare -r FILEBROWSER_STATUS_RUNNING=1
-declare -r FILEBROWSER_STATUS_NOT_RUNNING=0
-declare -r FILEBROWSER_STATUS_NOT_INSTALL=-1
 
 #plex env
 PLEX_LIBRARY_PATH='/var/lib/plexmediaserver'
@@ -66,7 +62,7 @@ PLEX_SERVICE='/etc/systemd/system/plexmediaserver.service'
 #plex status define
 declare -r PLEX_STATUS_RUNNING=1
 declare -r PLEX_STATUS_NOT_RUNNING=0
-declare -r PLEX_STATUS_NOT_INSTALL=255
+declare -r PLEX_STATUS_NOT_INSTALL=-1
 
 #utils 
 function LOGE() {
@@ -79,6 +75,22 @@ function LOGI() {
 
 function LOGD() {
     echo -e "${yellow}[DEG] $* ${plain}"
+}
+
+confirm() {
+    if [[ $# > 1 ]]; then
+        echo && read -p "$1 [默认$2]: " temp
+        if [[ x"${temp}" == x"" ]]; then
+            temp=$2
+        fi
+    else
+        read -p "$1 [y/n]: " temp
+    fi
+    if [[ x"${temp}" == x"y" || x"${temp}" == x"Y" ]]; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 #root user check
@@ -182,7 +194,7 @@ show_caddy_running_status() {
 #show caddy enable status
 show_caddy_enable_status() {
     local caddy_enable_status_temp=$(systemctl is-enabled caddy)
-    if [[ x"${caddy_enable_status_temp}" == x"enabled" ]]; then
+    if [[ "${caddy_enable_status_temp}" == "enabled" ]]; then
         echo -e "[INF] caddy是否开机自启: ${green}是${plain}"
     else
         echo -e "[INF] caddy是否开机自启: ${red}否${plain}"
@@ -235,73 +247,20 @@ show_sing_box_running_status() {
 #show sing-box enable status
 show_sing_box_enable_status() {
     local sing_box_enable_status_temp=$(systemctl is-enabled sing-box)
-    if [[ x"${sing_box_enable_status_temp}" == x"enabled" ]]; then
+    if [["${sing_box_enable_status_temp}" == "enabled" ]]; then
         echo -e "[INF] sing-box是否开机自启: ${green}是${plain}"
     else
         echo -e "[INF] sing-box是否开机自启: ${red}否${plain}"
     fi
 }
 
-#filebrowser status check,-1 means didn't install,0 means failed,1 means running
-filebrowser_status_check() {
-    if [[ ! -f "${FILEBROWSER_SERVICE}" ]]; then
-        return ${FILEBROWSER_STATUS_NOT_INSTALL}
-    fi
-    filebrowser_status_temp=$(systemctl is-active filebrowser)
-    if [[ "${filebrowser_status_temp}" == "active" ]]; then
-        return ${FILEBROWSER_STATUS_RUNNING}
-    else
-        return ${FILEBROWSER_STATUS_NOT_RUNNING}
-    fi
-}
-
-#show filebrowser status
-show_filebrowser_status() {
-    filebrowser_status_check
-    case $? in
-    0)
-        echo -e "[INF] filebrowser状态: ${yellow}未运行${plain}"
-        show_caddy_enable_status
-        ;;
-    1)
-        echo -e "[INF] filebrowser状态: ${green}已运行${plain}"
-        show_caddy_enable_status
-        show_caddy_running_status
-        ;;
-    -1)
-        echo -e "[INF] filebrowser状态: ${red}未安装${plain}"
-        ;;
-    esac
-}
-
-#show filebrowser running status
-show_filebrowser_running_status() {
-    filebrowser_status_check
-    if [[ $? == ${FILEBROWSER_STATUS_RUNNING} ]]; then
-        local runTime=$(systemctl status filebrowser | grep Active | awk '{for (i=5;i<=NF;i++)printf("%s ", $i);print ""}')
-        LOGI "filebrowser运行时长：${runTime}"
-    else
-        LOGE "filebrowser未运行"
-    fi
-}
-
-#show filebrowser enable status
-show_filebrowser_enable_status() {
-    local temp=$(systemctl is-enabled filebrowser)
-    if [[ x"${temp}" == x"enabled" ]]; then
-        echo -e "[INF] filebrowser是否开机自启: ${green}是${plain}"
-    else
-        echo -e "[INF] filebrowser是否开机自启: ${red}否${plain}"
-    fi
-}
-
 #plex status check,-1 means didn't install,0 means failed,1 means running
 plex_status_check() {
     if [[ ! -f "${PLEX_SERVICE}" ]]; then
-        return ${CADDY_STATUS_NOT_INSTALL}
+        return ${PLEX_STATUS_NOT_INSTALL}
     fi
-    temp=$(systemctl status plexmediaserver | grep Active | awk '{print $3}' | cut -d "(" -f2 | cut -d ")" -f1)
-    if [[ x"${temp}" == x"running" ]]; then
+    local plex_status_temp=$(systemctl is-active plexmediaserver)
+    if [[ "${plex_status_temp}" == "active" ]]; then
         return ${PLEX_STATUS_RUNNING}
     else
         return ${PLEX_STATUS_NOT_RUNNING}
@@ -330,7 +289,7 @@ show_plex_status() {
 #show plex running status
 show_plex_running_status() {
     plex_status_check
-    if [[ $? == ${CADDY_STATUS_RUNNING} ]]; then
+    if [[ $? == ${PLEX_STATUS_RUNNING} ]]; then
         local runTime=$(systemctl status plexmediaserver | grep Active | awk '{for (i=5;i<=NF;i++)printf("%s ", $i);print ""}')
         LOGI "plex运行时长：${runTime}"
     else
@@ -341,119 +300,20 @@ show_plex_running_status() {
 #show plex enable statusn
 show_plex_enable_status() {
     local temp=$(systemctl is-enabled plexmediaserver)
-    if [[ x"${temp}" == x"enabled" ]]; then
+    if [[ "${temp}" == "enabled" ]]; then
         echo -e "[INF] plex是否开机自启: ${green}是${plain}"
     else
         echo -e "[INF] plex是否开机自启: ${red}否${plain}"
     fi
 }
-#############################################################
 
-# FILEBROWSER ###############################
-#download filebrowser  binary
-download_filebrowser() {
-    LOGD "开始下载 filebrowser..."
-    # getting the latest version of filebrowser"
-    LATEST_FILEBROWSER_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/filebrowser/filebrowser/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'))
-    FILEBROWSER_LINK="https://github.com/filebrowser/filebrowser/releases/download/${LATEST_FILEBROWSER_VERSION}/linux-${ARCH}-filebrowser.tar.gz"
-    cd `mktemp -d`
-    wget -nv "${FILEBROWSER_LINK}" -O filebrowser.tar.gz
-    tar -zxvf filebrowser.tar.gz
-    mv filebrowser ${FILEBROWSER_BINARY} && chmod +x ${FILEBROWSER_BINARY}
-    LOGI "filebrowser 下载完毕"
-}
-
-#install filebrowser systemd service
-install_filebrowser_systemd_service() {
-    LOGD "开始安装 filebrowser systemd 服务..."
-    cat <<EOF >${FILEBROWSER_SERVICE}
-[Unit]
-Description=filebrowser
-After=network-online.target
-Wants=network-online.target systemd-networkd-wait-online.service
-[Service]
-User=root
-Restart=on-failure
-RestartSec=5s
-ExecStart=${FILEBROWSER_BINARY} -c ${FILEBROWSER_CONFIG_PATH}/config.json
-[Install]
-WantedBy=multi-user.target
-EOF
-    systemctl daemon-reload
-    systemctl enable filebrowser
-    LOGD "安装 filebrowser systemd 服务成功"
-}
-
-#configuration filebrowser config
-configuration_filebrowser_config() {
-    LOGD "开始配置filebrowser配置文件..."
-    # set config
-    cat <<EOF >${FILEBROWSER_CONFIG_PATH}/config.json
-{
-    "address":"127.0.0.1",
-    "database":"${FILEBROWSER_DATABASE_PATH}/filebrowser.db",
-    "log":"/${FILEBROWSER_LOG_PATH}/filebrowser.log",
-    "port":40333,
-    "root":"${FILEBROWSER_DATA_PATH}",
-    "username":"admin"
-}
-EOF
-    LOGD "filebrowser 配置文件完成"
-}
-
-#install filebrowser
-install_filebrowser() {
-    LOGD "开始安装 filebrowser..."
-    mkdir -p "${FILEBROWSER_CONFIG_PATH}"
-    mkdir -p "${FILEBROWSER_LOG_PATH}"
-    mkdir -p "${FILEBROWSER_DATABASE_PATH}"
-    mkdir -p "${FILEBROWSER_DATA_PATH}"
-    download_filebrowser
-    install_filebrowser_systemd_service
-    configuration_filebrowser_config
-    LOGI "filebrowser 已完成安装"
-}
-
-#update filebrowser
-update_filebrowser() {
-    LOGD "开始更新filebrowser..."
-    if [[ ! -f "${FILEBROWSER_SERVICE}" ]]; then
-        LOGE "当前系统未安装filebrowser,更新失败"
-        show_menu
-    fi
-    os_check && arch_check
-    systemctl stop filebrowser
-    rm -f ${FILEBROWSER_BINARY}
-    # getting the latest version of filebrowser"
-    download_filebrowser
-    LOGI "filebrowser 启动成功"
-    systemctl restart filebrowser
-    LOGI "filebrowser 已完成升级"
-}
-
-#uninstall filebrowser
-uninstall_filebrowser() {
-    LOGD "开始卸载filebrowser..."
-    systemctl stop filebrowser
-    systemctl disable filebrowser
-    rm -f ${FILEBROWSER_SERVICE}
-    systemctl daemon-reload
-    rm -f ${FILEBROWSER_BINARY}
-    rm -rf ${FILEBROWSER_CONFIG_PATH}
-    rm -rf ${FILEBROWSER_LOG_PATH}
-    rm -rf ${FILEBROWSER_DATABASE_PATH}
-    rm -rf ${FILEBROWSER_DATA_PATH}
-    LOGI "卸载filebrowser成功"
-}
-######################################
-
-# PLEX ################################
 #install plex
 install_plex() {
     LOGD "开始下载 plex..."
     # getting the latest version of plex"
     LATEST_PLEX_VERSION="$(wget -qO- -t1 -T2 "https://plex.tv/api/downloads/5.json" | grep -o '"version":"[^"]*' | grep -o '[^"]*$' | head -n 1)"
     PLEX_LINK="https://downloads.plex.tv/plex-media-server-new/${LATEST_PLEX_VERSION}/debian/plexmediaserver_${LATEST_PLEX_VERSION}_${ARCH}.deb"
+    cd `mktemp -d`
     wget -nv "${PLEX_LINK}" -O plexmediaserver.deb
     dpkg -i plexmediaserver.deb
     LOGI "plex 已完成安装"
@@ -479,23 +339,25 @@ uninstall_plex() {
     LOGI "卸载plex成功"
 }
 
-#######################################
-
-# CADDY TOOL #################################
-#download caddy  binary
+#download caddy  & filebrowser binary
 download_caddy() {
-    LOGD "开始下载 caddy..."
-    # getting the latest version of caddy"
+    LOGD "开始下载 caddy & filebrowser..."
+    # getting the latest version of caddy & filebrowser"
     LATEST_CADDY_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/lxhao61/integrated-examples/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
     CADDY_LINK="https://github.com/lxhao61/integrated-examples/releases/download/${LATEST_CADDY_VERSION}/caddy-linux-${ARCH}.tar.gz"
+    LATEST_FILEBROWSER_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/filebrowser/filebrowser/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
+    FILEBROWSER_LINK="https://github.com/filebrowser/filebrowser/releases/download/${LATEST_FILEBROWSER_VERSION}/linux-${ARCH}-filebrowser.tar.gz"
     cd `mktemp -d`
     wget -nv "${CADDY_LINK}" -O caddy.tar.gz
     tar -zxvf caddy.tar.gz
     mv caddy ${CADDY_BINARY} && chmod +x ${CADDY_BINARY}
-    LOGI "caddy 下载完毕"
+    wget -nv "${FILEBROWSER_LINK}" -O filebrowser.tar.gz
+    tar -zxvf filebrowser.tar.gz
+    mv filebrowser ${FILEBROWSER_BINARY} && chmod +x ${FILEBROWSER_BINARY}
+    LOGI "caddy & filebrowser下载完毕"
 }
 
-#install caddy systemd service
+#install caddy & filebrowser systemd service
 install_caddy_systemd_service() {
     LOGD "开始安装 caddy systemd 服务..."
     cat <<EOF >${CADDY_SERVICE}
@@ -519,12 +381,27 @@ AmbientCapabilities=CAP_NET_BIND_SERVICE
 [Install]
 WantedBy=multi-user.target
 EOF
+    LOGD "开始安装 filebrowser systemd 服务..."
+    cat <<EOF >${FILEBROWSER_SERVICE}
+[Unit]
+Description=filebrowser
+After=network-online.target
+Wants=network-online.target systemd-networkd-wait-online.service
+[Service]
+User=root
+Restart=on-failure
+RestartSec=5s
+ExecStart=${FILEBROWSER_BINARY} -c ${FILEBROWSER_CONFIG_PATH}/config.json
+[Install]
+WantedBy=multi-user.target
+EOF
     systemctl daemon-reload
     systemctl enable caddy
-    LOGD "安装 caddy systemd 服务成功"
+    systemctl enable filebrowser
+    LOGD "安装 caddy & filebrowser systemd 服务成功"
 }
 
-#configuration caddy Caddyfile
+#configuration caddy & filebrowser config
 configuration_caddy_config() {
     LOGD "开始配置caddy配置文件..."
     # set Caddyfile
@@ -569,9 +446,22 @@ configuration_caddy_config() {
 }
 EOF
     LOGD "caddy 配置文件完成"
+    LOGD "开始配置filebrowser配置文件..."
+    # set config
+    cat <<EOF >${FILEBROWSER_CONFIG_PATH}/config.json
+{
+    "address":"127.0.0.1",
+    "database":"${FILEBROWSER_DATABASE_PATH}/filebrowser.db",
+    "log":"/${FILEBROWSER_LOG_PATH}/filebrowser.log",
+    "port":40333,
+    "root":"${FILEBROWSER_DATA_PATH}",
+    "username":"admin"
+}
+EOF
+    LOGD "filebrowser 配置文件完成"
 }
 
-#configuration caddy Caddyfile with plex
+#configuration caddy & filebrowser with plex
 configuration_caddy_config_with_plex() {
     LOGD "开始配置caddy配置文件..."
     # set Caddyfile
@@ -630,65 +520,96 @@ configuration_caddy_config_with_plex() {
 }
 EOF
     LOGD "caddy 配置文件完成"
+    LOGD "开始配置filebrowser配置文件..."
+    # set config
+    cat <<EOF >${FILEBROWSER_CONFIG_PATH}/config.json
+{
+    "address":"127.0.0.1",
+    "database":"${FILEBROWSER_DATABASE_PATH}/filebrowser.db",
+    "log":"/${FILEBROWSER_LOG_PATH}/filebrowser.log",
+    "port":40333,
+    "root":"${FILEBROWSER_DATA_PATH}",
+    "username":"admin"
+}
+EOF
+    LOGD "filebrowser 配置文件完成"
 }
 
-#install caddy
+#install caddy & filebrowser
 install_caddy_without_plex() {
+    LOGD "开始安装 caddy & filebrowser..."
     mkdir -p "${CADDY_CONFIG_PATH}"
     mkdir -p "${CADDY_WWW_PATH}"
     mkdir -p "${CADDY_LOG_PATH}"
+    mkdir -p "${FILEBROWSER_CONFIG_PATH}"
+    mkdir -p "${FILEBROWSER_LOG_PATH}"
+    mkdir -p "${FILEBROWSER_DATABASE_PATH}"
+    mkdir -p "${FILEBROWSER_DATA_PATH}"
     download_caddy
     install_caddy_systemd_service
     configuration_caddy_config
-    LOGI "caddy 已完成安装"
+    LOGI "caddy & filebrowser已完成安装"
 }
 
 #install caddy with plex
 install_caddy_with_plex() {
-    LOGD "开始安装 caddy..."
+    LOGD "开始安装 caddy $ filebrowser..."
     mkdir -p "${CADDY_CONFIG_PATH}"
     mkdir -p "${CADDY_WWW_PATH}"
     mkdir -p "${CADDY_LOG_PATH}"
+    mkdir -p "${FILEBROWSER_CONFIG_PATH}"
+    mkdir -p "${FILEBROWSER_LOG_PATH}"
+    mkdir -p "${FILEBROWSER_DATABASE_PATH}"
+    mkdir -p "${FILEBROWSER_DATA_PATH}"
     download_caddy
     install_caddy_systemd_service
     configuration_caddy_config_with_plex
-    LOGI "caddy 已完成安装"
+    LOGI "caddy & filebrowser已完成安装"
 }
 
 #update caddy
 update_caddy() {
-    LOGD "开始更新caddy..."
+    LOGD "开始更新caddy & filebrowser..."
     if [[ ! -f "${CADDY_SERVICE}" ]]; then
         LOGE "当前系统未安装caddy,更新失败"
         show_menu
     fi
     os_check && arch_check
     systemctl stop caddy
+    systemctl stop filebrowser
     rm -f ${CADDY_BINARY}
+    rm -f ${FILEBROWSER_BINARY}
     # getting the latest version of caddy"
     download_caddy
-    LOGI "caddy 启动成功"
+    LOGI "caddy & filebrowser启动成功"
     systemctl restart caddy
-    LOGI "caddy 已完成升级"
+    systemctl restart filebrowser
+    LOGI "caddy & filebrowser已完成升级"
 }
 
 #uninstall caddy
 uninstall_caddy() {
-    LOGD "开始卸载caddy..."
+    LOGD "开始卸载caddy & filebrowser..."
     systemctl stop caddy
+    systemctl stop filebrowser
     systemctl disable caddy
+    systemctl disable filebrowser
     rm -f ${CADDY_SERVICE}
+    rm -f ${FILEBROWSER_SERVICE}
     systemctl daemon-reload
     rm -f ${CADDY_BINARY}
     rm -rf ${CADDY_CONFIG__PATH}
     rm -rf ${CADDY_LOG_PATH}
     rm -rf ${CADDY_WWW_PATH}
     rm -rf ${CADDY_TLS_PATH}
-    LOGI "卸载caddy成功"
+    rm -f ${FILEBROWSER_BINARY}
+    rm -rf ${FILEBROWSER_CONFIG_PATH}
+    rm -rf ${FILEBROWSER_LOG_PATH}
+    rm -rf ${FILEBROWSER_DATABASE_PATH}
+    rm -rf ${FILEBROWSER_DATA_PATH}
+    LOGI "卸载caddy & filebrowser成功"
 }
-#################################
 
-# SING-BOX TOOL ######################
 #download sing-box  binary
 download_sing-box() {
     LOGD "开始下载 sing-box..."
@@ -843,9 +764,7 @@ uninstall_sing-box() {
     rm -rf ${SING_BOX_LIB_PATH}
     LOGI "卸载sing-box成功"
 }
-########################################
 
-# INSTALL ALL ############################
 # install all without plex
 install_all_without_plex() {
     LOGD "开始安装 caddy + sing-box + filebrowser"
@@ -854,9 +773,6 @@ install_all_without_plex() {
         show_menu
     elif [[ -f "${SING_BOX_SERVICE}" ]]; then
         LOGE "当前系统已安装 sing-box,请使用更新命令"
-        show_menu
-    elif [[ -f "${FILEBROWSER_SERVICE}" ]]; then
-        LOGE "当前系统已安装 filebrowser,请使用更新命令"
         show_menu
     fi
     LOGI "开始安装"
@@ -878,10 +794,9 @@ install_all_without_plex() {
     read -p "请输入 warp reserved:" warpreserved
         [ -z "${warpreserved}" ]  
     install_caddy_without_plex
-    systemctl start caddy
     install_sing-box
+    systemctl start caddy
     systemctl start sing-box
-    install_filebrowser
     systemctl start filebrowser
     LOGI "caddy + sing-box + filebrowser 已完成安装"
 }
@@ -927,82 +842,65 @@ install_all_with_plex() {
         [ -z "${warpreserved}" ]  
     os_check && arch_check && install_base
     install_caddy_with_caddy
-    systemctl start caddy
     install_sing-box
-    systemctl start sing-box
-    install_filebrowser
-    systemctl start filebrowser
     install_plex
+    systemctl start caddy
+    systemctl start sing-box
+    systemctl start filebrowser
     LOGI "caddy + sing-box + plex + filebrowser 已完成安装"
 }
-##########################################
 
-# MENU ####################################
 #show menu
 show_menu() {
     echo -e "
-  ${green}Caddy | Sing-box | Filebrowser | Plex 管理脚本${plain}
+  ${green}Caddy (+filebrowser) | Sing-box (trojan+warp)  | Plex 管理脚本${plain}
   ————————————————
   ${green}0.${plain} 退出脚本
   ————————————————
-  ${green}A.${plain} 安装 caddy + sing-box + filebrowser
-  ${green}B.${plain} 安装 caddy + sing-box + filebrowser + plex
+  ${green}1.${plain} 安装 caddy + sing-box
+  ${green}2.${plain} 安装 caddy + sing-box + plex
   ————————————————
-  ${green}1.${plain} 更新 caddy 服务
-  ${green}2.${plain} 卸载 caddy 服务
+  ${green}3.${plain} 更新 caddy & filebrowser服务
+  ${green}4.${plain} 卸载 caddy & filebrowser服务
   ————————————————
-  ${green}3.${plain} 更新 sing-box 服务
-  ${green}4.${plain} 卸载 sing-box 服务
+  ${green}5.${plain} 更新 sing-box 服务
+  ${green}6.${plain} 卸载 sing-box 服务
   ————————————————
-  ${green}5.${plain} 更新 plex 服务
-  ${green}6.${plain} 卸载 plex 服务
-  ————————————————
-  ${green}7.${plain} 更新 filebrowser 服务
-  ${green}8.${plain} 卸载 filebrowser 服务
-  ${green}9.${plain} 安装 filebrowser 服务
+  ${green}7.${plain} 更新 plex 服务
+  ${green}8.${plain} 卸载 plex 服务
  "
     show_caddy_status
     show_sing_box_status
-    show_filebrowser_status
     show_plex_status
-    echo && read -p "请输入选择[A-B,0-8]:" num
+    echo && read -p "请输入选择[0-8]:" num
 
     case "${num}" in
     0)
         exit 0
         ;;
-    A)
+    1)
         install_all_without_plex && show_menu
         ;;
-    B)
+    2)
         install_all_with_plex && show_menu
         ;;
-    1)
+    3)
         update_caddy && show_menu
         ;;
-    2)
+    4)
         uninstall_caddy && show_menu
         ;;
-    3)
+    5)
         update_sing-box && show_menu
         ;;
-    4)
+    6)
         uninstall_sing-box && show_menu
         ;;
-    5)
+    7)
         update_plex && show_menu
         ;;
-    6)
-        uninstall_plex && show_menu
-        ;;
-    7)
-        update_filebrowser && show_menu
-        ;;
     8)
-        uninstall_filebrowser && show_menu
-        ;;
-    9)
-        install_filebrowser && show_menu
+        uninstall_plex && show_menu
         ;;
     *)
         LOGE "请输入正确的选项 [0-10]"
