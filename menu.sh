@@ -57,7 +57,7 @@ FILEBROWSER_SERVICE='/etc/systemd/system/filebrowser.service'
 
 #plex env
 PLEX_LIBRARY_PATH='/var/lib/plexmediaserver'
-PLEX_SERVICE='/etc/systemd/system/plexmediaserver.service'
+PLEX_SERVICE='/lib/systemd/system/plexmediaserver.service'
 
 #plex status define
 declare -r PLEX_STATUS_RUNNING=1
