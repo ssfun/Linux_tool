@@ -247,7 +247,7 @@ show_sing_box_running_status() {
 #show sing-box enable status
 show_sing_box_enable_status() {
     local sing_box_enable_status_temp=$(systemctl is-enabled sing-box)
-    if [["${sing_box_enable_status_temp}" == "enabled" ]]; then
+    if [[ "${sing_box_enable_status_temp}" == "enabled" ]]; then
         echo -e "[INF] sing-box是否开机自启: ${green}是${plain}"
     else
         echo -e "[INF] sing-box是否开机自启: ${red}否${plain}"
