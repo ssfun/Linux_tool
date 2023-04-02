@@ -175,7 +175,6 @@ show_filebrowser_status() {
     esac
 }
 
-
 #download filebrowser  binary
 download_filebrowser() {
     LOGD "开始下载 filebrowser..."
@@ -228,7 +227,7 @@ EOF
 }
 
 #install filebrowser
-install_filebrowser() {
+install() {
     LOGD "开始安装 filebrowser..."
     mkdir -p "${FILEBROWSER_CONFIG_PATH}"
     mkdir -p "${FILEBROWSER_LOG_PATH}"
@@ -241,7 +240,7 @@ install_filebrowser() {
 }
 
 #update filebrowser
-update_filebrowser() {
+update() {
     LOGD "开始更新filebrowser..."
     if [[ ! -f "${FILEBROWSER_SERVICE}" ]]; then
         LOGE "当前系统未安装filebrowser,更新失败"
@@ -258,7 +257,7 @@ update_filebrowser() {
 }
 
 #uninstall filebrowser
-uninstall_filebrowser() {
+uninstall() {
     LOGD "开始卸载filebrowser..."
     systemctl stop filebrowser
     systemctl disable filebrowser
@@ -291,13 +290,13 @@ show_menu() {
         exit 0
         ;;
     1)
-        install_filebrowser && show_menu
+        install && show_menu
         ;;
     2)
-        update_filebrowser && show_menu
+        update && show_menu
         ;;
     3)
-        uninstall_filebrowser && show_menu
+        uninstall && show_menu
         ;;
     *)
         LOGE "请输入正确的选项 [0-10]"
