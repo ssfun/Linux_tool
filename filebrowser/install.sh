@@ -212,7 +212,7 @@ configuration_filebrowser_config() {
 {
     "address":"127.0.0.1",
     "database":"${FILE_DATABASE_PATH}/filebrowser.db",
-    "log":"/${FILE_LOG_PATH}/filebrowser.log",
+    "log":"${FILE_LOG_PATH}/filebrowser.log",
     "port":40333,
     "root":"${FILE_DATA_PATH}",
     "username":"admin"
