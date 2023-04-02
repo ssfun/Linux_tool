@@ -184,8 +184,8 @@ show_caddy_status() {
 show_caddy_running_status() {
     caddy_status_check
     if [[ $? == ${CADDY_STATUS_RUNNING} ]]; then
-        local runTime=$(systemctl status caddy | grep Active | awk '{for (i=5;i<=NF;i++)printf("%s ", $i);print ""}')
-        LOGI "caddy运行时长：${runTime}"
+        local caddy_runTime=$(systemctl status caddy | grep Active | awk '{for (i=5;i<=NF;i++)printf("%s ", $i);print ""}')
+        LOGI "caddy运行时长：${caddy_runTime}"
     else
         LOGE "caddy未运行"
     fi
@@ -237,8 +237,8 @@ show_sing_box_status() {
 show_sing_box_running_status() {
     sing_box_status_check
     if [[ $? == ${SING_BOX_STATUS_RUNNING} ]]; then
-        local runTime=$(systemctl status sing-box | grep Active | awk '{for (i=5;i<=NF;i++)printf("%s ", $i);print ""}')
-        LOGI "sing-box运行时长：${runTime}"
+        local sing_box_runTime=$(systemctl status sing-box | grep Active | awk '{for (i=5;i<=NF;i++)printf("%s ", $i);print ""}')
+        LOGI "sing-box运行时长：${sing_box_runTime}"
     else
         LOGE "sing-box未运行"
     fi
@@ -277,8 +277,8 @@ show_plex_status() {
         ;;
     1)
         echo -e "[INF] plex状态: ${green}已运行${plain}"
-        show_caddy_enable_status
-        show_caddy_running_status
+        show_plex_enable_status
+        show_plex_running_status
         ;;
     255)
         echo -e "[INF] plex状态: ${red}未安装${plain}"
@@ -290,8 +290,8 @@ show_plex_status() {
 show_plex_running_status() {
     plex_status_check
     if [[ $? == ${PLEX_STATUS_RUNNING} ]]; then
-        local runTime=$(systemctl status plexmediaserver | grep Active | awk '{for (i=5;i<=NF;i++)printf("%s ", $i);print ""}')
-        LOGI "plex运行时长：${runTime}"
+        local plex_runTime=$(systemctl status plexmediaserver | grep Active | awk '{for (i=5;i<=NF;i++)printf("%s ", $i);print ""}')
+        LOGI "plex运行时长：${plex_runTime}"
     else
         LOGE "plex未运行"
     fi
@@ -299,8 +299,8 @@ show_plex_running_status() {
 
 #show plex enable statusn
 show_plex_enable_status() {
-    local temp=$(systemctl is-enabled plexmediaserver)
-    if [[ "${temp}" == "enabled" ]]; then
+    local plex_enable_status_temp=$(systemctl is-enabled plexmediaserver)
+    if [[ "${plex_enable_status_temp}" == "enabled" ]]; then
         echo -e "[INF] plex是否开机自启: ${green}是${plain}"
     else
         echo -e "[INF] plex是否开机自启: ${red}否${plain}"
