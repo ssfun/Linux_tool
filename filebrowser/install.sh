@@ -136,12 +136,12 @@ show_filebrowser_status() {
     case $? in
     0)
         echo -e "[INF] filebrowser状态: ${yellow}未运行${plain}"
-        show_caddy_enable_status
+        show_filebrowser_enable_status
         ;;
     1)
         echo -e "[INF] filebrowser状态: ${green}已运行${plain}"
-        show_caddy_enable_status
-        show_caddy_running_status
+        show_filebrowser_enable_status
+        show_filebrowser_running_status
         ;;
     255)
         echo -e "[INF] filebrowser状态: ${red}未安装${plain}"
@@ -160,7 +160,7 @@ show_filebrowser_running_status() {
     fi
 }
 
-#show filebrowser enable status,enabled means caddy can auto start when system boot on
+#show filebrowser enable status,enabled means filebrowser can auto start when system boot on
 show_filebrowser_enable_status() {
     local temp=$(systemctl is-enabled filebrowser)
     if [[ x"${temp}" == x"enabled" ]]; then
