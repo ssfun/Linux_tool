@@ -31,7 +31,7 @@ CADDY_SERVICE='/etc/systemd/system/caddy.service'
 #caddy status define
 declare -r CADDY_STATUS_RUNNING=1
 declare -r CADDY_STATUS_NOT_RUNNING=0
-declare -r CADDY_STATUS_NOT_INSTALL=-1
+declare -r CADDY_STATUS_NOT_INSTALL=255
 
 #sing-box env
 SING_BOX_VERSION=''
@@ -44,7 +44,7 @@ SING_BOX_SERVICE='/etc/systemd/system/sing-box.service'
 #sing-box status define
 declare -r SING_BOX_STATUS_RUNNING=1
 declare -r SING_BOX_STATUS_NOT_RUNNING=0
-declare -r SING_BOX_STATUS_NOT_INSTALL=-1
+declare -r SING_BOX_STATUS_NOT_INSTALL=255
 
 #filebrowser env
 FILEBROWSER_VERSION=''
@@ -62,7 +62,7 @@ PLEX_SERVICE='/etc/systemd/system/plexmediaserver.service'
 #plex status define
 declare -r PLEX_STATUS_RUNNING=1
 declare -r PLEX_STATUS_NOT_RUNNING=0
-declare -r PLEX_STATUS_NOT_INSTALL=-1
+declare -r PLEX_STATUS_NOT_INSTALL=255
 
 #utils 
 function LOGE() {
@@ -174,7 +174,7 @@ show_caddy_status() {
         show_caddy_enable_status
         show_caddy_running_status
         ;;
-    -1)
+    255)
         echo -e "[INF] caddy状态: ${red}未安装${plain}"
         ;;
     esac
@@ -227,7 +227,7 @@ show_sing_box_status() {
         show_sing_box_enable_status
         show_sing_box_running_status
         ;;
-    -1)
+    255)
         echo -e "[INF] sing-box状态: ${red}未安装${plain}"
         ;;
     esac
@@ -280,7 +280,7 @@ show_plex_status() {
         show_caddy_enable_status
         show_caddy_running_status
         ;;
-    -1)
+    255)
         echo -e "[INF] plex状态: ${red}未安装${plain}"
         ;;
     esac
@@ -903,7 +903,7 @@ show_menu() {
         uninstall_plex && show_menu
         ;;
     *)
-        LOGE "请输入正确的选项 [0-10]"
+        LOGE "请输入正确的选项 [0-8]"
         ;;
     esac
 }
