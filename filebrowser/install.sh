@@ -22,17 +22,17 @@ OS=''
 ARCH=''
 
 #file config patch
-FILE_CONFIG_PATH='/usr/local/etc/file'
+FILE_CONFIG_PATH='/usr/local/etc/filebrowser'
 #log file save path
-FILE_LOG_PATH='/var/log/file'
+FILE_LOG_PATH='/var/log/filebrowser'
 #file save path
-FILE_DATA_PATH='/home/file'
+FILE_DATA_PATH='/home/filebrowser'
 #database file save path
-FILE_DATABASE_PATH='/opt/file'
+FILE_DATABASE_PATH='/opt/filebrowser'
 #binary install path
-FILE_BINARY='/usr/local/bin/file'
+FILE_BINARY='/usr/local/bin/filebrowser'
 #service install path
-FILE_SERVICE='/etc/systemd/system/file.service'
+FILE_SERVICE='/etc/systemd/system/filebrowser.service'
 
 #file status define
 declare -r FILE_STATUS_RUNNING=1
@@ -122,7 +122,7 @@ file_status_check() {
     if [[ ! -f "${FILE_SERVICE}" ]]; then
         return ${FILE_STATUS_NOT_INSTALL}
     fi
-    temp=$(systemctl status file | grep Active | awk '{print $3}' | cut -d "(" -f2 | cut -d ")" -f1)
+    temp=$(systemctl status filebrowser | grep Active | awk '{print $3}' | cut -d "(" -f2 | cut -d ")" -f1)
     if [[ x"${temp}" == x"running" ]]; then
         return ${FILE_STATUS_RUNNING}
     else
@@ -153,7 +153,7 @@ show_file_status() {
 show_file_running_status() {
     file_status_check
     if [[ $? == ${FILE_STATUS_RUNNING} ]]; then
-        local runTime=$(systemctl status file | grep Active | awk '{for (i=5;i<=NF;i++)printf("%s ", $i);print ""}')
+        local runTime=$(systemctl status filebrowser | grep Active | awk '{for (i=5;i<=NF;i++)printf("%s ", $i);print ""}')
         LOGI "file运行时长：${runTime}"
     else
         LOGE "file未运行"
@@ -162,7 +162,7 @@ show_file_running_status() {
 
 #show file enable status,enabled means file can auto start when system boot on
 show_file_enable_status() {
-    local temp=$(systemctl is-enabled file)
+    local temp=$(systemctl is-enabled filebrowser)
     if [[ x"${temp}" == x"enabled" ]]; then
         echo -e "[INF] file是否开机自启: ${green}是${plain}"
     else
@@ -177,9 +177,9 @@ download_file() {
     LATEST_FILE_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/file/file/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'))
     FILE_LINK="https://github.com/file/file/releases/download/${LATEST_FILE_VERSION}/linux-${ARCH}-file.tar.gz"
     cd `mktemp -d`
-    wget -nv "${FILE_LINK}" -O file.tar.gz
-    tar -zxvf file.tar.gz
-    mv file ${FILE_BINARY} && chmod +x ${FILE_BINARY}
+    wget -nv "${FILE_LINK}" -O filebrowser.tar.gz
+    tar -zxvf filebrowser.tar.gz
+    mv filebrowser ${FILE_BINARY} && chmod +x ${FILE_BINARY}
     LOGI "file 下载完毕"
 }
 
@@ -188,7 +188,7 @@ install_file_systemd_service() {
     LOGD "开始安装 file systemd 服务..."
     cat <<EOF >${FILE_SERVICE}
 [Unit]
-Description=file
+Description=filebrowser
 After=network-online.target
 Wants=network-online.target systemd-networkd-wait-online.service
 [Service]
@@ -200,8 +200,8 @@ ExecStart=${FILE_BINARY} -c ${FILE_CONFIG_PATH}/config.json
 WantedBy=multi-user.target
 EOF
     systemctl daemon-reload
-    systemctl enable file
-    LOGD "安装 file systemd 服务成功"
+    systemctl enable filebrowser
+    LOGD "安装 filebrowser systemd 服务成功"
 }
 
 #configuration file config
@@ -211,8 +211,8 @@ configuration_file_config() {
     cat <<EOF >${FILE_CONFIG_PATH}/config.json
 {
     "address":"127.0.0.1",
-    "database":"${FILE_DATABASE_PATH}/file.db",
-    "log":"${FILE_LOG_PATH}/file.log",
+    "database":"${FILE_DATABASE_PATH}/filebrowser.db",
+    "log":"${FILE_LOG_PATH}/filebrowser.log",
     "port":40333,
     "root":"${FILE_DATA_PATH}",
     "username":"admin"
@@ -236,7 +236,7 @@ install_file() {
 
 #update file
 update_file() {
-    LOGD "开始更新file..."
+    LOGD "开始更新filebrowser..."
     if [[ ! -f "${FILE_SERVICE}" ]]; then
         LOGE "当前系统未安装file,更新失败"
         show_menu
@@ -244,18 +244,18 @@ update_file() {
     os_check && arch_check
     systemctl stop file
     rm -f ${FILE_BINARY}
-    # getting the latest version of file"
+    # getting the latest version of filebrowser"
     download_file
     LOGI "file 启动成功"
-    systemctl restart file
+    systemctl restart filebrowser
     LOGI "file 已完成升级"
 }
 
 #uninstall file
 uninstall_file() {
-    LOGD "开始卸载file..."
-    systemctl stop file
-    systemctl disable file
+    LOGD "开始卸载filebrowser..."
+    systemctl stop filebrowser
+    systemctl disable filebrowser
     rm -f ${FILE_SERVICE}
     systemctl daemon-reload
     rm -f ${FILE_BINARY}
@@ -263,7 +263,7 @@ uninstall_file() {
     rm -rf ${FILE_LOG_PATH}
     rm -rf ${FILE_DATABASE_PATH}
     rm -rf ${FILE_DATA_PATH}
-    LOGI "卸载file成功"
+    LOGI "卸载filebrowser成功"
 }
 
 #show menu
