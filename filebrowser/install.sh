@@ -21,7 +21,7 @@ OS=''
 #arch
 ARCH=''
 
-#file config patch
+#filebrowser config patch
 FILE_CONFIG_PATH='/usr/local/etc/filebrowser'
 #log file save path
 FILE_LOG_PATH='/var/log/filebrowser'
@@ -34,7 +34,7 @@ FILE_BINARY='/usr/local/bin/filebrowser'
 #service install path
 FILE_SERVICE='/etc/systemd/system/filebrowser.service'
 
-#file status define
+#filebrowser status define
 declare -r FILE_STATUS_RUNNING=1
 declare -r FILE_STATUS_NOT_RUNNING=0
 declare -r FILE_STATUS_NOT_INSTALL=255
@@ -117,8 +117,8 @@ install_base() {
     fi
 }
 
-#file status check,-1 means didn't install,0 means failed,1 means running
-file_status_check() {
+#filebrowser status check,-1 means didn't install,0 means failed,1 means running
+filebrowser_status_check() {
     if [[ ! -f "${FILE_SERVICE}" ]]; then
         return ${FILE_STATUS_NOT_INSTALL}
     fi
@@ -130,62 +130,62 @@ file_status_check() {
     fi
 }
 
-#show file status
-show_file_status() {
-    file_status_check
+#show filebrowser status
+show_filebrowser_status() {
+    filebrowser_status_check
     case $? in
     0)
-        echo -e "[INF] file状态: ${yellow}未运行${plain}"
-        show_file_enable_status
+        echo -e "[INF] filebrowser状态: ${yellow}未运行${plain}"
+        show_filebrowser_enable_status
         ;;
     1)
-        echo -e "[INF] file状态: ${green}已运行${plain}"
-        show_file_enable_status
-        show_file_running_status
+        echo -e "[INF] filebrowser状态: ${green}已运行${plain}"
+        show_filebrowser_enable_status
+        show_filebrowser_running_status
         ;;
     255)
-        echo -e "[INF] file状态: ${red}未安装${plain}"
+        echo -e "[INF] filebrowser状态: ${red}未安装${plain}"
         ;;
     esac
 }
 
-#show file running status
-show_file_running_status() {
-    file_status_check
+#show filebrowser running status
+show_filebrowser_running_status() {
+    filebrowser_status_check
     if [[ $? == ${FILE_STATUS_RUNNING} ]]; then
         local runTime=$(systemctl status filebrowser | grep Active | awk '{for (i=5;i<=NF;i++)printf("%s ", $i);print ""}')
-        LOGI "file运行时长：${runTime}"
+        LOGI "filebrowser运行时长：${runTime}"
     else
-        LOGE "file未运行"
+        LOGE "filebrowser未运行"
     fi
 }
 
-#show file enable status,enabled means file can auto start when system boot on
-show_file_enable_status() {
+#show filebrowser enable status,enabled means filebrowser can auto start when system boot on
+show_filebrowser_enable_status() {
     local temp=$(systemctl is-enabled filebrowser)
     if [[ x"${temp}" == x"enabled" ]]; then
-        echo -e "[INF] file是否开机自启: ${green}是${plain}"
+        echo -e "[INF] filebrowser是否开机自启: ${green}是${plain}"
     else
-        echo -e "[INF] file是否开机自启: ${red}否${plain}"
+        echo -e "[INF] filebrowser是否开机自启: ${red}否${plain}"
     fi
 }
 
-#download file  binary
-download_file() {
-    LOGD "开始下载 file..."
-    # getting the latest version of file"
-    LATEST_FILE_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/file/file/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'))
-    FILE_LINK="https://github.com/file/file/releases/download/${LATEST_FILE_VERSION}/linux-${ARCH}-file.tar.gz"
+#download filebrowser  binary
+download_filebrowser() {
+    LOGD "开始下载 filebrowser..."
+    # getting the latest version of filebrowser"
+    LATEST_FILE_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/filebrowser/filebrowser/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'))
+    FILE_LINK="https://github.com/filebrowser/filebrowser/releases/download/${LATEST_FILE_VERSION}/linux-${ARCH}-filebrowser.tar.gz"
     cd `mktemp -d`
     wget -nv "${FILE_LINK}" -O filebrowser.tar.gz
     tar -zxvf filebrowser.tar.gz
     mv filebrowser ${FILE_BINARY} && chmod +x ${FILE_BINARY}
-    LOGI "file 下载完毕"
+    LOGI "filebrowser 下载完毕"
 }
 
-#install file systemd service
-install_file_systemd_service() {
-    LOGD "开始安装 file systemd 服务..."
+#install filebrowser systemd service
+install_filebrowser_systemd_service() {
+    LOGD "开始安装 filebrowser systemd 服务..."
     cat <<EOF >${FILE_SERVICE}
 [Unit]
 Description=filebrowser
@@ -204,9 +204,9 @@ EOF
     LOGD "安装 filebrowser systemd 服务成功"
 }
 
-#configuration file config
-configuration_file_config() {
-    LOGD "开始配置file配置文件..."
+#configuration filebrowser config
+configuration_filebrowser_config() {
+    LOGD "开始配置filebrowser配置文件..."
     # set config
     cat <<EOF >${FILE_CONFIG_PATH}/config.json
 {
@@ -218,41 +218,41 @@ configuration_file_config() {
     "username":"admin"
 }
 EOF
-    LOGD "file 配置文件完成"
+    LOGD "filebrowser 配置文件完成"
 }
 
-#install file
-install_file() {
-    LOGD "开始安装 file..."
+#install filebrowser
+install_filebrowser() {
+    LOGD "开始安装 filebrowser..."
     mkdir -p "${FILE_CONFIG_PATH}"
     mkdir -p "${FILE_LOG_PATH}"
     mkdir -p "${FILE_DATABASE_PATH}"
     mkdir -p "${FILE_DATA_PATH}"
-    download_file
-    install_file_systemd_service
-    configuration_file_config
-    LOGI "file 已完成安装"
+    download_filebrowser
+    install_filebrowser_systemd_service
+    configuration_filebrowser_config
+    LOGI "filebrowser 已完成安装"
 }
 
-#update file
-update_file() {
+#update filebrowser
+update_filebrowser() {
     LOGD "开始更新filebrowser..."
     if [[ ! -f "${FILE_SERVICE}" ]]; then
-        LOGE "当前系统未安装file,更新失败"
+        LOGE "当前系统未安装filebrowser,更新失败"
         show_menu
     fi
     os_check && arch_check
-    systemctl stop file
+    systemctl stop filebrowser
     rm -f ${FILE_BINARY}
     # getting the latest version of filebrowser"
-    download_file
-    LOGI "file 启动成功"
+    download_filebrowser
+    LOGI "filebrowser 启动成功"
     systemctl restart filebrowser
-    LOGI "file 已完成升级"
+    LOGI "filebrowser 已完成升级"
 }
 
-#uninstall file
-uninstall_file() {
+#uninstall filebrowser
+uninstall_filebrowser() {
     LOGD "开始卸载filebrowser..."
     systemctl stop filebrowser
     systemctl disable filebrowser
@@ -273,11 +273,11 @@ show_menu() {
   ————————————————
   ${green}0.${plain} 退出脚本
   ————————————————
-  ${green}1.${plain} 安装 file 服务
-  ${green}2.${plain} 更新 file 服务
-  ${green}3.${plain} 卸载 file 服务
+  ${green}1.${plain} 安装 filebrowser 服务
+  ${green}2.${plain} 更新 filebrowser 服务
+  ${green}3.${plain} 卸载 filebrowser 服务
  "
-    show_file_status
+    show_filebrowser_status
     echo && read -p "请输入选择[0-3]:" num
 
     case "${num}" in
@@ -285,13 +285,13 @@ show_menu() {
         exit 0
         ;;
     1)
-        install_file && show_menu
+        install_filebrowser() && show_menu
         ;;
     2)
-        update_file && show_menu
+        update_filebrowser() && show_menu
         ;;
     3)
-        uninstall_file && show_menu
+        uninstall_filebrowser() && show_menu
         ;;
     *)
         LOGE "请输入正确的选项 [0-10]"
