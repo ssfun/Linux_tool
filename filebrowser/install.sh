@@ -118,7 +118,7 @@ install_base() {
 }
 
 #filebrowser status check,-1 means didn't install,0 means failed,1 means running
-filebrowser_status_check() {
+function filebrowser_status_check() {
     if [[ ! -f "${FILE_SERVICE}" ]]; then
         return ${FILE_STATUS_NOT_INSTALL}
     fi
@@ -131,7 +131,7 @@ filebrowser_status_check() {
 }
 
 #show filebrowser status
-show_filebrowser_status() {
+function show_filebrowser_status() {
     filebrowser_status_check
     case $? in
     0)
@@ -150,7 +150,7 @@ show_filebrowser_status() {
 }
 
 #show filebrowser running status
-show_filebrowser_running_status() {
+function show_filebrowser_running_status() {
     filebrowser_status_check
     if [[ $? == ${FILE_STATUS_RUNNING} ]]; then
         local runTime=$(systemctl status filebrowser | grep Active | awk '{for (i=5;i<=NF;i++)printf("%s ", $i);print ""}')
@@ -161,7 +161,7 @@ show_filebrowser_running_status() {
 }
 
 #show filebrowser enable status,enabled means filebrowser can auto start when system boot on
-show_filebrowser_enable_status() {
+function show_filebrowser_enable_status() {
     local temp=$(systemctl is-enabled filebrowser)
     if [[ x"${temp}" == x"enabled" ]]; then
         echo -e "[INF] filebrowser是否开机自启: ${green}是${plain}"
@@ -171,7 +171,7 @@ show_filebrowser_enable_status() {
 }
 
 #download filebrowser  binary
-download_filebrowser() {
+function download_filebrowser() {
     LOGD "开始下载 filebrowser..."
     # getting the latest version of filebrowser"
     LATEST_FILE_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/filebrowser/filebrowser/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'))
@@ -184,7 +184,7 @@ download_filebrowser() {
 }
 
 #install filebrowser systemd service
-install_filebrowser_systemd_service() {
+function install_filebrowser_systemd_service() {
     LOGD "开始安装 filebrowser systemd 服务..."
     cat <<EOF >${FILE_SERVICE}
 [Unit]
@@ -205,7 +205,7 @@ EOF
 }
 
 #configuration filebrowser config
-configuration_filebrowser_config() {
+function configuration_filebrowser_config() {
     LOGD "开始配置filebrowser配置文件..."
     # set config
     cat <<EOF >${FILE_CONFIG_PATH}/config.json
@@ -222,7 +222,7 @@ EOF
 }
 
 #install filebrowser
-install_filebrowser() {
+function install_filebrowser() {
     LOGD "开始安装 filebrowser..."
     mkdir -p "${FILE_CONFIG_PATH}"
     mkdir -p "${FILE_LOG_PATH}"
@@ -235,7 +235,7 @@ install_filebrowser() {
 }
 
 #update filebrowser
-update_filebrowser() {
+function update_filebrowser() {
     LOGD "开始更新filebrowser..."
     if [[ ! -f "${FILE_SERVICE}" ]]; then
         LOGE "当前系统未安装filebrowser,更新失败"
@@ -252,7 +252,7 @@ update_filebrowser() {
 }
 
 #uninstall filebrowser
-uninstall_filebrowser() {
+function uninstall_filebrowser() {
     LOGD "开始卸载filebrowser..."
     systemctl stop filebrowser
     systemctl disable filebrowser
@@ -285,13 +285,13 @@ show_menu() {
         exit 0
         ;;
     1)
-        install_filebrowser()
+        install_filebrowser && show_menu
         ;;
     2)
-        update_filebrowser()
+        update_filebrowser && show_menu
         ;;
     3)
-        uninstall_filebrowser()
+        uninstall_filebrowser && show_menu
         ;;
     *)
         LOGE "请输入正确的选项 [0-10]"
