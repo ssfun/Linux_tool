@@ -285,13 +285,13 @@ show_menu() {
         exit 0
         ;;
     1)
-        install_filebrowser() && show_menu
+        install_filebrowser()
         ;;
     2)
-        update_filebrowser() && show_menu
+        update_filebrowser()
         ;;
     3)
-        uninstall_filebrowser() && show_menu
+        uninstall_filebrowser()
         ;;
     *)
         LOGE "请输入正确的选项 [0-10]"
