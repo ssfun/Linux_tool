@@ -174,7 +174,7 @@ function show_filebrowser_enable_status() {
 function download_filebrowser() {
     LOGD "开始下载 filebrowser..."
     # getting the latest version of filebrowser"
-    LATEST_FILE_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/filebrowser/filebrowser/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'))
+    LATEST_FILE_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/filebrowser/filebrowser/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
     FILE_LINK="https://github.com/filebrowser/filebrowser/releases/download/${LATEST_FILE_VERSION}/linux-${ARCH}-filebrowser.tar.gz"
     cd `mktemp -d`
     wget -nv "${FILE_LINK}" -O filebrowser.tar.gz
