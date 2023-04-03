@@ -1,124 +1,58 @@
 # Linux_tool
 
-## caddy + sing-box + filebrowser + plex
+## All in one
+>Caddy & Filebrowser | Sing-box (Trojan & Warp) | Plex Media Server
 ```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/menu.sh)
-```
-
-## caddy
-- install
-```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/caddy/caddy-install.sh)
-```
-- update
-```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/caddy/caddy-update.sh)
-```
-- remove
-```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/caddy/caddy-remove.sh)
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/main.sh)
 ```
 
-## filebrowser
-- install
+## Caddy
 ```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/filebrowser/filebrowser-install.sh)
-```
-- update
-```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/filebrowser/filebrowser-update.sh)
-```
-- remove
-```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/filebrowser/filebrowser-remove.sh)
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/caddy/caddy.sh)
 ```
 
-## trojan-go
-- install
+## Sing-box
 ```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/trojan/trojan-go-install.sh)
-```
-- update
-```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/trojan/trojan-go-update.sh)
-```
-- remove
-```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/trojan/trojan-go-remove.sh)
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/sing-box/sing-box.sh)
 ```
 
-## realm
-- install
+## Filebrowser
 ```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/realm/realm-install.sh)
-```
-- update
-```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/realm/realm-update.sh)
-```
-- remove
-```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/realm/realm-remove.sh)
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/filebrowser/filebrowser.sh)
 ```
 
-## gost
-- install
+## Plex Media Server
 ```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/gost/gost-install.sh)
-```
-- update
-```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/gost/gost-update.sh)
-```
-- remove
-```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/gost/gost-remove.sh)
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/plex/plex.sh)
 ```
 
-## plexdrive
-- install
+## Trojan-go
 ```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/plexdrive/plexdrive-install.sh)
-```
-- update
-```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/plexdrive/plexdrive-update.sh)
-```
-- remove
-```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/plexdrive/plexdrive-remove.sh)
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/trojan/trojan-go.sh)
 ```
 
-## oci-help
-- install
+## Realm
+```
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/realm/realm.sh)
+```
+
+## Gost
+```
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/gost/gost.sh)
+```
+
+## Plexdrive
+```
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/plexdrive/plexdrive.sh)
+```
+
+## OCI-Help
 ```
 bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/oci-help/oci-help-install.sh)
 ```
-- update
-```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/oci-help/oci-help-update.sh)
-```
-- remove
-```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/oci-help/oci-help-remove.sh)
-```
 
 ## ServerStatus Client
-- install
 ```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/serverstatus/client-install.sh)
-```
-- update
-```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/serverstatus/client-update.sh)
-```
-- remove
-```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/serverstatus/client-remove.sh)
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/serverstatus/client.sh)
 ```
 
-## Plex media server
-- install & update
-```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/plex/plex-install.sh)
-```
