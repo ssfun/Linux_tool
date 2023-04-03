@@ -36,23 +36,9 @@ bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/trojan/t
 bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/realm/realm.sh)
 ```
 
-## Gost
-```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/gost/gost.sh)
-```
-
 ## Plexdrive
 ```
 bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/plexdrive/plexdrive.sh)
 ```
 
-## OCI-Help
-```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/oci-help/oci-help-install.sh)
-```
-
-## ServerStatus Client
-```
-bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/serverstatus/client.sh)
-```
 
