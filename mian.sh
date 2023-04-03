@@ -860,14 +860,14 @@ show_menu() {
   ${green}1.${plain} 安装 caddy + sing-box
   ${green}2.${plain} 安装 caddy + sing-box + plex
   ————————————————
-  ${green}3.${plain} 更新 caddy & filebrowser 服务
-  ${green}4.${plain} 卸载 caddy & filebrowser 服务
+  ${green}3.${plain} 更新 caddy & filebrowser
+  ${green}4.${plain} 卸载 caddy & filebrowser
   ————————————————
-  ${green}5.${plain} 更新 sing-box 服务
-  ${green}6.${plain} 卸载 sing-box 服务
+  ${green}5.${plain} 更新 sing-box
+  ${green}6.${plain} 卸载 sing-box
   ————————————————
-  ${green}7.${plain} 更新 plex 服务
-  ${green}8.${plain} 卸载 plex 服务
+  ${green}7.${plain} 更新 plex
+  ${green}8.${plain} 卸载 plex
  "
     show_caddy_status
     show_sing_box_status
