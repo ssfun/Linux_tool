@@ -1,13 +1,13 @@
 #!/bin/bash
 
 #####################################################
-# This shell script is used for sing-box installation
+# ssfun's Linux Tool
 # Author: ssfun
-# Date: 2023-03-31
+# Date: 2023-04-01
 # Version: 1.0.0
 #####################################################
 
-#Some basic definitions
+#Basic definitions
 plain='\033[0m'
 red='\033[0;31m'
 blue='\033[1;34m'
@@ -15,18 +15,24 @@ pink='\033[1;35m'
 green='\033[0;32m'
 yellow='\033[0;33m'
 
-#os
-OS_RELEASE=''
+#os arch evn
+OS=''
+ARCH=''
 
-#arch
-OS_ARCH=''
+#sing-box env
+SING_BOX_VERSION=''
+SING_BOX_CONFIG_PATH='/usr/local/etc/sing-box'
+SING_BOX_LOG_PATH='/var/log/sing-box'
+SING_BOX_LIB_PATH='/var/lib/sing-box'
+SING_BOX_BINARY='/usr/local/bin/sing-box'
+SING_BOX_SERVICE='/etc/systemd/system/sing-box.service'
 
 #sing-box status define
 declare -r SING_BOX_STATUS_RUNNING=1
 declare -r SING_BOX_STATUS_NOT_RUNNING=0
 declare -r SING_BOX_STATUS_NOT_INSTALL=255
 
-#utils
+#utils 
 function LOGE() {
     echo -e "${red}[ERR] $* ${plain}"
 }
@@ -55,111 +61,85 @@ confirm() {
     fi
 }
 
-#Root check
+#root user check
 [[ $EUID -ne 0 ]] && LOGE "请使用root用户运行该脚本" && exit 1
 
 #System check
 os_check() {
     LOGI "检测当前系统中..."
     if [[ -f /etc/redhat-release ]]; then
-        OS_RELEASE="centos"
+        OS="centos"
     elif cat /etc/issue | grep -Eqi "debian"; then
-        OS_RELEASE="debian"
+        OS="debian"
     elif cat /etc/issue | grep -Eqi "ubuntu"; then
-        OS_RELEASE="ubuntu"
+        OS="ubuntu"
     elif cat /etc/issue | grep -Eqi "centos|red hat|redhat"; then
-        OS_RELEASE="centos"
+        OS="centos"
     elif cat /proc/version | grep -Eqi "debian"; then
-        OS_RELEASE="debian"
+        OS="debian"
     elif cat /proc/version | grep -Eqi "ubuntu"; then
-        OS_RELEASE="ubuntu"
+        OS="ubuntu"
     elif cat /proc/version | grep -Eqi "centos|red hat|redhat"; then
-        OS_RELEASE="centos"
+        OS="centos"
     else
         LOGE "系统检测错误,当前系统不支持!" && exit 1
     fi
-    LOGI "系统检测完毕,当前系统为:${OS_RELEASE}"
+    LOGI "系统检测完毕,当前系统为:${OS}"
 }
 
 #arch check
 arch_check() {
     LOGI "检测当前系统架构中..."
-    OS_ARCH=$(arch)
-    LOGI "当前系统架构为 ${OS_ARCH}"
-
-    if [[ ${OS_ARCH} == "x86_64" || ${OS_ARCH} == "x64" || ${OS_ARCH} == "amd64" ]]; then
-        OS_ARCH="amd64"
-    elif [[ ${OS_ARCH} == "aarch64" || ${OS_ARCH} == "arm64" ]]; then
-        OS_ARCH="arm64"
+    ARCH=$(arch)
+    LOGI "当前系统架构为 ${ARCH}"
+    if [[ ${ARCH} == "x86_64" || ${ARCH} == "x64" || ${ARCH} == "amd64" ]]; then
+        ARCH="amd64"
+    elif [[ ${ARCH} == "aarch64" || ${ARCH} == "arm64" ]]; then
+        ARCH="arm64"
     else
         LOGE "检测系统架构失败,当前系统架构不支持!" && exit 1
     fi
-    LOGI "系统架构检测完毕,当前系统架构为:${OS_ARCH}"
+    LOGI "系统架构检测完毕,当前系统架构为:${ARCH}"
+}
+
+#install some common utils
+install_base() {
+    if [[ ${OS} == "ubuntu" || ${OS} == "debian" ]]; then
+        if ! dpkg -s wget tar >/dev/null 2>&1; then
+            apt install wget tar -y
+        fi
+    elif [[ ${OS} == "centos" ]]; then
+        if ! rpm -q wget tar >/dev/null 2>&1; then
+            yum install wget tar -y
+        fi
+    fi
 }
 
 #sing-box status check,-1 means didn't install,0 means failed,1 means running
-status_check() {
-    if [[ ! -f "/etc/systemd/system/sing-box.service" ]]; then
+sing_box_status_check() {
+    if [[ ! -f "${SING_BOX_SERVICE}" ]]; then
         return ${SING_BOX_STATUS_NOT_INSTALL}
     fi
-    temp=$(systemctl status sing-box | grep Active | awk '{print $3}' | cut -d "(" -f2 | cut -d ")" -f1)
-    if [[ x"${temp}" == x"running" ]]; then
+    sing_box_status_temp=$(systemctl is-active sing-box)
+    if [[ "${sing_box_status_temp}" == "active" ]]; then
         return ${SING_BOX_STATUS_RUNNING}
     else
         return ${SING_BOX_STATUS_NOT_RUNNING}
     fi
 }
 
-#show sing-box version
-show_sing_box_version() {
-    LOGI "版本信息:/usr/local/bin/sing-box version)"
-}
-
-#show sing-box enable status,enabled means sing-box can auto start when system boot on
-show_enable_status() {
-    local temp=$(systemctl is-enabled sing-box)
-    if [[ x"${temp}" == x"enabled" ]]; then
-        echo -e "[INF] sing-box是否开机自启: ${green}是${plain}"
-    else
-        echo -e "[INF] sing-box是否开机自启: ${red}否${plain}"
-    fi
-}
-
-#show sing-box running status
-show_running_status() {
-    status_check
-    if [[ $? == ${SING_BOX_STATUS_RUNNING} ]]; then
-        local pid=$(pidof sing-box)
-        local runTime=$(systemctl status sing-box | grep Active | awk '{for (i=5;i<=NF;i++)printf("%s ", $i);print ""}')
-        local memCheck=$(cat /proc/${pid}/status | grep -i vmrss | awk '{print $2,$3}')
-        LOGI "#####################"
-        LOGI "进程ID:${pid}"
-        LOGI "运行时长：${runTime}"
-        LOGI "内存占用:${memCheck}"
-        LOGI "#####################"
-    else
-        LOGE "sing-box未运行"
-    fi
-}
-
 #show sing-box status
-show_status() {
-    status_check
+show_sing_box_status() {
+    sing_box_status_check
     case $? in
     0)
-        show_sing_box_version
         echo -e "[INF] sing-box状态: ${yellow}未运行${plain}"
-        show_enable_status
-        LOGI "配置文件路径:/usr/local/etc/sing-box/config.json"
-        LOGI "可执行文件路径:/usr/local/bin/sing-box"
+        show_sing_box_enable_status
         ;;
     1)
-        show_sing_box_version
         echo -e "[INF] sing-box状态: ${green}已运行${plain}"
-        show_enable_status
-        show_running_status
-        LOGI "配置文件路径:/usr/local/etc/sing-box/config.json"
-        LOGI "可执行文件路径:/usr/local/bin/sing-box"
+        show_sing_box_enable_status
+        show_sing_box_running_status
         ;;
     255)
         echo -e "[INF] sing-box状态: ${red}未安装${plain}"
@@ -167,42 +147,54 @@ show_status() {
     esac
 }
 
-#install some common utils
-install_base() {
-    if [[ ${OS_RELEASE} == "ubuntu" || ${OS_RELEASE} == "debian" ]]; then
-        apt install wget tar -y
-    elif [[ ${OS_RELEASE} == "centos" ]]; then
-        yum install wget tar -y
+#show sing-box running status
+show_sing_box_running_status() {
+    sing_box_status_check
+    if [[ $? == ${SING_BOX_STATUS_RUNNING} ]]; then
+        local sing_box_runTime=$(systemctl status sing-box | grep Active | awk '{for (i=5;i<=NF;i++)printf("%s ", $i);print ""}')
+        LOGI "sing-box运行时长：${sing_box_runTime}"
+    else
+        LOGE "sing-box未运行"
+    fi
+}
+
+#show sing-box enable status
+show_sing_box_enable_status() {
+    local sing_box_enable_status_temp=$(systemctl is-enabled sing-box)
+    if [[ "${sing_box_enable_status_temp}" == "enabled" ]]; then
+        echo -e "[INF] sing-box是否开机自启: ${green}是${plain}"
+    else
+        echo -e "[INF] sing-box是否开机自启: ${red}否${plain}"
     fi
 }
 
 #download sing-box  binary
 download_sing-box() {
     LOGD "开始下载 sing-box..."
-    os_check && arch_check && install_base
-     # getting the latest version of sing-box"
+    # getting the latest version of sing-box"
     LATEST_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
     LATEST_NUM="$(wget -qO- -t1 -T2 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/v//g;s/,//g;s/ //g')"
-    LINK="https://github.com/SagerNet/sing-box/releases/download/${LATEST_VERSION}/sing-box-${LATEST_NUM}-linux-${OS_ARCH}.tar.gz"
+    LINK="https://github.com/SagerNet/sing-box/releases/download/${LATEST_VERSION}/sing-box-${LATEST_NUM}-linux-${ARCH}.tar.gz"
+    cd `mktemp -d`
     wget -nv "${LINK}" -O sing-box.tar.gz
     tar -zxvf sing-box.tar.gz --strip-components=1
-    mv sing-box /usr/local/bin/sing-box && chmod +x /usr/local/bin/sing-box
+    mv sing-box ${SING_BOX_BINARY} && chmod +x ${SING_BOX_BINARY}
     LOGI "sing-box 下载完毕"
 }
 
-#install systemd service
-install_systemd_service() {
+#install sing-box systemd service
+install_sing_box_systemd_service() {
     LOGD "开始安装 sing-box systemd 服务..."
-    cat <<EOF >/etc/systemd/system/sing-box.service
+    cat <<EOF >${SING_BOX_SERVICE}
 [Unit]
 Description=sing-box service
 Documentation=https://sing-box.sagernet.org
 After=network.target nss-lookup.target
 [Service]
-WorkingDirectory=/var/lib/sing-box
+WorkingDirectory=${SING_BOX_LIB_PATH}
 CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH
 AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH
-ExecStart=/usr/local/bin/sing-box run -c /usr/local/etc/sing-box/config.json
+ExecStart=${SING_BOX_BINARY} run -c ${SING_BOX_CONFIG_PATH}/config.json
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 RestartSec=10s
@@ -215,102 +207,33 @@ EOF
     LOGD "安装 sing-box systemd 服务成功"
 }
 
-#configuration config
-configuration_config() {
+#configuration sing-box config
+configuration_sing_box_config() {
     LOGD "开始配置sing-box配置文件..."
-    # set config.json
-    read -p "请输入 trojan 网站:" trojanhost
-        [ -z "${trojanhost}" ]
-    read -p "请输入 trojan 端口:" trojanport
-        [ -z "${trojanport}" ]
-    read -p "请输入 trojan 密码:" trojanpswd
-        [ -z "${trojanpswd}" ]
-    read -p "请输入 ws path:" wspath
-        [ -z "${wspath}" ]
-    read -p "请输入 vmess 端口:" vmessport
-        [ -z "${vmessport}" ]    
-    read -p "请输入 vmess UUID:" vmessuuid
-        [ -z "${vmessuuid}" ]  
-    read -p "请输入 warp ipv4:" warpipv4
-        [ -z "${warpipv4}" ]  
-    read -p "请输入 warp ipv6:" warpipv6
-        [ -z "${warpipv6}" ]  
-    read -p "请输入 warp private key:" warpprivatekey
-        [ -z "${warpprivatekey}" ]  
-    read -p "请输入 warp public key:" warppublickey
-        [ -z "${warppublickey}" ]  
-    read -p "请输入 warp reserved:" warpreserved
-        [ -z "${warpreserved}" ]  
-    cat <<EOF >/usr/local/etc/sing-box/config.json
+    cat <<EOF >${SING_BOX_CONFIG_PATH}/config.json
 {
     "log":{
         "level":"info",
-        "output":"/var/log/sing-box/sing-box.log",
+        "output":"${SING_BOX_LOG_PATH}/sing-box.log",
         "timestamp":true
     },
     "inbounds":[
         {
             "type":"trojan",
             "tag":"trojan-in",
-            "listen":"0.0.0.0",
-            "listen_port":$trojanport,
+            "listen":"127.0.0.1",
+            "listen_port":$tport,
             "tcp_fast_open":true,
             "udp_fragment":true,
             "sniff":true,
             "sniff_override_destination":false,
             "udp_timeout":300,
             "proxy_protocol":true,
-            "proxy_protocol_accept_no_header":false,
+            "proxy_protocol_accept_no_header":true,
             "users":[
                 {
                     "name":"trojan",
-                    "password":"$trojanpswd"
-                }
-            ],
-            "tls":{
-                "enabled":true,
-                "server_name":"$trojanhost",
-                "alpn":[
-                    "h2",
-                    "http/1.1"
-                ],
-                "min_version":"1.2",
-                "max_version":"1.3",
-                "cipher_suites":[
-                    "TLS_CHACHA20_POLY1305_SHA256",
-                    "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
-                    "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256"
-                ],
-                "certificate_path":"/home/tls/certificates/acme-v02.api.letsencrypt.org-directory/$trojanhost/$trojanhost.crt",
-                "key_path":"/home/tls/certificates/acme-v02.api.letsencrypt.org-directory/$trojanhost/$trojanhost.key"
-            },
-            "fallback":{
-                "server":"127.0.0.1",
-                "server_port":404
-            },
-            "transport":{
-                "type":"ws",
-                "path":"/$wspath",
-                "max_early_data":0,
-                "early_data_header_name":"Sec-WebSocket-Protocol"
-            }
-        },
-        {
-            "type":"vmess",
-            "tag":"vmess-in",
-            "listen":"0.0.0.0",
-            "listen_port":$vmessport,
-            "tcp_fast_open":true,
-            "udp_fragment":true,
-            "sniff":true,
-            "sniff_override_destination":false,
-            "proxy_protocol":true,
-            "proxy_protocol_accept_no_header":false,
-            "users":[
-                {
-                    "name":"vmess",
-                    "uuid":"$vmessuuid",
-                    "alterId":0
+                    "password":"$tpswd"
                 }
             ],
             "transport":{
@@ -332,11 +255,11 @@ configuration_config() {
             "server":"engage.cloudflareclient.com",
             "server_port":2408,
             "local_address":[
-                "$warpipv4",
-                "$warpipv6"
+                "172.16.0.2/32",
+                "$warpv6"
             ],
-            "private_key":"$warpprivatekey",
-            "peer_public_key":"$warppublickey",
+            "private_key":"$warpkey",
+            "peer_public_key":"bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
             "reserved":[$warpreserved],
             "mtu":1280
         }
@@ -344,14 +267,9 @@ configuration_config() {
     "route":{
         "rules":[
             {
-                "inbound":[
-                    "trojan-in",
-                    "vmess-in"
-                ],
-                "domain_suffix":[
-                    "openai.com",
-                    "ai.com"
-                ],
+                "inbound":["trojan-in"],
+                "domain_suffix":["openai.com","ai.com"],
+                "ip_cidr": ["1.1.1.1/32"],
                 "outbound":"wireguard-out"
             }
         ],
@@ -365,32 +283,25 @@ EOF
 #install sing-box  
 install_sing-box() {
     LOGD "开始安装 sing-box..."
-    if [[ -f "/etc/systemd/system/sing-box.service" ]]; then
-        LOGE "当前系统已安装 sing-box,请使用更新命令"
-        show_menu
-    fi
-    os_check && arch_check && install_base
-    mkdir -p "/usr/local/etc/sing-box"
-    mkdir -p "/var/log/sing-box"
-    mkdir -p "/var/lib/sing-box"
+    mkdir -p "${SING_BOX_CONFIG_PATH}"
+    mkdir -p "${SING_BOX_LOG_PATH}"
+    mkdir -p "${SING_BOX_LIB_PATH}"
     download_sing-box
-    install_systemd_service
-    configuration_config
-    LOGI "sing-box 启动成功"
-    systemctl start sing-box
+    install_sing_box_systemd_service
+    configuration_sing_box_config
     LOGI "sing-box 已完成安装"
 }
-
 
 #update sing-box
 update_sing-box() {
     LOGD "开始更新sing-box..."
-    if [[ ! -f "/etc/systemd/system/sing-box.service" ]]; then
+    if [[ ! -f "${SING_BOX_SERVICE}" ]]; then
         LOGE "当前系统未安装sing-box,更新失败"
         show_menu
     fi
+    os_check && arch_check
     systemctl stop sing-box
-    rm -f /usr/local/bin/sing-box
+    rm -f ${SING_BOX_BINARY}
     # getting the latest version of sing-box"
     download_sing-box
     LOGI "sing-box 启动成功"
@@ -401,35 +312,34 @@ update_sing-box() {
 #uninstall sing-box
 uninstall_sing-box() {
     LOGD "开始卸载sing-box..."
-    if [[ ! -f "/etc/systemd/system/sing-box.service" ]]; then
-        LOGE "当前系统未安装sing-box,无需卸载"
-        show_menu
-    fi
     systemctl stop sing-box
     systemctl disable sing-box
-    rm -f /etc/systemd/system/sing-box.service
+    rm -f ${SING_BOX_SERVICE}
     systemctl daemon-reload
-    rm -f /usr/local/bin/sing-box
-    rm -rf /usr/local/etc/sing-box
-    rm -rf /var/log/sing-box
+    rm -f ${SING_BOX_BINARY}
+    rm -rf ${SING_BOX_CONFIG_PATH}
+    rm -rf ${SING_BOX_LOG_PATH}
+    rm -rf ${SING_BOX_LIB_PATH}
     LOGI "卸载sing-box成功"
 }
-
 
 #show menu
 show_menu() {
     echo -e "
-  ${green}sing-box 管理脚本${plain}
+  ${green}Sing-box (trojan+warp) 管理脚本${plain}
   ————————————————
-  
-  ${green}1.${plain} 安装 sing-box 服务
-  ${green}2.${plain} 更新 sing-box 服务
-  ${green}3.${plain} 卸载 sing-box 服务
-  
-  ${green}0.${plain} 退出 sing-box 脚本
+  ${green}0.${plain} 退出脚本
+  ————————————————
+  ${green}1.${plain} 安装 sing-box
+  ${green}2.${plain} 更新 sing-box
+  ${green}3.${plain} 卸载 sing-box
+  ————————————————
+  ${green}4.${plain} 修改 sing-box 配置
+  ${green}5.${plain} 重启 sing-box 服务
+  ${green}6.${plain} 查看 sing-box 日志
  "
-    show_status
-    echo && read -p "请输入选择[0-3]:" num
+    show_sing_box_status
+    echo && read -p "请输入选择[0-6]:" num
 
     case "${num}" in
     0)
@@ -444,8 +354,17 @@ show_menu() {
     3)
         uninstall_sing-box && show_menu
         ;;
+    4)
+        nano ${SING_BOX_CONFIG_PATH}/config.json && show_menu
+        ;;
+    5)
+        systemctl restart sing-box && show_menu
+        ;;
+    6)
+        systemctl status sing-box && show_menu
+        ;;
     *)
-        LOGE "请输入正确的选项 [0-3]"
+        LOGE "请输入正确的选项 [0-6]"
         ;;
     esac
 }
