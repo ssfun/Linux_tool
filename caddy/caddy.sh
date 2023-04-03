@@ -323,7 +323,21 @@ EOF
 
 #install caddy
 install_caddy_without_plex() {
-    LOGD "开始安装 caddy..."
+    LOGD "开始安装 caddy"
+    if [[ -f "${CADDY_SERVICE}" ]]; then
+        LOGE "当前系统已安装 caddy,请使用更新命令"
+        show_menu
+    fi
+    LOGI "开始安装"
+    read -p "请输入申请证书邮箱:" mail
+        [ -z "${mail}" ]
+    read -p "请输入 trojan 网站:" thost
+        [ -z "${thost}" ]
+    read -p "请输入 trojan 端口:" tport
+        [ -z "${tport}" ]
+    read -p "请输入 ws path:" wspath
+        [ -z "${wspath}" ]
+    os_check && arch_check && install_base
     mkdir -p "${CADDY_CONFIG_PATH}"
     mkdir -p "${CADDY_WWW_PATH}"
     mkdir -p "${CADDY_LOG_PATH}"
@@ -335,7 +349,23 @@ install_caddy_without_plex() {
 
 #install caddy with plex
 install_caddy_with_plex() {
-    LOGD "开始安装 caddy..."
+    LOGD "开始安装 caddy"
+    if [[ -f "${CADDY_SERVICE}" ]]; then
+        LOGE "当前系统已安装 caddy,请使用更新命令"
+        show_menu
+    fi
+    LOGI "开始安装"
+    read -p "请输入申请证书邮箱:" mail
+        [ -z "${mail}" ]
+    read -p "请输入 trojan 网站:" thost
+        [ -z "${thost}" ]
+    read -p "请输入 plex 网站:" phost
+        [ -z "${phost}" ]
+    read -p "请输入 trojan 端口:" tport
+        [ -z "${tport}" ]
+    read -p "请输入 ws path:" wspath
+        [ -z "${wspath}" ]
+    os_check && arch_check && install_base
     mkdir -p "${CADDY_CONFIG_PATH}"
     mkdir -p "${CADDY_WWW_PATH}"
     mkdir -p "${CADDY_LOG_PATH}"
@@ -352,7 +382,7 @@ update_caddy() {
         LOGE "当前系统未安装caddy,更新失败"
         show_menu
     fi
-    os_check && arch_check
+    os_check && arch_check && install_base
     systemctl stop caddy
     rm -f ${CADDY_BINARY}
     # getting the latest version of caddy"
