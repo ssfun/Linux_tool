@@ -21,7 +21,7 @@ ARCH=''
 
 #plexdrive env
 PLEXDRIVE_VERSION=''
-PLEXDRIVE_CONFIG_PATH='/home/.plexdriv'
+PLEXDRIVE_CONFIG_PATH='/home/.plexdrive'
 PLEXDRIVE_MOUNT_PATH='/var/log/plexdrive'
 PLEXDRIVE_BINARY='/usr/local/bin/plexdrive'
 PLEXDRIVE_SERVICE='/etc/systemd/system/plexdrive.service'
