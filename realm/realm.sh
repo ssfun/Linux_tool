@@ -270,6 +270,7 @@ uninstall_realm() {
     systemctl daemon-reload
     rm -f ${REALM_BINARY}
     rm -rf ${REALM_CONFIG_PATH}
+    rm -rf ${REALM_LOG_PATH}
     LOGI "卸载realm成功"
 }
 
