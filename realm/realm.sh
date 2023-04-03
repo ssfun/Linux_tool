@@ -1,0 +1,326 @@
+#!/bin/bash
+
+#####################################################
+# ssfun's Linux Tool
+# Author: ssfun
+# Date: 2023-04-01
+# Version: 1.0.0
+#####################################################
+
+#Basic definitions
+plain='\033[0m'
+red='\033[0;31m'
+blue='\033[1;34m'
+pink='\033[1;35m'
+green='\033[0;32m'
+yellow='\033[0;33m'
+
+#os arch evn
+OS=''
+ARCH=''
+
+#realm env
+REALM_VERSION=''
+REALM_CONFIG_PATH='/usr/local/etc/realm'
+REALM_LOG_PATH='/var/log/realm'
+REALM_BINARY='/usr/local/bin/realm'
+REALM_SERVICE='/etc/systemd/system/realm.service'
+
+#realm status define
+declare -r REALM_STATUS_RUNNING=1
+declare -r REALM_STATUS_NOT_RUNNING=0
+declare -r REALM_STATUS_NOT_INSTALL=255
+
+#utils 
+function LOGE() {
+    echo -e "${red}[ERR] $* ${plain}"
+}
+
+function LOGI() {
+    echo -e "${green}[INF] $* ${plain}"
+}
+
+function LOGD() {
+    echo -e "${yellow}[DEG] $* ${plain}"
+}
+
+confirm() {
+    if [[ $# > 1 ]]; then
+        echo && read -p "$1 [默认$2]: " temp
+        if [[ x"${temp}" == x"" ]]; then
+            temp=$2
+        fi
+    else
+        read -p "$1 [y/n]: " temp
+    fi
+    if [[ x"${temp}" == x"y" || x"${temp}" == x"Y" ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+#root user check
+[[ $EUID -ne 0 ]] && LOGE "请使用root用户运行该脚本" && exit 1
+
+#System check
+os_check() {
+    LOGI "检测当前系统中..."
+    if [[ -f /etc/redhat-release ]]; then
+        OS="centos"
+    elif cat /etc/issue | grep -Eqi "debian"; then
+        OS="debian"
+    elif cat /etc/issue | grep -Eqi "ubuntu"; then
+        OS="ubuntu"
+    elif cat /etc/issue | grep -Eqi "centos|red hat|redhat"; then
+        OS="centos"
+    elif cat /proc/version | grep -Eqi "debian"; then
+        OS="debian"
+    elif cat /proc/version | grep -Eqi "ubuntu"; then
+        OS="ubuntu"
+    elif cat /proc/version | grep -Eqi "centos|red hat|redhat"; then
+        OS="centos"
+    else
+        LOGE "系统检测错误,当前系统不支持!" && exit 1
+    fi
+    LOGI "系统检测完毕,当前系统为:${OS}"
+}
+
+#arch check
+arch_check() {
+    LOGI "检测当前系统架构中..."
+    ARCH=$(arch)
+    LOGI "当前系统架构为 ${ARCH}"
+    if [[ ${ARCH} == "x86_64" || ${ARCH} == "x64" || ${ARCH} == "amd64" ]]; then
+        ARCH="amd64"
+    elif [[ ${ARCH} == "aarch64" || ${ARCH} == "arm64" ]]; then
+        ARCH="arm64"
+    else
+        LOGE "检测系统架构失败,当前系统架构不支持!" && exit 1
+    fi
+    LOGI "系统架构检测完毕,当前系统架构为:${ARCH}"
+}
+
+#install some common utils
+install_base() {
+    if [[ ${OS} == "ubuntu" || ${OS} == "debian" ]]; then
+        if ! dpkg -s wget tar >/dev/null 2>&1; then
+            apt install wget tar -y
+        fi
+    elif [[ ${OS} == "centos" ]]; then
+        if ! rpm -q wget tar >/dev/null 2>&1; then
+            yum install wget tar -y
+        fi
+    fi
+}
+
+#realm status check,-1 means didn't install,0 means failed,1 means running
+realm_status_check() {
+    if [[ ! -f "${REALM_SERVICE}" ]]; then
+        return ${REALM_STATUS_NOT_INSTALL}
+    fi
+    realm_status_temp=$(systemctl is-active realm)
+    if [[ "${realm_status_temp}" == "active" ]]; then
+        return ${REALM_STATUS_RUNNING}
+    else
+        return ${REALM_STATUS_NOT_RUNNING}
+    fi
+}
+
+#show realm status
+show_realm_status() {
+    realm_status_check
+    case $? in
+    0)
+        echo -e "[INF] realm状态: ${yellow}未运行${plain}"
+        show_realm_enable_status
+        ;;
+    1)
+        echo -e "[INF] realm状态: ${green}已运行${plain}"
+        show_realm_enable_status
+        show_realm_running_status
+        ;;
+    255)
+        echo -e "[INF] realm状态: ${red}未安装${plain}"
+        ;;
+    esac
+}
+
+#show realm running status
+show_realm_running_status() {
+    realm_status_check
+    if [[ $? == ${REALM_STATUS_RUNNING} ]]; then
+        local realm_runTime=$(systemctl status realm | grep Active | awk '{for (i=5;i<=NF;i++)printf("%s ", $i);print ""}')
+        LOGI "realm运行时长：${realm_runTime}"
+    else
+        LOGE "realm未运行"
+    fi
+}
+
+#show realm enable status
+show_realm_enable_status() {
+    local realm_enable_status_temp=$(systemctl is-enabled realm)
+    if [[ "${realm_enable_status_temp}" == "enabled" ]]; then
+        echo -e "[INF] realm是否开机自启: ${green}是${plain}"
+    else
+        echo -e "[INF] realm是否开机自启: ${red}否${plain}"
+    fi
+}
+
+#download realm  binary
+download_realm() {
+    LOGD "开始下载 realm..."
+    # getting the latest version of realm"
+    LATEST_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/zhboner/realm/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
+    LINK="https://github.com/zhboner/realm/releases/download/${LATEST_VERSION}/realm-${ARCH}-unknown-linux-gnu.tar.gz"
+    cd `mktemp -d`
+    wget -nv "${LINK}" -O realm.tar.gz
+    tar -zxvf realm.tar.gz
+    mv realm ${REALM_BINARY} && chmod +x ${REALM_BINARY}
+    LOGI "realm 下载完毕"
+}
+
+#install realm systemd service
+install_realm_systemd_service() {
+    LOGD "开始安装 realm systemd 服务..."
+    cat <<EOF >${REALM_SERVICE}
+[Unit]
+Description=realm
+After=network-online.target
+Wants=network-online.target systemd-networkd-wait-online.service
+[Service]
+Type=simple
+User=root
+Restart=on-failure
+RestartSec=5s
+ExecStart=${REALM_BINARY} -c ${REALM_CONFIG_PATH}/config.toml
+[Install]
+WantedBy=multi-user.target
+EOF
+    systemctl daemon-reload
+    systemctl enable realm
+    LOGD "安装 realm systemd 服务成功"
+}
+
+#configuration realm config
+configuration_realm_config() {
+    LOGD "开始配置realm配置文件..."
+    cat <<EOF >${REALM_CONFIG_PATH}/config.toml
+[log]
+level = "warn"
+output = "${REALM_LOG_PATH}/realm.log"
+[network]
+use_udp = true
+zero_copy = true
+[[endpoints]]
+listen = "$lhost:$lport"
+remote = "$rhost:$rport"
+EOF
+    LOGD "realm 配置文件完成"
+}
+
+#install realm  
+install_realm() {
+    LOGD "开始安装 realm"
+    if [[ -f "${REALM_SERVICE}" ]]; then
+        LOGE "当前系统已安装 realm,请使用更新命令"
+        show_menu
+    fi
+    LOGI "开始安装"
+    read -p "请输入本地需要监听的地址,(ipv6:"[::0]";ipv4:"0.0.0.0"):" lhost
+        [ -z "${lhost}" ]
+    read -p "请输入本地需要监听的端口:" lport
+        [ -z "${lport}" ]
+    read -p "请输入需要转发的地址:" rhost
+        [ -z "${rhost}" ]
+    read -p "请输入需要转发的端口:" rport
+        [ -z "${rport}" ]
+    os_check && arch_check && install_base
+    mkdir -p "${REALM_CONFIG_PATH}"
+    mkdir -p "${REALM_LOG_PATH}"
+    download_realm
+    install_realm_systemd_service
+    configuration_realm_config
+    LOGI "realm 已完成安装"
+}
+
+#update realm
+update_realm() {
+    LOGD "开始更新realm..."
+    if [[ ! -f "${REALM_SERVICE}" ]]; then
+        LOGE "当前系统未安装realm,更新失败"
+        show_menu
+    fi
+    os_check && arch_check && install_base
+    systemctl stop realm
+    rm -f ${REALM_BINARY}
+    # getting the latest version of realm"
+    download_realm
+    LOGI "realm 启动成功"
+    systemctl restart realm
+    LOGI "realm 已完成升级"
+}
+
+#uninstall realm
+uninstall_realm() {
+    LOGD "开始卸载realm..."
+    systemctl stop realm
+    systemctl disable realm
+    rm -f ${REALM_SERVICE}
+    systemctl daemon-reload
+    rm -f ${REALM_BINARY}
+    rm -rf ${REALM_CONFIG_PATH}
+    LOGI "卸载realm成功"
+}
+
+#show menu
+show_menu() {
+    echo -e "
+  ${green}Trojan-go 管理脚本${plain}
+  ————————————————
+  ${green}0.${plain} 退出脚本
+  ————————————————
+  ${green}1.${plain} 安装 realm
+  ${green}2.${plain} 更新 realm
+  ${green}3.${plain} 卸载 realm
+  ————————————————
+  ${green}4.${plain} 修改 realm 配置
+  ${green}5.${plain} 重启 realm 服务
+  ${green}6.${plain} 查看 realm 日志
+ "
+    show_realm_status
+    echo && read -p "请输入选择[0-6]:" num
+
+    case "${num}" in
+    0)
+        exit 0
+        ;;
+    1)
+        install_realm && show_menu
+        ;;
+    2)
+        update_realm && show_menu
+        ;;
+    3)
+        uninstall_realm && show_menu
+        ;;
+    4)
+        nano ${REALM_CONFIG_PATH}/config.toml && show_menu
+        ;;
+    5)
+        systemctl restart realm && show_menu
+        ;;
+    6)
+        systemctl status realm && show_menu
+        ;;
+    *)
+        LOGE "请输入正确的选项 [0-6]"
+        ;;
+    esac
+}
+
+main(){
+    show_menu
+}
+
+main $*
