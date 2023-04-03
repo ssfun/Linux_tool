@@ -277,7 +277,7 @@ uninstall_realm() {
 #show menu
 show_menu() {
     echo -e "
-  ${green}Trojan-go 管理脚本${plain}
+  ${green}Realm 管理脚本${plain}
   ————————————————
   ${green}0.${plain} 退出脚本
   ————————————————
