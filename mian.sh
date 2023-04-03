@@ -830,10 +830,6 @@ install_all_with_plex() {
         [ -z "${tpswd}" ]
     read -p "请输入 ws path:" wspath
         [ -z "${wspath}" ]
-    read -p "请输入 vmess 端口:" vport
-        [ -z "${vport}" ]    
-    read -p "请输入 vmess UUID:" vuuid
-        [ -z "${vuuid}" ]  
     read -p "请输入 warp ipv6:" warpv6
         [ -z "${warpv6}" ]  
     read -p "请输入 warp private key:" warpkey
