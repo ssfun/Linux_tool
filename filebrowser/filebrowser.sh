@@ -224,6 +224,7 @@ EOF
 #install filebrowser
 install_fb() {
     LOGD "开始安装 filebrowser..."
+    os_check && arch_check && install_base
     mkdir -p "${FILEBROWSER_CONFIG_PATH}"
     mkdir -p "${FILEBROWSER_LOG_PATH}"
     mkdir -p "${FILEBROWSER_DATABASE_PATH}"
@@ -241,7 +242,7 @@ update_fb() {
         LOGE "当前系统未安装 filebrowser,更新失败"
         show_menu
     fi
-    os_check && arch_check
+    os_check && arch_check && install_base
     systemctl stop filebrowser
     rm -f ${FILEBROWSER_BINARY}
     # getting the latest version of filebrowser"
