@@ -452,7 +452,7 @@ EOF
 {
     "address":"127.0.0.1",
     "database":"${FILEBROWSER_DATABASE_PATH}/filebrowser.db",
-    "log":"/${FILEBROWSER_LOG_PATH}/filebrowser.log",
+    "log":"${FILEBROWSER_LOG_PATH}/filebrowser.log",
     "port":40333,
     "root":"${FILEBROWSER_DATA_PATH}",
     "username":"admin"
@@ -526,7 +526,7 @@ EOF
 {
     "address":"127.0.0.1",
     "database":"${FILEBROWSER_DATABASE_PATH}/filebrowser.db",
-    "log":"/${FILEBROWSER_LOG_PATH}/filebrowser.log",
+    "log":"${FILEBROWSER_LOG_PATH}/filebrowser.log",
     "port":40333,
     "root":"${FILEBROWSER_DATA_PATH}",
     "username":"admin"
@@ -812,9 +812,6 @@ install_all_with_plex() {
         show_menu
     elif [[ -f "${FILEBROWSER_SERVICE}" ]]; then
         LOGE "当前系统已安装 filebrowser,请使用更新命令"
-        show_menu
-    elif [[ -f "${PLEX_SERVICE}" ]]; then
-        LOGE "当前系统已安装 plex,请使用更新命令"
         show_menu
     fi
     LOGI "开始安装"
