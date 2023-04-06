@@ -344,7 +344,7 @@ install_caddy_without_plex() {
     download_caddy
     install_caddy_systemd_service
     configuration_caddy_config
-    LOGI "caddy & filebrowser已完成安装"
+    LOGI "caddy 已完成安装"
 }
 
 #install caddy with plex
