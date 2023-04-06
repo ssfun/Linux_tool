@@ -834,7 +834,7 @@ install_all_with_plex() {
     read -p "请输入 warp reserved:" warpreserved
         [ -z "${warpreserved}" ]  
     os_check && arch_check && install_base
-    install_caddy_with_caddy
+    install_caddy_with_plex
     install_sing-box
     install_plex
     systemctl start caddy
