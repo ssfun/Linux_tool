@@ -212,7 +212,7 @@ configuration_fb_config() {
 {
     "address":"127.0.0.1",
     "database":"${FILEBROWSER_DATABASE_PATH}/filebrowser.db",
-    "log":"/${FILEBROWSER_LOG_PATH}/filebrowser.log",
+    "log":"${FILEBROWSER_LOG_PATH}/filebrowser.log",
     "port":40333,
     "root":"${FILEBROWSER_DATA_PATH}",
     "username":"admin"
