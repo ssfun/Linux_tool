@@ -302,7 +302,7 @@ show_menu() {
         nano ${FILEBROWSER_CONFIG_PATH}/config.json && show_menu
         ;;
     5)
-        systemctl restart filebrowser && show_menu
+        systemctl reset-failed && systemctl restart filebrowser && show_menu
         ;;
     6)
         systemctl status filebrowser && show_menu
