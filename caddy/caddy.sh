@@ -416,41 +416,45 @@ show_menu() {
   ${green}0.${plain} 退出脚本
   ————————————————
   ${green}1.${plain} 安装 caddy
-  ${green}2.${plain} 更新 caddy
-  ${green}3.${plain} 卸载 caddy
+  ${green}2.${plain} 安装 caddy with plex
+  ${green}3.${plain} 更新 caddy
+  ${green}4.${plain} 卸载 caddy
   ————————————————
-  ${green}4.${plain} 修改 caddy 配置
-  ${green}5.${plain} 重启 caddy 服务
-  ${green}6.${plain} 查看 caddy 日志
+  ${green}5.${plain} 修改 caddy 配置
+  ${green}6.${plain} 重启 caddy 服务
+  ${green}7.${plain} 查看 caddy 日志
 
  "
     show_caddy_status
-    echo && read -p "请输入选择[0-6]:" num
+    echo && read -p "请输入选择[0-7]:" num
 
     case "${num}" in
     0)
         exit 0
         ;;
     1)
-        install_caddy && show_menu
+        install_caddy_without_plex && show_menu
         ;;
     2)
-        update_caddy && show_menu
+        install_caddy_with_plex && show_menu
         ;;
     3)
-        uninstall_caddy && show_menu
+        update_caddy && show_menu
         ;;
     4)
-        nano ${CADDY_CONFIG_PATH}/Caddyfile && show_menu
+        uninstall_caddy && show_menu
         ;;
     5)
-        systemctl restart caddy && show_menu
+        nano ${CADDY_CONFIG_PATH}/Caddyfile && show_menu
         ;;
     6)
+        systemctl restart caddy && show_menu
+        ;;
+    7)
         systemctl status caddy && show_menu
         ;;
     *)
-        LOGE "请输入正确的选项 [0-6]"
+        LOGE "请输入正确的选项 [0-7]"
         ;;
     esac
 }
