@@ -191,6 +191,7 @@ show_plex_enable_status() {
 
 install_plex() {
     LOGD "开始下载 plex..."
+    os_check && arch_check && install_base
     # getting the latest version of plex"
     LATEST_PLEX_VERSION="$(wget -qO- -t1 -T2 "https://plex.tv/api/downloads/5.json" | grep -o '"version":"[^"]*' | grep -o '[^"]*$' | head -n 1)"
     PLEX_LINK="https://downloads.plex.tv/plex-media-server-new/${LATEST_PLEX_VERSION}/debian/plexmediaserver_${LATEST_PLEX_VERSION}_${ARCH}.deb"
