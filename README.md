@@ -1,7 +1,7 @@
 # Linux_tool
 
 ## All in one
->Caddy & Filebrowser | Sing-box (Trojan & Warp) | Plex Media Server
+>Caddy (Trojan) | Filebrowser | Plex Media Server
 ```
 bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/main.sh)
 ```
