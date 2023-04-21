@@ -223,13 +223,8 @@ configuration_sing_box_config() {
             "tag":"trojan-in",
             "listen":"127.0.0.1",
             "listen_port":$tport,
-            "tcp_fast_open":true,
-            "udp_fragment":true,
             "sniff":true,
-            "sniff_override_destination":false,
-            "udp_timeout":300,
-            "proxy_protocol":true,
-            "proxy_protocol_accept_no_header":true,
+            "sniff_override_destination":true,
             "users":[
                 {
                     "name":"trojan",
@@ -239,7 +234,7 @@ configuration_sing_box_config() {
             "transport":{
                 "type":"ws",
                 "path":"/$wspath",
-                "max_early_data":0,
+                "max_early_data":2048,
                 "early_data_header_name":"Sec-WebSocket-Protocol"
             }
         }
