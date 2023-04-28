@@ -784,7 +784,7 @@ show_menu() {
         install_all_with_plex && show_menu
         ;;
     2)
-        install_caddy && show_menu
+        install_caddy_without_plex && show_menu
         ;;
     3)
         update_caddy && show_menu
