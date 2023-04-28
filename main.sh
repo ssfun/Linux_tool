@@ -659,6 +659,7 @@ EOF
 
 install_caddy_without_plex() {
     LOGD "开始安装 caddy..."
+    os_check && arch_check && install_base
     mkdir -p "${CADDY_CONFIG_PATH}"
     mkdir -p "${CADDY_WWW_PATH}"
     mkdir -p "${CADDY_404_PATH}"
@@ -673,6 +674,7 @@ install_caddy_without_plex() {
 
 install_caddy_with_plex() {
     LOGD "开始安装 caddy..."
+    os_check && arch_check && install_base
     mkdir -p "${CADDY_CONFIG_PATH}"
     mkdir -p "${CADDY_WWW_PATH}"
     mkdir -p "${CADDY_404_PATH}"
