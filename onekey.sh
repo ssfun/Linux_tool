@@ -910,7 +910,7 @@ show_menu() {
   ${green}5.${plain} 更新 plex
   ————————————————
   ${green}6.${plain} 卸载 caddy
-  ${green}7.${plain} 更新 sing-box
+  ${green}7.${plain} 卸载 sing-box
   ${green}8.${plain} 卸载 filebrowser
   ${green}9.${plain} 卸载 plex
  "
