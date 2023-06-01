@@ -496,6 +496,8 @@ configuration_sing_box_config() {
         "rules":[
             {
                 "inbound":["trojan-in"],
+                "ip_version": 6,
+                "domain_suffix": ["imgur.com"],
                 "geosite":["openai"],
                 "ip_cidr": ["1.1.1.1/32"],
                 "outbound":"wireguard-out"
