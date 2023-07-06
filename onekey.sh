@@ -683,7 +683,7 @@ configuration_caddy_config() {
         storage file_system {
                 root ${CADDY_TLS_PATH} #存放TLS证书的基本路径
         }
-        cert_issuer acme #acme表示从Let's Encrypt申请TLS证书，zerossl表示从ZeroSSL申请TLS证书。必须acme与zerossl二选一（固定TLS证书的目录便于引用）。注意：版本不小于v2.4.1才支持。
+        cert_issuer zerossl #acme表示从Let's Encrypt申请TLS证书，zerossl表示从ZeroSSL申请TLS证书。必须acme与zerossl二选一（固定TLS证书的目录便于引用）。注意：版本不小于v2.4.1才支持。
         email $mail #电子邮件地址。选配，推荐。
 }
 
@@ -744,7 +744,7 @@ configuration_caddy_config_with_plex() {
         storage file_system {
                 root ${CADDY_TLS_PATH} #存放TLS证书的基本路径
         }
-        cert_issuer acme #acme表示从Let's Encrypt申请TLS证书，zerossl表示从ZeroSSL申请TLS证书。必须acme与zerossl二选一（固定TLS证书的目录便于引用）。注意：版本不小于v2.4.1才支持。
+        cert_issuer zerossl #acme表示从Let's Encrypt申请TLS证书，zerossl表示从ZeroSSL申请TLS证书。必须acme与zerossl二选一（固定TLS证书的目录便于引用）。注意：版本不小于v2.4.1才支持。
         email $mail #电子邮件地址。选配，推荐。
 }
 
