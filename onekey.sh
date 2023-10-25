@@ -807,7 +807,7 @@ install_caddy_without_plex() {
     download_caddy
     install_caddy_systemd_service
     configuration_caddy_config
-    systmctl start caddy
+    systemctl start caddy
     LOGI "caddy 已完成安装"
 }
 
