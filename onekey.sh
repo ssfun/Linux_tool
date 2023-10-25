@@ -3,8 +3,8 @@
 #####################################################
 # ssfun's Linux Onekey Tool
 # Author: ssfun
-# Date: 2023-04-29
-# Version: 1.0.0
+# Date: 2023-10-25
+# Version: 2.0.0
 #####################################################
 
 #Basic definitions
@@ -448,25 +448,14 @@ configuration_sing_box_config() {
             "tag":"trojan-in",
             "listen":"127.0.0.1",
             "listen_port":$tport,
-            "sniff":true,
-            "sniff_override_destination":true,
-            "proxy_protocol": true,
-            "proxy_protocol_accept_no_header": true,
             "users":[
                 {
-                    "name":"trojan",
                     "password":"$tpswd"
                 }
             ],
-            "fallback": {
-            	"server": "127.0.0.1",
-            	"server_port": 40333
-            },
             "transport":{
                 "type":"ws",
                 "path":"$wspath",
-                "max_early_data":2048,
-                "early_data_header_name":"Sec-WebSocket-Protocol"
             }
         }
     ],
@@ -674,17 +663,27 @@ configuration_caddy_config() {
     # set Caddyfile
     cat <<EOF >${CADDY_CONFIG_PATH}/Caddyfile
 {
-        order reverse_proxy before route
-        admin off
-        log {
-                output file /${CADDY_LOG_PATH}/caddy.log
-                level ERROR
-        }       #版本不小于v2.4.0才支持日志全局配置，否则各自配置。
-        storage file_system {
-                root ${CADDY_TLS_PATH} #存放TLS证书的基本路径
-        }
-        cert_issuer zerossl #acme表示从Let's Encrypt申请TLS证书，zerossl表示从ZeroSSL申请TLS证书。必须acme与zerossl二选一（固定TLS证书的目录便于引用）。注意：版本不小于v2.4.1才支持。
-        email $mail #电子邮件地址。选配，推荐。
+	order reverse_proxy before route
+	admin off
+	persist_config off
+	log {
+		output file /${CADDY_LOG_PATH}/caddy.log
+		format console
+		level WARN
+	} #版本不小于 v2.4.0 才支持日志全局配置
+	
+	email $mail #电子邮件地址
+	storage file_system {
+        root ${CADDY_TLS_PATH} #存放TLS证书的基本路径
+    }
+	
+	servers :443 {
+		trusted_proxies cloudflare { #cloudflare 为使用 cloudflare ips，由 caddy-cloudflare-ip 插件提供。
+			interval 12h
+			timeout 15s
+		} #配置可信代理服务器的 IP 范围，以实现套 CDN 后服务端记录的客户端 IP 为真实来源 IP。若使用其它非 Cloudflare CDN，需调整 trusted_proxies 配置。（选配，套 CDN 配置。）
+		protocols h1 h2 h3 #默认配置。（可省略）
+	}
 }
 
 :80 {
@@ -692,30 +691,29 @@ configuration_caddy_config() {
         redir https://{host}{uri} permanent #HTTP自动跳转HTTPS，让网站看起来更真实。
 }
 
-:443, $host:443 {
-        #HTTPS server监听端口。注意：逗号与域名（或含端口）之间有一个空格。
-        tls {
-                ciphers TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_ECDSA_WITH_>
-                curves x25519 secp521r1 secp384r1 secp256r1
-                alpn http/1.1 h2
-        }
+:443, $host { #xx.yy 修改为自己的域名。注意：逗号与域名之间有一个空格。
+	tls {
+		ciphers TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256
+		curves x25519 secp521r1 secp384r1 secp256r1
+	}
 
-        route {
-                # 限定域名访问
-                @host host $host
-                header {
-                        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-                }
+	@tws {
+		path $tpath #与 Trojan+WebSocket 应用中 path 对应
+		header Connection *Upgrade*
+		header Upgrade websocket
+	}
+	reverse_proxy @tws 127.0.0.1:$tport #转发给本机 Trojan+WebSocket 监听端口
 
-                # WebSocket path 转发到 trojan
-                @tws path $tpath
-                header Connection *Upgrade*
-                header Upgrade websocket
-                reverse_proxy @tws 127.0.0.1:$tport
-
-                # 其他请求转发到 127.0.0.1:40333
-                reverse_proxy 127.0.0.1:40333
-        }
+	@host {
+		host $host #限定域名访问（包括禁止以 IP 方式访问网站），修改为自己的域名。
+	}
+	route @host {
+		header {
+			Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" #启用 HSTS
+		}
+		reverse_proxy 127.0.0.1:40333
+	}
+}
 EOF
     LOGD "caddy 配置文件完成"
 }
@@ -735,17 +733,27 @@ configuration_caddy_config_with_plex() {
     # set Caddyfile
     cat <<EOF >${CADDY_CONFIG_PATH}/Caddyfile
 {
-        order reverse_proxy before route
-        admin off
-        log {
-                output file ${CADDY_LOG_PATH}/caddy.log
-                level ERROR
-        }       #版本不小于v2.4.0才支持日志全局配置，否则各自配置。
-        storage file_system {
-                root ${CADDY_TLS_PATH} #存放TLS证书的基本路径
-        }
-        cert_issuer zerossl #acme表示从Let's Encrypt申请TLS证书，zerossl表示从ZeroSSL申请TLS证书。必须acme与zerossl二选一（固定TLS证书的目录便于引用）。注意：版本不小于v2.4.1才支持。
-        email $mail #电子邮件地址。选配，推荐。
+	order reverse_proxy before route
+	admin off
+	persist_config off
+	log {
+		output file /${CADDY_LOG_PATH}/caddy.log
+		format console
+		level WARN
+	} #版本不小于 v2.4.0 才支持日志全局配置
+	
+	email $mail #电子邮件地址
+	storage file_system {
+        root ${CADDY_TLS_PATH} #存放TLS证书的基本路径
+    }
+	
+	servers :443 {
+		trusted_proxies cloudflare { #cloudflare 为使用 cloudflare ips，由 caddy-cloudflare-ip 插件提供。
+			interval 12h
+			timeout 15s
+		} #配置可信代理服务器的 IP 范围，以实现套 CDN 后服务端记录的客户端 IP 为真实来源 IP。若使用其它非 Cloudflare CDN，需调整 trusted_proxies 配置。（选配，套 CDN 配置。）
+		protocols h1 h2 h3 #默认配置。（可省略）
+	}
 }
 
 :80 {
@@ -753,44 +761,44 @@ configuration_caddy_config_with_plex() {
         redir https://{host}{uri} permanent #HTTP自动跳转HTTPS，让网站看起来更真实。
 }
 
-:443, $host:443, $plex:443 {
-        #HTTPS server监听端口。注意：逗号与域名（或含端口）之间有一个空格。
-        tls {
-                ciphers TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_ECDSA_WITH_>
-                curves x25519 secp521r1 secp384r1 secp256r1
-                alpn http/1.1 h2
-        }
+:443, $host, $plex {
+    #HTTPS server监听端口。注意：逗号与域名（或含端口）之间有一个空格。
+    tls {
+	    ciphers TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256
+	    curves x25519 secp521r1 secp384r1 secp256r1
+	}
 
-        route {
-                # 限定域名访问
-                @host host $host
-                header {
-                        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-                }
+    @tws {
+		path $tpath #与 Trojan+WebSocket 应用中 path 对应
+		header Connection *Upgrade*
+		header Upgrade websocket
+	}
+	reverse_proxy @tws 127.0.0.1:$tport #转发给本机 Trojan+WebSocket 监听端口
 
-                # WebSocket path 转发到 trojan
-                @tws path $tpath
-                header Connection *Upgrade*
-                header Upgrade websocket
-                reverse_proxy @tws 127.0.0.1:$tport
-
-                # 其他请求转发到 127.0.0.1:40333
-                reverse_proxy 127.0.0.1:40333
+	@host {
+		host $host #限定域名访问（包括禁止以 IP 方式访问网站），修改为自己的域名。
+	}
+	route @host {
+		header {
+			Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" #启用 HSTS
+		}
+		reverse_proxy 127.0.0.1:40333
+	}
         
-        @plex {
-                host $plex #限定域名访问（禁止以ip方式访问网站），修改为自己的域名。
+    @plex {
+        host $plex #限定域名访问（禁止以ip方式访问网站），修改为自己的域名。
+    }
+    route @plex {
+        header {
+            Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" #启用HSTS
+            X-Content-Type-Options nosniff
+            X-Frame-Options DENY
+            Referrer-Policy no-referrer-when-downgrade
+            X-XSS-Protection 1
         }
-        route @plex {
-                header {
-                        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" #启用HSTS
-                        X-Content-Type-Options nosniff
-                        X-Frame-Options DENY
-                        Referrer-Policy no-referrer-when-downgrade
-                        X-XSS-Protection 1
-                }
-                reverse_proxy 127.0.0.1:32400
-                encode gzip
-        }
+        reverse_proxy 127.0.0.1:32400
+        encode gzip
+    }
 }
 EOF
     LOGD "caddy 配置文件完成"
