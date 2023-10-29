@@ -33,7 +33,7 @@ jobs:
    
     - name: install sing-box
       run: |
-        GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go install -v -tags with_quic,with_utls,with_reality_server,with_acme,with_clash_api github.com/sagernet/sing-box/cmd/sing-box@latest
+        GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go install -v -tags with_wireguard,with_quic,with_utls,with_reality_server,with_acme,with_clash_api github.com/sagernet/sing-box/cmd/sing-box@latest
     
     - name: Rename for amd64 
       if: matrix.goarch == 'amd64'
