@@ -3,7 +3,7 @@
 #####################################################
 # ssfun's Linux Tool
 # Author: ssfun
-# Date: 2023-04-01
+# Date: 2023-11-01
 # Version: 1.0.0
 #####################################################
 
@@ -212,64 +212,95 @@ configuration_sing_box_config() {
     LOGD "开始配置sing-box配置文件..."
     cat <<EOF >${SING_BOX_CONFIG_PATH}/config.json
 {
-    "log":{
-        "level":"info",
-        "output":"${SING_BOX_LOG_PATH}/sing-box.log",
-        "timestamp":true
-    },
-    "inbounds":[
+  "log": {
+    "level": "info",
+    "output": "${SING_BOX_LOG_PATH}/sing-box.log",
+    "timestamp": true
+  },
+  "inbounds": [
+    {
+      "type": "trojan",
+      "tag": "trojan-in",
+      "listen": "::",
+      "listen_port": $tport,
+      "sniff": true,
+      "sniff_override_destination": false,
+      "users": [
         {
-            "type":"trojan",
-            "tag":"trojan-in",
-            "listen":"127.0.0.1",
-            "listen_port":$tport,
-            "sniff":true,
-            "sniff_override_destination":true,
-            "users":[
-                {
-                    "name":"trojan",
-                    "password":"$tpswd"
-                }
-            ],
-            "transport":{
-                "type":"ws",
-                "path":"/$wspath",
-                "max_early_data":2048,
-                "early_data_header_name":"Sec-WebSocket-Protocol"
-            }
+          "name": "trojan",
+          "password": "$tpswd"
         }
-    ],
-    "outbounds":[
-        {
-            "type":"direct",
-            "tag":"direct"
-        },
-        {
-            "type":"wireguard",
-            "tag":"wireguard-out",
-            "server":"engage.cloudflareclient.com",
-            "server_port":2408,
-            "local_address":[
-                "172.16.0.2/32",
-                "$warpv6"
-            ],
-            "private_key":"$warpkey",
-            "peer_public_key":"bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
-            "reserved":[$warpreserved],
-            "mtu":1280
+      ],
+      "tls": {
+        "enabled": true,
+        "server_name": "$thost",
+        "certificate_path": "/home/tls/certificates/acme-v02.api.letsencrypt.org-directory/wildcard_.$host/wildcard_.$host.crt",
+        "key_path": "/home/tls/certificates/acme-v02.api.letsencrypt.org-directory/wildcard_.$host/wildcard_.$host.key"
+      },
+      "fallback": {
+        "server": "127.0.0.1",
+        "server_port": 80
+      },
+      "fallback_for_alpn": {
+        "http/1.1": {
+          "server": "127.0.0.1",
+          "server_port": 443
         }
-    ],
-    "route":{
-        "rules":[
-            {
-                "inbound":["trojan-in"],
-                "domain_suffix":["openai.com","ai.com"],
-                "ip_cidr": ["1.1.1.1/32"],
-                "outbound":"wireguard-out"
-            }
-        ],
-        "final":"direct"
+      },
+      "transport": {
+        "type": "ws",
+        "path": "$tpath",
+        "max_early_data": 2048,
+        "early_data_header_name": "Sec-WebSocket-Protocol"
+      }
     }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "direct"
+    },
+    {
+      "type": "wireguard",
+      "tag": "wireguard-out",
+      "server": "engage.cloudflareclient.com",
+      "server_port": 2408,
+      "local_address": [
+        "172.16.0.2/32",
+        "$warpv6"
+      ],
+      "private_key": "$warpkey",
+      "peer_public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
+      "reserved": [$warpreserved],
+      "mtu": 1280,
+      "domain_strategy": "prefer_ipv6",
+      "fallback_delay": "300ms"
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "inbound": ["trojan-in"],
+        "ip_version": 6,
+        "domain_suffix": ["imgur.com"],
+        "geosite": ["openai"],
+        "ip_cidr": ["1.1.1.1/32"],
+        "outbound": "wireguard-out"
+      }
+    ],
+    "geoip": {
+      "path": "geoip.db",
+      "download_url": "https://github.com/SagerNet/sing-geoip/releases/latest/download/geoip.db",
+      "download_detour": "direct"
+    },
+    "geosite": {
+      "path": "geosite.db",
+      "download_url": "https://github.com/SagerNet/sing-geosite/releases/latest/download/geosite.db",
+      "download_detour": "direct"
+    },
+    "final": "direct",
+    "auto_detect_interface": true
+  }
 }
 EOF
     LOGD "sing-box 配置文件完成"
@@ -277,25 +308,7 @@ EOF
 
 #install sing-box  
 install_sing-box() {
-    LOGD "开始安装 sing-box"
-    if [[ -f "${SING_BOX_SERVICE}" ]]; then
-        LOGE "当前系统已安装 sing-box,请使用更新命令"
-        show_menu
-    fi
-    LOGI "开始安装"
-    read -p "请输入 trojan 端口:" tport
-        [ -z "${tport}" ]
-    read -p "请输入 trojan 密码:" tpswd
-        [ -z "${tpswd}" ]
-    read -p "请输入 ws path:" wspath
-        [ -z "${wspath}" ]
-    read -p "请输入 warp ipv6:" warpv6
-        [ -z "${warpv6}" ]  
-    read -p "请输入 warp private key:" warpkey
-        [ -z "${warpkey}" ]  
-    read -p "请输入 warp reserved:" warpreserved
-        [ -z "${warpreserved}" ]  
-    os_check && arch_check && install_base
+    LOGD "开始安装 sing-box..."
     mkdir -p "${SING_BOX_CONFIG_PATH}"
     mkdir -p "${SING_BOX_LOG_PATH}"
     mkdir -p "${SING_BOX_LIB_PATH}"
@@ -303,6 +316,8 @@ install_sing-box() {
     install_sing_box_systemd_service
     configuration_sing_box_config
     LOGI "sing-box 已完成安装"
+    systemctl start sing-box
+    LOGI "sing-box 启动成功"
 }
 
 #update sing-box
@@ -312,7 +327,7 @@ update_sing-box() {
         LOGE "当前系统未安装sing-box,更新失败"
         show_menu
     fi
-    os_check && arch_check && install_base
+    os_check && arch_check
     systemctl stop sing-box
     rm -f ${SING_BOX_BINARY}
     # getting the latest version of sing-box"
