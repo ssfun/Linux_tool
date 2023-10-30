@@ -1009,6 +1009,8 @@ install_all_without_plex() {
         [ -z "${host}" ]
     read -p "请输入域名前缀:" sub
         [ -z "${sub}" ]
+    read -p "请输入 cloudflare token:" token
+        [ -z "${token}" ]
     read -p "请输入 trojan 端口:" port
         [ -z "${port}" ]
     read -p "请输入 trojan 密码:" pswd
