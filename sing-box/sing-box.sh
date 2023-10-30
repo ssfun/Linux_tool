@@ -314,6 +314,10 @@ install_sing-box() {
         show_menu
     fi
     LOGI "开始安装"
+    read -p "请输入泛域名:" host
+        [ -z "${host}" ]
+    read -p "请输入 trojan 域名:" thost
+        [ -z "${thost}" ]
     read -p "请输入 trojan 端口:" tport
         [ -z "${tport}" ]
     read -p "请输入 trojan 密码:" tpswd
