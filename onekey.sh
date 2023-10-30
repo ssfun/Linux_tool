@@ -3,7 +3,7 @@
 #####################################################
 # ssfun's Linux Onekey Tool
 # Author: ssfun
-# Date: 2023-10-25
+# Date: 2023-11-1
 # Version: 2.0.0
 #####################################################
 
@@ -437,74 +437,95 @@ configuration_sing_box_config() {
     LOGD "开始配置sing-box配置文件..."
     cat <<EOF >${SING_BOX_CONFIG_PATH}/config.json
 {
-    "log":{
-        "level":"info",
-        "output":"${SING_BOX_LOG_PATH}/sing-box.log",
-        "timestamp":true
-    },
-    "inbounds":[
+  "log": {
+    "level": "info",
+    "output": "${SING_BOX_LOG_PATH}/sing-box.log",
+    "timestamp": true
+  },
+  "inbounds": [
+    {
+      "type": "trojan",
+      "tag": "trojan-in",
+      "listen": "::",
+      "listen_port": $port,
+      "sniff": true,
+      "sniff_override_destination": false,
+      "users": [
         {
-            "type":"trojan",
-            "tag":"trojan-in",
-            "listen":"127.0.0.1",
-            "listen_port":$tport,
-            "users":[
-                {
-                    "password":"$tpswd"
-                }
-            ],
-            "transport":{
-                "type":"ws",
-                "path":"$wspath",
-            }
+          "name": "trojan",
+          "password": "$pswd"
         }
-    ],
-    "outbounds":[
-        {
-            "type":"direct",
-            "tag":"direct"
-        },
-        {
-            "type":"wireguard",
-            "tag":"wireguard-out",
-            "server":"engage.cloudflareclient.com",
-            "server_port":2408,
-            "local_address":[
-                "172.16.0.2/32",
-                "$warpv6"
-            ],
-            "private_key":"$warpkey",
-            "peer_public_key":"bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
-            "reserved":[$warpreserved],
-            "mtu":1280,
-            "domain_strategy": "prefer_ipv6",
-            "fallback_delay": "300ms"
+      ],
+      "tls": {
+        "enabled": true,
+        "server_name": "$thost",
+        "certificate_path": "${CADDY_TLS_PATH}/certificates/acme-v02.api.letsencrypt.org-directory/wildcard_.$host/wildcard_.$host.crt",
+        "key_path": "${CADDY_TLS_PATH}/certificates/acme-v02.api.letsencrypt.org-directory/wildcard_.$host/wildcard_.$host.key"
+      },
+      "fallback": {
+        "server": "127.0.0.1",
+        "server_port": 80
+      },
+      "fallback_for_alpn": {
+        "http/1.1": {
+          "server": "127.0.0.1",
+          "server_port": 443
         }
-    ],
-    "route":{
-        "rules":[
-            {
-                "inbound":["trojan-in"],
-                "ip_version": 6,
-                "domain_suffix": ["imgur.com"],
-                "geosite":["openai"],
-                "ip_cidr": ["1.1.1.1/32"],
-                "outbound":"wireguard-out"
-            }
-        ],
-        "geoip": {
-            "path": "geoip.db",
-            "download_url": "https://github.com/SagerNet/sing-geoip/releases/latest/download/geoip.db",
-            "download_detour": "direct"
-        },
-        "geosite": {
-            "path": "geosite.db",
-            "download_url": "https://github.com/SagerNet/sing-geosite/releases/latest/download/geosite.db",
-            "download_detour": "direct"
-        },
-        "final":"direct",
-        "auto_detect_interface": true
+      },
+      "transport": {
+        "type": "ws",
+        "path": "$path",
+        "max_early_data": 2048,
+        "early_data_header_name": "Sec-WebSocket-Protocol"
+      }
     }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "direct"
+    },
+    {
+      "type": "wireguard",
+      "tag": "wireguard-out",
+      "server": "engage.cloudflareclient.com",
+      "server_port": 2408,
+      "local_address": [
+        "172.16.0.2/32",
+        "$ipv6"
+      ],
+      "private_key": "$key",
+      "peer_public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
+      "reserved": [$reserved],
+      "mtu": 1280,
+      "domain_strategy": "prefer_ipv6",
+      "fallback_delay": "300ms"
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "inbound": ["trojan-in"],
+        "ip_version": 6,
+        "domain_suffix": ["imgur.com"],
+        "geosite": ["openai"],
+        "ip_cidr": ["1.1.1.1/32"],
+        "outbound": "wireguard-out"
+      }
+    ],
+    "geoip": {
+      "path": "geoip.db",
+      "download_url": "https://github.com/SagerNet/sing-geoip/releases/latest/download/geoip.db",
+      "download_detour": "direct"
+    },
+    "geosite": {
+      "path": "geosite.db",
+      "download_url": "https://github.com/SagerNet/sing-geosite/releases/latest/download/geosite.db",
+      "download_detour": "direct"
+    },
+    "final": "direct",
+    "auto_detect_interface": true
+  }
 }
 EOF
     LOGD "sing-box 配置文件完成"
@@ -513,31 +534,14 @@ EOF
 #install sing-box  
 install_sing-box() {
     LOGD "开始安装 sing-box"
-    if [[ -f "${SING_BOX_SERVICE}" ]]; then
-        LOGE "当前系统已安装 sing-box,请使用更新命令"
-        show_menu
-    fi
-    LOGI "开始安装"
-    read -p "请输入 trojan 端口:" tport
-        [ -z "${tport}" ]
-    read -p "请输入 trojan 密码:" tpswd
-        [ -z "${tpswd}" ]
-    read -p "请输入 ws path:" wspath
-        [ -z "${wspath}" ]
-    read -p "请输入 warp ipv6:" warpv6
-        [ -z "${warpv6}" ]  
-    read -p "请输入 warp private key:" warpkey
-        [ -z "${warpkey}" ]  
-    read -p "请输入 warp reserved:" warpreserved
-        [ -z "${warpreserved}" ]  
-    os_check && arch_check && install_base
     mkdir -p "${SING_BOX_CONFIG_PATH}"
     mkdir -p "${SING_BOX_LOG_PATH}"
     mkdir -p "${SING_BOX_LIB_PATH}"
     download_sing-box
     install_sing_box_systemd_service
     configuration_sing_box_config
-    LOGI "sing-box 已完成安装"
+    systemctl start sing-box
+    LOGI "sing-box 已完成安装并启动"
 }
 
 #update sing-box
@@ -634,8 +638,8 @@ Requires=network-online.target
 Type=notify
 User=root
 Group=root
-ExecStart=${CADDY_BINARY} run --environ --config ${CADDY_CONFIG_PATH}/Caddyfile
-ExecReload=${CADDY_BINARY} reload --config ${CADDY_CONFIG_PATH}/Caddyfile
+ExecStart=${CADDY_BINARY} run --environ --config ${CADDY_CONFIG_PATH}/config.json
+ExecReload=${CADDY_BINARY} reload --config ${CADDY_CONFIG_PATH}/config.json
 TimeoutStopSec=5s
 LimitNOFILE=1048576
 LimitNPROC=512
@@ -652,67 +656,121 @@ EOF
 
 configuration_caddy_config() {
     LOGD "开始配置caddy配置文件..."
-    read -p "请输入需要设置的网站host:" host
-        [ -z "${host}" ]
-    read -p "请输入 trojan 端口:" tport
-        [ -z "${tport}" ]
-    read -p "请输入 trojan path:" tpath
-        [ -z "${tpath}" ]
-    read -p "请输入申请证书mail:" mail
-        [ -z "${mail}" ]  
     # set Caddyfile
-    cat <<EOF >${CADDY_CONFIG_PATH}/Caddyfile
+    cat <<EOF >${CADDY_CONFIG_PATH}/config.json
 {
-	order reverse_proxy before route
-	admin off
-	persist_config off
-	log {
-		output file /${CADDY_LOG_PATH}/caddy.log
-		format console
-		level WARN
-	} #版本不小于 v2.4.0 才支持日志全局配置
-	
-	email $mail #电子邮件地址
-	storage file_system {
-        root ${CADDY_TLS_PATH} #存放TLS证书的基本路径
+  "admin": {
+    "disabled": true,
+    "config": {
+      "persist": false
     }
-	
-	servers :443 {
-		trusted_proxies cloudflare { #cloudflare 为使用 cloudflare ips，由 caddy-cloudflare-ip 插件提供。
-			interval 12h
-			timeout 15s
-		} #配置可信代理服务器的 IP 范围，以实现套 CDN 后服务端记录的客户端 IP 为真实来源 IP。若使用其它非 Cloudflare CDN，需调整 trusted_proxies 配置。（选配，套 CDN 配置。）
-		protocols h1 h2 h3 #默认配置。（可省略）
-	}
-}
-
-:80 {
-        #HTTP默认监听端口
-        redir https://{host}{uri} permanent #HTTP自动跳转HTTPS，让网站看起来更真实。
-}
-
-:443, $host { #xx.yy 修改为自己的域名。注意：逗号与域名之间有一个空格。
-	tls {
-		ciphers TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256
-		curves x25519 secp521r1 secp384r1 secp256r1
-	}
-
-	@tws {
-		path $tpath #与 Trojan+WebSocket 应用中 path 对应
-		header Connection *Upgrade*
-		header Upgrade websocket
-	}
-	reverse_proxy @tws 127.0.0.1:$tport #转发给本机 Trojan+WebSocket 监听端口
-
-	@host {
-		host $host #限定域名访问（包括禁止以 IP 方式访问网站），修改为自己的域名。
-	}
-	route @host {
-		header {
-			Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" #启用 HSTS
-		}
-		reverse_proxy 127.0.0.1:40333
-	}
+  },
+  "logging": {
+    "logs": {
+      "default": {
+        "writer": {
+          "output": "file",
+          "filename": "${CADDY_LOG_PATH}/caddy.log"
+        },
+        "encoder": {
+          "format": "console"
+        },
+        "level": "WARN"
+      }
+    }
+  },
+  "storage": {
+    "module": "file_system",
+    "root": "${CADDY_TLS_PATH}"
+  },
+  "apps": {
+    "http": {
+      "servers": {
+        "srvh1": {
+          "listen": [":80"],
+          "routes": [
+            {
+              "handle": [
+                {
+                  "handler": "static_response",
+                  "headers": {
+                    "Location": ["https://{http.request.host}{http.request.uri}"]
+                  },
+                  "status_code": 301
+                }
+              ]
+            }
+          ],
+          "protocols": ["h1"]
+        },
+        "srvh2": {
+          "listen": [":443"],
+          "routes": [
+            {
+              "handle": [
+                {
+                  "handler": "headers",
+                  "response": {
+                    "set": {
+                      "Strict-Transport-Security": ["max-age=31536000; includeSubDomains; preload"]
+                    }
+                  }
+                },
+                {
+                  "handler": "reverse_proxy",
+                  "upstreams": [
+                    {
+                      "dial": "127.0.0.1:40333"
+                    }
+                  ]
+                }
+              ],
+              "match": [
+                {
+                  "host": ["$sub.$host"]
+                }
+              ]
+            }
+          ],
+          "tls_connection_policies": [
+            {
+              "cipher_suites": [
+                "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+                "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+                "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256"
+              ],
+              "curves": ["x25519","secp521r1","secp384r1","secp256r1"]
+            }
+          ],
+          "protocols": ["h1","h2"]
+        }
+      }
+    },
+    "tls": {
+      "certificates": {
+        "automate": ["*.$host"]
+      },
+      "automation": {
+        "policies": [
+          {
+            "issuers": [
+              {
+                "module": "acme",
+                "challenges": {
+                  "dns": {
+                    "provider": {
+                      "name": "cloudflare",
+                      "api_token": "$token"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
 }
 EOF
     LOGD "caddy 配置文件完成"
@@ -720,85 +778,158 @@ EOF
 
 configuration_caddy_config_with_plex() {
     LOGD "开始配置caddy配置文件..."
-    read -p "请输入需要设置的网站host:" host
-        [ -z "${host}" ]
-    read -p "请输入申请证书的mail:" mail
-        [ -z "${mail}" ]
-    read -p "请输入 trojan 端口:" tport
-        [ -z "${tport}" ]
-    read -p "请输入 trojan path:" tpath
-        [ -z "${tport}" ]
-    read -p "请输入需要设置的Plex网站:" plex
-        [ -z "${plex}" ]
     # set Caddyfile
-    cat <<EOF >${CADDY_CONFIG_PATH}/Caddyfile
+    cat <<EOF >${CADDY_CONFIG_PATH}/config.json
 {
-	order reverse_proxy before route
-	admin off
-	persist_config off
-	log {
-		output file /${CADDY_LOG_PATH}/caddy.log
-		format console
-		level WARN
-	} #版本不小于 v2.4.0 才支持日志全局配置
-	
-	email $mail #电子邮件地址
-	storage file_system {
-        root ${CADDY_TLS_PATH} #存放TLS证书的基本路径
+  "admin": {
+    "disabled": true,
+    "config": {
+      "persist": false
     }
-	
-	servers :443 {
-		trusted_proxies cloudflare { #cloudflare 为使用 cloudflare ips，由 caddy-cloudflare-ip 插件提供。
-			interval 12h
-			timeout 15s
-		} #配置可信代理服务器的 IP 范围，以实现套 CDN 后服务端记录的客户端 IP 为真实来源 IP。若使用其它非 Cloudflare CDN，需调整 trusted_proxies 配置。（选配，套 CDN 配置。）
-		protocols h1 h2 h3 #默认配置。（可省略）
-	}
-}
-
-:80 {
-        #HTTP默认监听端口
-        redir https://{host}{uri} permanent #HTTP自动跳转HTTPS，让网站看起来更真实。
-}
-
-:443, $host, $plex {
-    #HTTPS server监听端口。注意：逗号与域名（或含端口）之间有一个空格。
-    tls {
-	    ciphers TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256
-	    curves x25519 secp521r1 secp384r1 secp256r1
-	}
-
-    @tws {
-		path $tpath #与 Trojan+WebSocket 应用中 path 对应
-		header Connection *Upgrade*
-		header Upgrade websocket
-	}
-	reverse_proxy @tws 127.0.0.1:$tport #转发给本机 Trojan+WebSocket 监听端口
-
-	@host {
-		host $host #限定域名访问（包括禁止以 IP 方式访问网站），修改为自己的域名。
-	}
-	route @host {
-		header {
-			Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" #启用 HSTS
-		}
-		reverse_proxy 127.0.0.1:40333
-	}
-        
-    @plex {
-        host $plex #限定域名访问（禁止以ip方式访问网站），修改为自己的域名。
+  },
+  "logging": {
+    "logs": {
+      "default": {
+        "writer": {
+          "output": "file",
+          "filename": "${CADDY_LOG_PATH}/caddy.log"
+        },
+        "encoder": {
+          "format": "console"
+        },
+        "level": "WARN"
+      }
     }
-    route @plex {
-        header {
-            Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" #启用HSTS
-            X-Content-Type-Options nosniff
-            X-Frame-Options DENY
-            Referrer-Policy no-referrer-when-downgrade
-            X-XSS-Protection 1
+  },
+  "storage": {
+    "module": "file_system",
+    "root": "${CADDY_TLS_PATH}"
+  },
+  "apps": {
+    "http": {
+      "servers": {
+        "srvh1": {
+          "listen": [":80"],
+          "routes": [
+            {
+              "handle": [
+                {
+                  "handler": "static_response",
+                  "headers": {
+                    "Location": ["https://{http.request.host}{http.request.uri}"]
+                  },
+                  "status_code": 301
+                }
+              ]
+            }
+          ],
+          "protocols": ["h1"]
+        },
+        "srvh2": {
+          "listen": [":443"],
+          "routes": [
+            {
+              "handle": [
+                {
+                  "handler": "headers",
+                  "response": {
+                    "set": {
+                      "Strict-Transport-Security": ["max-age=31536000; includeSubDomains; preload"]
+                    }
+                  }
+                },
+                {
+                  "handler": "reverse_proxy",
+                  "upstreams": [
+                    {
+                      "dial": "127.0.0.1:40333"
+                    }
+                  ]
+                }
+              ],
+              "match": [
+                {
+                  "host": ["$sub.$host"]
+                }
+              ]
+            },
+            {
+              "handle": [
+                {
+                  "handler": "headers",
+                  "response": {
+                    "set": {
+                      "Referrer-Policy": ["no-referrer-when-downgrade"],
+                      "Strict-Transport-Security": ["max-age=31536000; includeSubDomains; preload"],
+                      "X-Content-Type-Options": ["nosniff"],
+                      "X-Frame-Options": ["DENY"],
+                      "X-Xss-Protection": ["1"]
+                    }
+                  }
+                },
+                {
+                  "handler": "reverse_proxy",
+                  "upstreams": [
+                    {
+                      "dial": "127.0.0.1:32400"
+                    }
+                  ]
+                },
+                {
+                  "encodings": {
+                    "gzip": {
+                    }
+                  },
+                  "handler": "encode",
+                  "prefer": ["gzip"]
+                }
+              ],
+              "match": [
+                {
+                  "host": ["$plex.$host"]
+                }
+              ]
+            }
+          ],
+          "tls_connection_policies": [
+            {
+              "cipher_suites": [
+                "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+                "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+                "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256"
+              ],
+              "curves": ["x25519","secp521r1","secp384r1","secp256r1"]
+            }
+          ],
+          "protocols": ["h1","h2"]
         }
-        reverse_proxy 127.0.0.1:32400
-        encode gzip
+      }
+    },
+    "tls": {
+      "certificates": {
+        "automate": ["*.$host"]
+      },
+      "automation": {
+        "policies": [
+          {
+            "issuers": [
+              {
+                "module": "acme",
+                "challenges": {
+                  "dns": {
+                    "provider": {
+                      "name": "cloudflare",
+                      "api_token": "$token"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
     }
+  }
 }
 EOF
     LOGD "caddy 配置文件完成"
@@ -806,7 +937,6 @@ EOF
 
 install_caddy_without_plex() {
     LOGD "开始安装 caddy..."
-    os_check && arch_check && install_base
     mkdir -p "${CADDY_CONFIG_PATH}"
     mkdir -p "${CADDY_WWW_PATH}"
     mkdir -p "${CADDY_404_PATH}"
@@ -816,12 +946,11 @@ install_caddy_without_plex() {
     install_caddy_systemd_service
     configuration_caddy_config
     systemctl start caddy
-    LOGI "caddy 已完成安装"
+    LOGI "caddy 已完成安装并启动"
 }
 
 install_caddy_with_plex() {
     LOGD "开始安装 caddy..."
-    os_check && arch_check && install_base
     mkdir -p "${CADDY_CONFIG_PATH}"
     mkdir -p "${CADDY_WWW_PATH}"
     mkdir -p "${CADDY_404_PATH}"
@@ -830,7 +959,7 @@ install_caddy_with_plex() {
     download_caddy
     install_caddy_systemd_service
     configuration_caddy_config_with_plex
-    LOGI "caddy 已完成安装"
+    LOGI "caddy 已完成安装并启动"
 }
 
 update_caddy() {
@@ -876,11 +1005,27 @@ install_all_without_plex() {
         show_menu
     fi
     LOGI "开始安装"
+    read -p "请输入根域名:" host
+        [ -z "${host}" ]
+    read -p "请输入域名前缀:" sub
+        [ -z "${sub}" ]
+    read -p "请输入 trojan 端口:" port
+        [ -z "${port}" ]
+    read -p "请输入 trojan 密码:" pswd
+        [ -z "${pswd}" ]
+    read -p "请输入 trojan ws path:" path
+        [ -z "${path}" ]
+    read -p "请输入 warp ipv6:" ipv6
+        [ -z "${ipv6}" ]
+    read -p "请输入 warp private key:" key
+        [ -z "${key}" ]
+    read -p "请输入 warp reserved:" reserved
+        [ -z "${reserved}" ]
     os_check && arch_check && install_base
     install_caddy_without_plex
     install_sing-box
     install_fb
-    LOGI "caddy + filebrowser 已完成安装"
+    LOGI "caddy + sing-box + filebrowser 已完成安装"
 }
 
 install_all_with_plex() {
@@ -896,18 +1041,38 @@ install_all_with_plex() {
         show_menu
     fi
     LOGI "开始安装"
+    read -p "请输入根域名:" host
+        [ -z "${host}" ]
+    read -p "请输入域名前缀:" sub
+        [ -z "${sub}" ]
+    read -p "请输入 plex 域名前缀:" plex
+        [ -z "${plex}" ]
+    read -p "请输入 cloudflare token:" token
+        [ -z "${token}" ]
+    read -p "请输入 trojan 端口:" port
+        [ -z "${port}" ]
+    read -p "请输入 trojan 密码:" pswd
+        [ -z "${pswd}" ]
+    read -p "请输入 trojan ws path:" path
+        [ -z "${path}" ]
+    read -p "请输入 warp ipv6:" ipv6
+        [ -z "${ipv6}" ]
+    read -p "请输入 warp private key:" key
+        [ -z "${key}" ]
+    read -p "请输入 warp reserved:" reserved
+        [ -z "${reserved}" ]
     os_check && arch_check && install_base
     install_caddy_with_plex
     install_sing-box
     install_fb
     install_plex
-    LOGI "caddy + plex + filebrowser 已完成安装"
+    LOGI "caddy + sing-box plex + filebrowser 已完成安装"
 }
 
 #show menu
 show_menu() {
     echo -e "
-  ${green}Caddy | Sing-box | Filebrowser  | Plex 管理脚本${plain}
+  ${green}Caddy | Sing-box | Filebrowser | Plex 管理脚本${plain}
   ————————————————
   ${green}Q.${plain} 退出脚本
   ————————————————
