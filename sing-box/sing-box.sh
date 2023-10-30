@@ -308,16 +308,33 @@ EOF
 
 #install sing-box  
 install_sing-box() {
-    LOGD "开始安装 sing-box..."
+    LOGD "开始安装 sing-box"
+    if [[ -f "${SING_BOX_SERVICE}" ]]; then
+        LOGE "当前系统已安装 sing-box,请使用更新命令"
+        show_menu
+    fi
+    LOGI "开始安装"
+    read -p "请输入 trojan 端口:" tport
+        [ -z "${tport}" ]
+    read -p "请输入 trojan 密码:" tpswd
+        [ -z "${tpswd}" ]
+    read -p "请输入 ws path:" tpath
+        [ -z "${tpath}" ]
+    read -p "请输入 warp ipv6:" warpv6
+        [ -z "${warpv6}" ]  
+    read -p "请输入 warp private key:" warpkey
+        [ -z "${warpkey}" ]  
+    read -p "请输入 warp reserved:" warpreserved
+        [ -z "${warpreserved}" ]  
+    os_check && arch_check && install_base
     mkdir -p "${SING_BOX_CONFIG_PATH}"
     mkdir -p "${SING_BOX_LOG_PATH}"
     mkdir -p "${SING_BOX_LIB_PATH}"
     download_sing-box
     install_sing_box_systemd_service
     configuration_sing_box_config
-    LOGI "sing-box 已完成安装"
     systemctl start sing-box
-    LOGI "sing-box 启动成功"
+    LOGI "sing-box 已完成安装并启动"
 }
 
 #update sing-box
