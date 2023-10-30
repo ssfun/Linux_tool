@@ -458,7 +458,7 @@ configuration_sing_box_config() {
       ],
       "tls": {
         "enabled": true,
-        "server_name": "$thost",
+        "server_name": "$sub.$host",
         "certificate_path": "${CADDY_TLS_PATH}/certificates/acme-v02.api.letsencrypt.org-directory/wildcard_.$host/wildcard_.$host.crt",
         "key_path": "${CADDY_TLS_PATH}/certificates/acme-v02.api.letsencrypt.org-directory/wildcard_.$host/wildcard_.$host.key"
       },
