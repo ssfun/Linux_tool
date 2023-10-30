@@ -3,8 +3,8 @@
 #####################################################
 # ssfun's Linux Tool
 # Author: ssfun
-# Date: 2023-04-01
-# Version: 1.0.0
+# Date: 2023-11-01
+# Version: 2.0.0
 #####################################################
 
 #Basic definitions
@@ -197,8 +197,8 @@ Requires=network-online.target
 Type=notify
 User=root
 Group=root
-ExecStart=${CADDY_BINARY} run --environ --config ${CADDY_CONFIG_PATH}/Caddyfile
-ExecReload=${CADDY_BINARY} reload --config ${CADDY_CONFIG_PATH}/Caddyfile
+ExecStart=${CADDY_BINARY} run --environ --config ${CADDY_CONFIG_PATH}/config.json
+ExecReload=${CADDY_BINARY} reload --config ${CADDY_CONFIG_PATH}/config.json
 TimeoutStopSec=5s
 LimitNOFILE=1048576
 LimitNPROC=512
@@ -217,44 +217,120 @@ EOF
 configuration_caddy_config() {
     LOGD "开始配置caddy配置文件..."
     # set Caddyfile
-    cat <<EOF >${CADDY_CONFIG_PATH}/Caddyfile
+    cat <<EOF >${CADDY_CONFIG_PATH}/config.json
 {
-        order reverse_proxy before route
-        admin off
-        log {
-                output file ${CADDY_LOG_PATH}/caddy.log
-                level ERROR
-        }       #版本不小于v2.4.0才支持日志全局配置，否则各自配置。
-        storage file_system {
-                root ${CADDY_TLS_PATH} #存放TLS证书的基本路径
-        }
-        cert_issuer acme #acme表示从Let's Encrypt申请TLS证书，zerossl表示从ZeroSSL申请TLS证书。必须acme与zerossl二选一（固定TLS证书的目录便于引用）。注意：版本不小于v2.4.1才支持。
-        email $mail #电子邮件地址。选配，推荐。
-}
-:443, $thost {
-        #HTTPS server监听端口。注意：逗号与域名（或含端口）之间有一个空格。
-        tls {
-                ciphers TLS_AES_256_GCM_SHA384 TLS_AES_128_GCM_SHA256 TLS_CHACHA20_POLY1305_SHA256 TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256
-                curves x25519 secp521r1 secp384r1 secp256r1
-                alpn http/1.1 h2
-        }
-        
-        @tws {
-                path /$wspath #与Trojan+WebSocket应用中path对应
-                header Connection *Upgrade*
-                header Upgrade websocket
-        } 
-        reverse_proxy @tws 127.0.0.1:$tport #转发给本机Trojan+WebSocket监听端口
-        
-        @host {
-                host $thost #限定域名访问（禁止以ip方式访问网站），修改为自己的域名。
-        }
-        route @host {
-                header {
-                        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" #启用HSTS
+  "admin": {
+    "disabled": true,
+    "config": {
+      "persist": false
+    }
+  },
+  "logging": {
+    "logs": {
+      "default": {
+        "writer": {
+          "output": "file",
+          "filename": "${CADDY_LOG_PATH}/caddy.log"
+        },
+        "encoder": {
+          "format": "console"
+        },
+        "level": "WARN"
+      }
+    }
+  },
+  "storage": {
+    "module": "file_system",
+    "root": "${CADDY_TLS_PATH}"
+  },
+  "apps": {
+    "http": {
+      "servers": {
+        "srvh1": {
+          "listen": [":80"],
+          "routes": [
+            {
+              "handle": [
+                {
+                  "handler": "static_response",
+                  "headers": {
+                    "Location": ["https://{http.request.host}{http.request.uri}"]
+                  },
+                  "status_code": 301
                 }
-                reverse_proxy 127.0.0.1:40333
+              ]
+            }
+          ],
+          "protocols": ["h1"]
+        },
+        "srvh2": {
+          "listen": [":443"],
+          "routes": [
+            {
+              "handle": [
+                {
+                  "handler": "headers",
+                  "response": {
+                    "set": {
+                      "Strict-Transport-Security": ["max-age=31536000; includeSubDomains; preload"]
+                    }
+                  }
+                },
+                {
+                  "handler": "reverse_proxy",
+                  "upstreams": [
+                    {
+                      "dial": "127.0.0.1:40333"
+                    }
+                  ]
+                }
+              ],
+              "match": [
+                {
+                  "host": ["$sub.$host"]
+                }
+              ]
+            }
+          ],
+          "tls_connection_policies": [
+            {
+              "cipher_suites": [
+                "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+                "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+                "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256"
+              ],
+              "curves": ["x25519","secp521r1","secp384r1","secp256r1"]
+            }
+          ],
+          "protocols": ["h1","h2"]
         }
+      }
+    },
+    "tls": {
+      "certificates": {
+        "automate": ["*.$host"]
+      },
+      "automation": {
+        "policies": [
+          {
+            "issuers": [
+              {
+                "module": "acme",
+                "challenges": {
+                  "dns": {
+                    "provider": {
+                      "name": "cloudflare",
+                      "api_token": "$token"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
 }
 EOF
     LOGD "caddy 配置文件完成"
@@ -264,58 +340,157 @@ EOF
 configuration_caddy_config_with_plex() {
     LOGD "开始配置caddy配置文件..."
     # set Caddyfile
-    cat <<EOF >${CADDY_CONFIG_PATH}/Caddyfile
+    cat <<EOF >${CADDY_CONFIG_PATH}/config.json
 {
-        order reverse_proxy before route
-        admin off
-        log {
-                output file ${CADDY_LOG_PATH}/caddy.log
-                level ERROR
-        }       #版本不小于v2.4.0才支持日志全局配置，否则各自配置。
-        storage file_system {
-                root ${CADDY_TLS_PATH} #存放TLS证书的基本路径
-        }
-        cert_issuer acme #acme表示从Let's Encrypt申请TLS证书，zerossl表示从ZeroSSL申请TLS证书。必须acme与zerossl二选一（固定TLS证书的目录便于引用）。注意：版本不小于v2.4.1才支持。
-        email $mail #电子邮件地址。选配，推荐。
-}
-:443, $thost, $phost {
-        #HTTPS server监听端口。注意：逗号与域名（或含端口）之间有一个空格。
-        tls {
-                ciphers TLS_AES_256_GCM_SHA384 TLS_AES_128_GCM_SHA256 TLS_CHACHA20_POLY1305_SHA256 TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256
-                curves x25519 secp521r1 secp384r1 secp256r1
-                alpn http/1.1 h2
-        }
-        @tws {
-                path /$wspath #与Trojan+WebSocket应用中path对应
-                header Connection *Upgrade*
-                header Upgrade websocket
-        }  
-        reverse_proxy @tws 127.0.0.1:$tport #转发给本机Trojan+WebSocket监听端口
-        
-        @host {
-                host $thost #限定域名访问（禁止以ip方式访问网站），修改为自己的域名。
-        }
-        route @host {
-                header {
-                        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" #启用HSTS
+  "admin": {
+    "disabled": true,
+    "config": {
+      "persist": false
+    }
+  },
+  "logging": {
+    "logs": {
+      "default": {
+        "writer": {
+          "output": "file",
+          "filename": "${CADDY_LOG_PATH}/caddy.log"
+        },
+        "encoder": {
+          "format": "console"
+        },
+        "level": "WARN"
+      }
+    }
+  },
+  "storage": {
+    "module": "file_system",
+    "root": "${CADDY_TLS_PATH}"
+  },
+  "apps": {
+    "http": {
+      "servers": {
+        "srvh1": {
+          "listen": [":80"],
+          "routes": [
+            {
+              "handle": [
+                {
+                  "handler": "static_response",
+                  "headers": {
+                    "Location": ["https://{http.request.host}{http.request.uri}"]
+                  },
+                  "status_code": 301
                 }
-                reverse_proxy 127.0.0.1:40333
-        }
-        
-        @plex {
-                host $phost #限定域名访问（禁止以ip方式访问网站），修改为自己的域名。
-        }
-        route @plex {
-                header {
-                        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" #启用HSTS
-                        X-Content-Type-Options nosniff
-                        X-Frame-Options DENY
-                        Referrer-Policy no-referrer-when-downgrade
-                        X-XSS-Protection 1
+              ]
+            }
+          ],
+          "protocols": ["h1"]
+        },
+        "srvh2": {
+          "listen": [":443"],
+          "routes": [
+            {
+              "handle": [
+                {
+                  "handler": "headers",
+                  "response": {
+                    "set": {
+                      "Strict-Transport-Security": ["max-age=31536000; includeSubDomains; preload"]
+                    }
+                  }
+                },
+                {
+                  "handler": "reverse_proxy",
+                  "upstreams": [
+                    {
+                      "dial": "127.0.0.1:40333"
+                    }
+                  ]
                 }
-                reverse_proxy 127.0.0.1:32400
-                encode gzip
+              ],
+              "match": [
+                {
+                  "host": ["$sub.$host"]
+                }
+              ]
+            },
+            {
+              "handle": [
+                {
+                  "handler": "headers",
+                  "response": {
+                    "set": {
+                      "Referrer-Policy": ["no-referrer-when-downgrade"],
+                      "Strict-Transport-Security": ["max-age=31536000; includeSubDomains; preload"],
+                      "X-Content-Type-Options": ["nosniff"],
+                      "X-Frame-Options": ["DENY"],
+                      "X-Xss-Protection": ["1"]
+                    }
+                  }
+                },
+                {
+                  "handler": "reverse_proxy",
+                  "upstreams": [
+                    {
+                      "dial": "127.0.0.1:32400"
+                    }
+                  ]
+                },
+                {
+                  "encodings": {
+                    "gzip": {
+                    }
+                  },
+                  "handler": "encode",
+                  "prefer": ["gzip"]
+                }
+              ],
+              "match": [
+                {
+                  "host": ["$plex.$host"]
+                }
+              ]
+            }
+          ],
+          "tls_connection_policies": [
+            {
+              "cipher_suites": [
+                "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+                "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+                "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256"
+              ],
+              "curves": ["x25519","secp521r1","secp384r1","secp256r1"]
+            }
+          ],
+          "protocols": ["h1","h2"]
         }
+      }
+    },
+    "tls": {
+      "certificates": {
+        "automate": ["*.$host"]
+      },
+      "automation": {
+        "policies": [
+          {
+            "issuers": [
+              {
+                "module": "acme",
+                "challenges": {
+                  "dns": {
+                    "provider": {
+                      "name": "cloudflare",
+                      "api_token": "$token"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
 }
 EOF
     LOGD "caddy 配置文件完成"
@@ -329,14 +504,12 @@ install_caddy_without_plex() {
         show_menu
     fi
     LOGI "开始安装"
-    read -p "请输入申请证书邮箱:" mail
-        [ -z "${mail}" ]
-    read -p "请输入 trojan 网站:" thost
-        [ -z "${thost}" ]
-    read -p "请输入 trojan 端口:" tport
-        [ -z "${tport}" ]
-    read -p "请输入 ws path:" wspath
-        [ -z "${wspath}" ]
+    read -p "请输入根域名:" host
+        [ -z "${host}" ]
+    read -p "请输入域名前缀:" sub
+        [ -z "${sub}" ]
+    read -p "请输入 cloudflare token:" token
+        [ -z "${token}" ]
     os_check && arch_check && install_base
     mkdir -p "${CADDY_CONFIG_PATH}"
     mkdir -p "${CADDY_WWW_PATH}"
@@ -344,7 +517,8 @@ install_caddy_without_plex() {
     download_caddy
     install_caddy_systemd_service
     configuration_caddy_config
-    LOGI "caddy 已完成安装"
+    systemctl start caddy
+    LOGI "caddy 已完成安装并启动"
 }
 
 #install caddy with plex
@@ -355,16 +529,14 @@ install_caddy_with_plex() {
         show_menu
     fi
     LOGI "开始安装"
-    read -p "请输入申请证书邮箱:" mail
-        [ -z "${mail}" ]
-    read -p "请输入 trojan 网站:" thost
-        [ -z "${thost}" ]
-    read -p "请输入 plex 网站:" phost
-        [ -z "${phost}" ]
-    read -p "请输入 trojan 端口:" tport
-        [ -z "${tport}" ]
-    read -p "请输入 ws path:" wspath
-        [ -z "${wspath}" ]
+    read -p "请输入根域名:" host
+        [ -z "${host}" ]
+    read -p "请输入域名前缀:" sub
+        [ -z "${sub}" ]
+    read -p "请输入 plex 域名前缀:" plex
+        [ -z "${plex}" ]
+    read -p "请输入 cloudflare token:" token
+        [ -z "${token}" ]
     os_check && arch_check && install_base
     mkdir -p "${CADDY_CONFIG_PATH}"
     mkdir -p "${CADDY_WWW_PATH}"
@@ -372,7 +544,8 @@ install_caddy_with_plex() {
     download_caddy
     install_caddy_systemd_service
     configuration_caddy_config_with_plex
-    LOGI "caddy 已完成安装"
+    systemctl start caddy
+    LOGI "caddy 已完成安装并启动"
 }
 
 #update caddy
