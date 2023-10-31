@@ -486,6 +486,12 @@ configuration_sing_box_config() {
       "tag": "direct"
     },
     {
+      "type":"direct",
+      "tag":"warp-IPv6-out",
+      "detour":"wireguard-out",
+      "domain_strategy":"ipv6_only"
+    },
+    {
       "type": "wireguard",
       "tag": "wireguard-out",
       "server": "engage.cloudflareclient.com",
@@ -957,6 +963,7 @@ install_caddy_with_plex() {
     download_caddy
     install_caddy_systemd_service
     configuration_caddy_config_with_plex
+    systemctl start caddy
     LOGI "caddy 已完成安装并启动"
 }
 
