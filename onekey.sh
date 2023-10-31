@@ -459,8 +459,8 @@ configuration_sing_box_config() {
       "tls": {
         "enabled": true,
         "server_name": "$sub.$host",
-        "certificate_path": "${CADDY_TLS_PATH}/certificates/acme-v02.api.letsencrypt.org-directory/wildcard_.$host/wildcard_.$host.crt",
-        "key_path": "${CADDY_TLS_PATH}/certificates/acme-v02.api.letsencrypt.org-directory/wildcard_.$host/wildcard_.$host.key"
+        "certificate_path": "${CADDY_TLS_PATH}/certificates/acme-v02.api.letsencrypt.org-directory/$host/$host.crt",
+        "key_path": "${CADDY_TLS_PATH}/certificates/acme-v02.api.letsencrypt.org-directory/$host/$host.key"
       },
       "fallback": {
         "server": "127.0.0.1",
@@ -505,21 +505,29 @@ configuration_sing_box_config() {
   "route": {
     "rules": [
       {
-        "inbound": ["trojan-in"],
-        "ip_version": 6,
         "domain_suffix": ["imgur.com"],
-        "geosite": ["openai"],
+        "outbound": "wireguard-out"
+      },
+      {
         "ip_cidr": ["1.1.1.1/32"],
         "outbound": "wireguard-out"
+      },
+      {
+        "geosite": ["openai"],
+        "outbound": "warp-IPv6-out"
+      },
+      {
+        "ip_version": 6,
+        "outbound": "warp-IPv6-out"
       }
     ],
     "geoip": {
-      "path": "geoip.db",
+      "path": "${SING_BOX_CONFIG_PATH}/geoip.db",
       "download_url": "https://github.com/SagerNet/sing-geoip/releases/latest/download/geoip.db",
       "download_detour": "direct"
     },
     "geosite": {
-      "path": "geosite.db",
+      "path": "${SING_BOX_CONFIG_PATH}/geosite.db",
       "download_url": "https://github.com/SagerNet/sing-geosite/releases/latest/download/geosite.db",
       "download_detour": "direct"
     },
@@ -727,7 +735,7 @@ configuration_caddy_config() {
               ],
               "match": [
                 {
-                  "host": ["$sub.$host"]
+                  "host": ["$host"]
                 }
               ]
             }
@@ -748,7 +756,7 @@ configuration_caddy_config() {
     },
     "tls": {
       "certificates": {
-        "automate": ["*.$host"]
+        "automate": ["$host"]
       },
       "automation": {
         "policies": [
@@ -756,14 +764,7 @@ configuration_caddy_config() {
             "issuers": [
               {
                 "module": "acme",
-                "challenges": {
-                  "dns": {
-                    "provider": {
-                      "name": "cloudflare",
-                      "api_token": "$token"
-                    }
-                  }
-                }
+                "email": "$email"
               }
             ]
           }
@@ -849,7 +850,7 @@ configuration_caddy_config_with_plex() {
               ],
               "match": [
                 {
-                  "host": ["$sub.$host"]
+                  "host": ["$host"]
                 }
               ]
             },
@@ -886,7 +887,7 @@ configuration_caddy_config_with_plex() {
               ],
               "match": [
                 {
-                  "host": ["$plex.$host"]
+                  "host": ["$plex"]
                 }
               ]
             }
@@ -907,7 +908,7 @@ configuration_caddy_config_with_plex() {
     },
     "tls": {
       "certificates": {
-        "automate": ["*.$host"]
+        "automate": ["$host","&plex"]
       },
       "automation": {
         "policies": [
@@ -915,14 +916,7 @@ configuration_caddy_config_with_plex() {
             "issuers": [
               {
                 "module": "acme",
-                "challenges": {
-                  "dns": {
-                    "provider": {
-                      "name": "cloudflare",
-                      "api_token": "$token"
-                    }
-                  }
-                }
+                "email": "$email"
               }
             ]
           }
@@ -1005,12 +999,10 @@ install_all_without_plex() {
         show_menu
     fi
     LOGI "开始安装"
-    read -p "请输入根域名:" host
+    read -p "请输入域名:" host
         [ -z "${host}" ]
-    read -p "请输入域名前缀:" sub
-        [ -z "${sub}" ]
-    read -p "请输入 cloudflare token:" token
-        [ -z "${token}" ]
+    read -p "请输入证书邮箱:" email
+        [ -z "${email}" ]
     read -p "请输入 trojan 端口:" port
         [ -z "${port}" ]
     read -p "请输入 trojan 密码:" pswd
@@ -1043,14 +1035,11 @@ install_all_with_plex() {
         show_menu
     fi
     LOGI "开始安装"
-    read -p "请输入根域名:" host
-        [ -z "${host}" ]
-    read -p "请输入域名前缀:" sub
-        [ -z "${sub}" ]
-    read -p "请输入 plex 域名前缀:" plex
+    read -p "请输入域名:" host
+    read -p "请输入 plex 域名:" plex
         [ -z "${plex}" ]
-    read -p "请输入 cloudflare token:" token
-        [ -z "${token}" ]
+    read -p "请输入证书邮箱:" email
+        [ -z "${email}" ]
     read -p "请输入 trojan 端口:" port
         [ -z "${port}" ]
     read -p "请输入 trojan 密码:" pswd
