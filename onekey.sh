@@ -517,6 +517,10 @@ configuration_sing_box_config() {
         "outbound": "warp-IPv6-out"
       },
       {
+        "domain_keyword": ["ipv6"],
+        "outbound": "warp-IPv6-out"
+      },
+      {
         "ip_version": 6,
         "outbound": "warp-IPv6-out"
       }
