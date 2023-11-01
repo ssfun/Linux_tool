@@ -487,7 +487,7 @@ configuration_sing_box_config() {
     }
   ],
   "route": {
-    "rules": []
+    "rules": [],
     "final": "direct",
     "auto_detect_interface": true
   }
@@ -967,12 +967,6 @@ install_all_without_plex() {
         [ -z "${pswd}" ]
     read -p "请输入 trojan ws path:" path
         [ -z "${path}" ]
-    read -p "请输入 warp ipv6:" ipv6
-        [ -z "${ipv6}" ]
-    read -p "请输入 warp private key:" key
-        [ -z "${key}" ]
-    read -p "请输入 warp reserved:" reserved
-        [ -z "${reserved}" ]
     os_check && arch_check && install_base
     install_caddy_without_plex
     install_sing-box
