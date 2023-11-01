@@ -4,7 +4,7 @@
 # ssfun's Linux Onekey Tool
 # Author: ssfun
 # Date: 2023-11-1
-# Version: 2.0.0
+# Version: 3.0.0
 #####################################################
 
 #Basic definitions
@@ -432,8 +432,82 @@ EOF
     LOGD "安装 sing-box systemd 服务成功"
 }
 
-#configuration sing-box config
+#configuration sing-box (trojan) config
 configuration_sing_box_config() {
+    LOGD "开始配置sing-box配置文件..."
+    cat <<EOF >${SING_BOX_CONFIG_PATH}/config.json
+{
+  "log": {
+    "level": "info",
+    "output": "${SING_BOX_LOG_PATH}/sing-box.log",
+    "timestamp": true
+  },
+  "inbounds": [
+    {
+      "type": "trojan",
+      "tag": "trojan-in",
+      "listen": "::",
+      "listen_port": $port,
+      "sniff": true,
+      "sniff_override_destination": false,
+      "users": [
+        {
+          "name": "trojan",
+          "password": "$pswd"
+        }
+      ],
+      "tls": {
+        "enabled": true,
+        "server_name": "$sub.$host",
+        "certificate_path": "${CADDY_TLS_PATH}/certificates/acme-v02.api.letsencrypt.org-directory/$host/$host.crt",
+        "key_path": "${CADDY_TLS_PATH}/certificates/acme-v02.api.letsencrypt.org-directory/$host/$host.key"
+      },
+      "fallback": {
+        "server": "127.0.0.1",
+        "server_port": 80
+      },
+      "fallback_for_alpn": {
+        "http/1.1": {
+          "server": "127.0.0.1",
+          "server_port": 443
+        }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "$path",
+        "max_early_data": 2048,
+        "early_data_header_name": "Sec-WebSocket-Protocol"
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "direct"
+    }
+  ],
+  "route": {
+    "rules": [],
+    "geoip": {
+      "path": "${SING_BOX_CONFIG_PATH}/geoip.db",
+      "download_url": "https://github.com/SagerNet/sing-geoip/releases/latest/download/geoip.db",
+      "download_detour": "direct"
+    },
+    "geosite": {
+      "path": "${SING_BOX_CONFIG_PATH}/geosite.db",
+      "download_url": "https://github.com/SagerNet/sing-geosite/releases/latest/download/geosite.db",
+      "download_detour": "direct"
+    },
+    "final": "direct",
+    "auto_detect_interface": true
+  }
+}
+EOF
+    LOGD "sing-box 配置文件完成"
+}
+
+#configuration sing-box (trojan + warp) config
+configuration_sing_box_warp_config() {
     LOGD "开始配置sing-box配置文件..."
     cat <<EOF >${SING_BOX_CONFIG_PATH}/config.json
 {
@@ -558,6 +632,19 @@ install_sing-box() {
     download_sing-box
     install_sing_box_systemd_service
     configuration_sing_box_config
+    systemctl start sing-box
+    LOGI "sing-box 已完成安装并启动"
+}
+
+#install sing-box with warp
+install_sing-box_warp() {
+    LOGD "开始安装 sing-box"
+    mkdir -p "${SING_BOX_CONFIG_PATH}"
+    mkdir -p "${SING_BOX_LOG_PATH}"
+    mkdir -p "${SING_BOX_LIB_PATH}"
+    download_sing-box
+    install_sing_box_systemd_service
+    configuration_sing_box_warp_config
     systemctl start sing-box
     LOGI "sing-box 已完成安装并启动"
 }
@@ -787,7 +874,7 @@ EOF
     LOGD "caddy 配置文件完成"
 }
 
-configuration_caddy_config_with_plex() {
+configuration_caddy_plex_config() {
     LOGD "开始配置caddy配置文件..."
     # set Caddyfile
     cat <<EOF >${CADDY_CONFIG_PATH}/config.json
@@ -939,7 +1026,7 @@ EOF
     LOGD "caddy 配置文件完成"
 }
 
-install_caddy_without_plex() {
+install_caddy() {
     LOGD "开始安装 caddy..."
     mkdir -p "${CADDY_CONFIG_PATH}"
     mkdir -p "${CADDY_WWW_PATH}"
@@ -953,7 +1040,7 @@ install_caddy_without_plex() {
     LOGI "caddy 已完成安装并启动"
 }
 
-install_caddy_with_plex() {
+install_caddy_plex() {
     LOGD "开始安装 caddy..."
     mkdir -p "${CADDY_CONFIG_PATH}"
     mkdir -p "${CADDY_WWW_PATH}"
@@ -962,7 +1049,7 @@ install_caddy_with_plex() {
     curl -s  https://raw.githubusercontent.com/ssfun/Linux_tool/main/caddy/404/index.html  -o ${CADDY_404_PATH}/index.html
     download_caddy
     install_caddy_systemd_service
-    configuration_caddy_config_with_plex
+    configuration_caddy_plex_config
     systemctl start caddy
     LOGI "caddy 已完成安装并启动"
 }
@@ -997,8 +1084,40 @@ uninstall_caddy() {
     LOGI "卸载caddy 成功"
 }
 
+#安装 caddy + sing-box(trojan) + filebrowser
+install_all_without_warp_plex() {
+    LOGD "开始安装 caddy + sing-box(trojan) + filebrowser"
+    if [[ -f "${CADDY_SERVICE}" ]]; then
+        LOGE "当前系统已安装 caddy,请使用更新命令"
+        show_menu
+    elif [[ -f "${SING_BOX_SERVICE}" ]]; then
+        LOGE "当前系统已安装 sing-box,请使用更新命令"
+        show_menu
+    elif [[ -f "${FILEBROWSER_SERVICE}" ]]; then
+        LOGE "当前系统已安装 filebrowser,请使用更新命令"
+        show_menu
+    fi
+    LOGI "开始安装"
+    read -p "请输入域名:" host
+        [ -z "${host}" ]
+    read -p "请输入证书邮箱:" email
+        [ -z "${email}" ]
+    read -p "请输入 trojan 端口:" port
+        [ -z "${port}" ]
+    read -p "请输入 trojan 密码:" pswd
+        [ -z "${pswd}" ]
+    read -p "请输入 trojan ws path:" path
+        [ -z "${path}" ]
+    os_check && arch_check && install_base
+    install_caddy
+    install_sing-box
+    install_fb
+    LOGI "caddy + sing-box(trojan) + filebrowser 已完成安装"
+}
+
+#安装 caddy + sing-box(trojan & warp) + filebrowser
 install_all_without_plex() {
-    LOGD "开始安装 caddy + sing-box + filebrowser"
+    LOGD "开始安装 caddy + sing-box(trojan & warp) + filebrowser"
     if [[ -f "${CADDY_SERVICE}" ]]; then
         LOGE "当前系统已安装 caddy,请使用更新命令"
         show_menu
@@ -1027,14 +1146,48 @@ install_all_without_plex() {
     read -p "请输入 warp reserved:" reserved
         [ -z "${reserved}" ]
     os_check && arch_check && install_base
-    install_caddy_without_plex
-    install_sing-box
+    install_caddy
+    install_sing-box_warp
     install_fb
-    LOGI "caddy + sing-box + filebrowser 已完成安装"
+    LOGI "caddy + sing-box(trojan & warp) + filebrowser 已完成安装"
 }
 
-install_all_with_plex() {
-    LOGD "开始安装 caddy + sing-box + filebrowser + plex"
+#安装 caddy + sing-box(trojan) + filebrowser + plex
+install_all_without_warp() {
+    LOGD "开始安装 caddy + sing-box(trojan) + filebrowser + plex"
+    if [[ -f "${CADDY_SERVICE}" ]]; then
+        LOGE "当前系统已安装 caddy,请使用更新命令"
+        show_menu
+    elif [[ -f "${SING_BOX_SERVICE}" ]]; then
+        LOGE "当前系统已安装 sing-box,请使用更新命令"
+        show_menu
+    elif [[ -f "${FILEBROWSER_SERVICE}" ]]; then
+        LOGE "当前系统已安装 filebrowser,请使用更新命令"
+        show_menu
+    fi
+    LOGI "开始安装"
+    read -p "请输入域名:" host
+    read -p "请输入 plex 域名:" plex
+        [ -z "${plex}" ]
+    read -p "请输入证书邮箱:" email
+        [ -z "${email}" ]
+    read -p "请输入 trojan 端口:" port
+        [ -z "${port}" ]
+    read -p "请输入 trojan 密码:" pswd
+        [ -z "${pswd}" ]
+    read -p "请输入 trojan ws path:" path
+        [ -z "${path}" ]
+    os_check && arch_check && install_base
+    install_caddy_plex
+    install_sing-box
+    install_fb
+    install_plex
+    LOGI "caddy + sing-box(trojan) + filebrowser + plex 已完成安装"
+}
+
+#安装 caddy + sing-box(trojan & warp) + filebrowser + plex
+install_all() {
+    LOGD "开始安装 caddy + sing-box(trojan & warp) + filebrowser + plex"
     if [[ -f "${CADDY_SERVICE}" ]]; then
         LOGE "当前系统已安装 caddy,请使用更新命令"
         show_menu
@@ -1064,11 +1217,11 @@ install_all_with_plex() {
     read -p "请输入 warp reserved:" reserved
         [ -z "${reserved}" ]
     os_check && arch_check && install_base
-    install_caddy_with_plex
-    install_sing-box
+    install_caddy_plex
+    install_sing-box_warp
     install_fb
     install_plex
-    LOGI "caddy + sing-box plex + filebrowser 已完成安装"
+    LOGI "caddy + sing-box(trojan & warp) + filebrowser + plex 已完成安装"
 }
 
 #show menu
@@ -1078,61 +1231,69 @@ show_menu() {
   ————————————————
   ${green}Q.${plain} 退出脚本
   ————————————————
-  ${green}0.${plain} 安装 caddy + sing-box + filebrowser
-  ${green}1.${plain} 安装 caddy + sing-box + filebrowser + plex
+  ${green}1.${plain} 安装 caddy + sing-box(trojan) + filebrowser
+  ${green}2.${plain} 安装 caddy + sing-box(trojan & warp) + filebrowser
+  ${green}3.${plain} 安装 caddy + sing-box(trojan) + filebrowser + plex
+  ${green}4.${plain} 安装 caddy + sing-box(trojan & warp) + filebrowser + plex
   ————————————————
-  ${green}2.${plain} 更新 caddy
-  ${green}3.${plain} 更新 sing-box
-  ${green}4.${plain} 更新 filebrowser
-  ${green}5.${plain} 更新 plex
+  ${green}5.${plain} 更新 caddy
+  ${green}6.${plain} 更新 sing-box
+  ${green}7.${plain} 更新 filebrowser
+  ${green}8.${plain} 更新 plex
   ————————————————
-  ${green}6.${plain} 卸载 caddy
-  ${green}7.${plain} 卸载 sing-box
-  ${green}8.${plain} 卸载 filebrowser
-  ${green}9.${plain} 卸载 plex
+  ${green}11.${plain} 卸载 caddy
+  ${green}12.${plain} 卸载 sing-box
+  ${green}13.${plain} 卸载 filebrowser
+  ${green}14.${plain} 卸载 plex
  "
     show_caddy_status
     show_sing_box_status
     show_fb_status
     show_plex_status
-    echo && read -p "请输入选择[0-9]:" num
+    echo && read -p "请输入选择[0-14]:" num
 
     case "${num}" in
     Q)
         exit 0
         ;;
-    0)
-        install_all_without_plex && show_menu
-        ;;
     1)
-        install_all_with_plex && show_menu
+        install_all_without_warp_plex && show_menu
         ;;
     2)
-        update_caddy && show_menu
+        install_all_without_plex && show_menu
         ;;
     3)
-        update_sing-box && show_menu
+        install_all_without_warp && show_menu
         ;;
     4)
-        update_fb && show_menu
+        install_all && show_menu
         ;;
     5)
-        update_plex && show_menu
+        update_caddy && show_menu
         ;;
     6)
-        uninstall_caddy && show_menu
+        update_sing-box && show_menu
         ;;
     7)
-        uninstall_sing-box && show_menu
+        update_fb && show_menu
         ;;
     8)
+        update_plex && show_menu
+        ;;
+    11)
+        uninstall_caddy && show_menu
+        ;;
+    12)
+        uninstall_sing-box && show_menu
+        ;;
+    13)
         uninstall_fb && show_menu
         ;;
-    9)
+    14)
         uninstall_plex && show_menu
         ;;
     *)
-        LOGE "请输入正确的选项 [0-9]"
+        LOGE "请输入正确的选项 [0-14]"
         ;;
     esac
 }
