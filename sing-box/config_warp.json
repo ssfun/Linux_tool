@@ -1,0 +1,109 @@
+{
+  "log": {
+    "level": "info",
+    "output": "${SING_BOX_LOG_PATH}/sing-box.log",
+    "timestamp": true
+  },
+  "inbounds": [
+    {
+      "type": "trojan",
+      "tag": "trojan-in",
+      "listen": "::",
+      "listen_port": $port,
+      "sniff": true,
+      "sniff_override_destination": false,
+      "users": [
+        {
+          "name": "trojan",
+          "password": "$pswd"
+        }
+      ],
+      "tls": {
+        "enabled": true,
+        "server_name": "$sub.$host",
+        "certificate_path": "${CADDY_TLS_PATH}/certificates/acme-v02.api.letsencrypt.org-directory/$host/$host.crt",
+        "key_path": "${CADDY_TLS_PATH}/certificates/acme-v02.api.letsencrypt.org-directory/$host/$host.key"
+      },
+      "fallback": {
+        "server": "127.0.0.1",
+        "server_port": 80
+      },
+      "fallback_for_alpn": {
+        "http/1.1": {
+          "server": "127.0.0.1",
+          "server_port": 443
+        }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "$path",
+        "max_early_data": 2048,
+        "early_data_header_name": "Sec-WebSocket-Protocol"
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "direct"
+    },
+    {
+      "type":"direct",
+      "tag":"warp-IPv6-out",
+      "detour":"wireguard-out",
+      "domain_strategy":"ipv6_only"
+    },
+    {
+      "type": "wireguard",
+      "tag": "wireguard-out",
+      "server": "engage.cloudflareclient.com",
+      "server_port": 2408,
+      "local_address": [
+        "172.16.0.2/32",
+        "$ipv6"
+      ],
+      "private_key": "$key",
+      "peer_public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
+      "reserved": [$reserved],
+      "mtu": 1280,
+      "domain_strategy": "prefer_ipv6",
+      "fallback_delay": "300ms"
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "domain_suffix": ["imgur.com"],
+        "outbound": "wireguard-out"
+      },
+      {
+        "ip_cidr": ["1.1.1.1/32"],
+        "outbound": "wireguard-out"
+      },
+      {
+        "geosite": ["openai"],
+        "outbound": "warp-IPv6-out"
+      },
+      {
+        "domain_keyword": ["ipv6"],
+        "outbound": "warp-IPv6-out"
+      },
+      {
+        "ip_version": 6,
+        "outbound": "warp-IPv6-out"
+      }
+    ],
+    "geoip": {
+      "path": "${SING_BOX_CONFIG_PATH}/geoip.db",
+      "download_url": "https://github.com/SagerNet/sing-geoip/releases/latest/download/geoip.db",
+      "download_detour": "direct"
+    },
+    "geosite": {
+      "path": "${SING_BOX_CONFIG_PATH}/geosite.db",
+      "download_url": "https://github.com/SagerNet/sing-geosite/releases/latest/download/geosite.db",
+      "download_detour": "direct"
+    },
+    "final": "direct",
+    "auto_detect_interface": true
+  }
+}
