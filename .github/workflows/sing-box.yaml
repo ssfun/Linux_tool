@@ -1,4 +1,4 @@
-name: Build sing-box with wireguard
+name: Build sing-box with wireguard acme
 
 on:
   schedule:
