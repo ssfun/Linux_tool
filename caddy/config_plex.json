@@ -1,0 +1,144 @@
+{
+  "admin": {
+    "disabled": true,
+    "config": {
+      "persist": false
+    }
+  },
+  "logging": {
+    "logs": {
+      "default": {
+        "writer": {
+          "output": "file",
+          "filename": "${CADDY_LOG_PATH}/caddy.log"
+        },
+        "encoder": {
+          "format": "console"
+        },
+        "level": "WARN"
+      }
+    }
+  },
+  "storage": {
+    "module": "file_system",
+    "root": "${CADDY_TLS_PATH}"
+  },
+  "apps": {
+    "http": {
+      "servers": {
+        "srvh1": {
+          "listen": [":80"],
+          "routes": [
+            {
+              "handle": [
+                {
+                  "handler": "static_response",
+                  "headers": {
+                    "Location": ["https://{http.request.host}{http.request.uri}"]
+                  },
+                  "status_code": 301
+                }
+              ]
+            }
+          ],
+          "protocols": ["h1"]
+        },
+        "srvh2": {
+          "listen": [":443"],
+          "routes": [
+            {
+              "handle": [
+                {
+                  "handler": "headers",
+                  "response": {
+                    "set": {
+                      "Strict-Transport-Security": ["max-age=31536000; includeSubDomains; preload"]
+                    }
+                  }
+                },
+                {
+                  "handler": "reverse_proxy",
+                  "upstreams": [
+                    {
+                      "dial": "127.0.0.1:40333"
+                    }
+                  ]
+                }
+              ],
+              "match": [
+                {
+                  "host": ["$host"]
+                }
+              ]
+            },
+            {
+              "handle": [
+                {
+                  "handler": "headers",
+                  "response": {
+                    "set": {
+                      "Referrer-Policy": ["no-referrer-when-downgrade"],
+                      "Strict-Transport-Security": ["max-age=31536000; includeSubDomains; preload"],
+                      "X-Content-Type-Options": ["nosniff"],
+                      "X-Frame-Options": ["DENY"],
+                      "X-Xss-Protection": ["1"]
+                    }
+                  }
+                },
+                {
+                  "handler": "reverse_proxy",
+                  "upstreams": [
+                    {
+                      "dial": "127.0.0.1:32400"
+                    }
+                  ]
+                },
+                {
+                  "encodings": {
+                    "gzip": {
+                    }
+                  },
+                  "handler": "encode",
+                  "prefer": ["gzip"]
+                }
+              ],
+              "match": [
+                {
+                  "host": ["$plex"]
+                }
+              ]
+            }
+          ],
+          "tls_connection_policies": [
+            {
+              "cipher_suites": [
+                "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+                "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+                "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256"
+              ],
+              "curves": ["x25519","secp521r1","secp384r1","secp256r1"]
+            }
+          ],
+          "protocols": ["h1","h2"]
+        }
+      }
+    },
+    "tls": {
+      "certificates": {
+        "automate": ["$host","&plex"]
+      },
+      "automation": {
+        "policies": [
+          {
+            "issuers": [
+              {
+                "module": "acme",
+                "email": "$email"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
