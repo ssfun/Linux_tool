@@ -585,7 +585,15 @@ configuration_sing_box_warp_config() {
   "route": {
     "rules": [
       {
-        "domain_suffix": ["imgur.com"],
+        "domain_regex": ["^[^.]+\\.itunes\\.apple\\.com$"],
+        "outbound": "wireguard-out"
+      },
+      {
+        "domain_suffix": [
+            "imgur.com",
+            "testflight.apple.com",
+            "mzstatic.com"
+        ],
         "outbound": "wireguard-out"
       },
       {
