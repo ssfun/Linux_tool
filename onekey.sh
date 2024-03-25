@@ -198,7 +198,7 @@ install_plex() {
     LATEST_PLEX_VERSION="$(wget -qO- -t1 -T2 "https://plex.tv/api/downloads/5.json" | grep -o '"version":"[^"]*' | grep -o '[^"]*$' | head -n 1)"
     PLEX_LINK="https://downloads.plex.tv/plex-media-server-new/${LATEST_PLEX_VERSION}/debian/plexmediaserver_${LATEST_PLEX_VERSION}_${ARCH}.deb"
     cd `mktemp -d`
-    curl -v -k -sSL "${PLEX_LINK}" -O plexmediaserver.deb
+    wget -nv "${PLEX_LINK}" -O plexmediaserver.deb
     dpkg -i plexmediaserver.deb
     LOGI "plex 已完成安装"
 }
@@ -266,7 +266,7 @@ download_fb() {
     LATEST_FILEBROWSER_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/filebrowser/filebrowser/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
     FILEBROWSER_LINK="https://github.com/filebrowser/filebrowser/releases/download/${LATEST_FILEBROWSER_VERSION}/linux-${ARCH}-filebrowser.tar.gz"
     cd `mktemp -d`
-    curl -v -k -sSL "${FILEBROWSER_LINK}" -O filebrowser.tar.gz
+    wget -nv "${FILEBROWSER_LINK}" -O filebrowser.tar.gz
     tar -zxvf filebrowser.tar.gz
     mv filebrowser ${FILEBROWSER_BINARY} && chmod +x ${FILEBROWSER_BINARY}
     LOGI "filebrowser 下载完毕"
@@ -401,7 +401,7 @@ download_sing-box() {
     LATEST_NUM="$(wget -qO- -t1 -T2 "https://api.github.com/repos/SagerNet/sing-box/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/v//g;s/,//g;s/ //g')"
     LINK="https://github.com/SagerNet/sing-box/releases/download/${LATEST_VERSION}/sing-box-${LATEST_NUM}-linux-${ARCH}.tar.gz"
     cd `mktemp -d`
-    curl -v -k -sSL "${LINK}" -O sing-box.tar.gz
+    wget -nv "${LINK}" -O sing-box.tar.gz
     tar -zxvf sing-box.tar.gz --strip-components=1
     mv sing-box ${SING_BOX_BINARY} && chmod +x ${SING_BOX_BINARY}
     LOGI "sing-box 下载完毕"
@@ -733,7 +733,7 @@ download_caddy() {
     LATEST_CADDY_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/lxhao61/integrated-examples/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
     CADDY_LINK="https://github.com/lxhao61/integrated-examples/releases/download/${LATEST_CADDY_VERSION}/caddy-linux-${ARCH}.tar.gz"
     cd `mktemp -d`
-    curl -v -k -sSL "${CADDY_LINK}" -O caddy.tar.gz
+    wget -nv "${CADDY_LINK}" -O caddy.tar.gz
     tar -zxvf caddy.tar.gz
     mv caddy ${CADDY_BINARY} && chmod +x ${CADDY_BINARY}
     LOGI "caddy 下载完毕"
