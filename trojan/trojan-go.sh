@@ -200,7 +200,7 @@ RestartSec=10s
 LimitNOFILE=infinity
 [Install]
 WantedBy=multi-user.target
-EO
+EOF
     systemctl daemon-reload
     systemctl enable trojan-go
     LOGD "安装 trojan-go systemd 服务成功"
