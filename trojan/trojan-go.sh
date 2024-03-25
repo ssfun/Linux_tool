@@ -207,7 +207,7 @@ EO
 }
 
 #configuration trojan-go config
-configuration_trojan_go_config() {
+set_trojan_go_config() {
     LOGD "开始配置trojan-go配置文件..."
     cat <<EOF >${TROJAN_GO_CONFIG_PATH}/config.json
 {
@@ -277,7 +277,7 @@ install_trojan-go() {
     mkdir -p "${TROJAN_GO_CONFIG_PATH}"
     download_trojan-go
     install_trojan_go_systemd_service
-    configuration_trojan_go_config
+    set_trojan_go_config
     LOGI "trojan-go 已完成安装"
 }
 
