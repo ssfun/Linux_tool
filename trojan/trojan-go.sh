@@ -173,7 +173,7 @@ download_trojan-go() {
     LATEST_VERSION="$(wget -qO- -t1 -T2 "https://api.github.com/repos/p4gefau1t/trojan-go/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
     LINK="https://github.com/p4gefau1t/trojan-go/releases/download/${LATEST_VERSION}/trojan-go-linux-${ARCH}.zip"
     cd `mktemp -d`
-    wget -nv "${LINK}" -O trojan-go.tar.gz
+    wget -nv "${LINK}" -O trojan-go.zip
     unzip -q trojan-go.zip
     mv trojan-go ${TROJAN_GO_BINARY} && chmod +x ${TROJAN_GO_BINARY}
     mv geoip.dat ${TROJAN_GO_CONFIG_PATH}/geoip.dat
