@@ -458,7 +458,7 @@ configuration_sing_box_config() {
       ],
       "tls": {
         "enabled": true,
-        "server_name": "$sub.$host",
+        "server_name": "$host",
         "certificate_path": "${CADDY_TLS_PATH}/certificates/acme-v02.api.letsencrypt.org-directory/$host/$host.crt",
         "key_path": "${CADDY_TLS_PATH}/certificates/acme-v02.api.letsencrypt.org-directory/$host/$host.key"
       },
@@ -532,7 +532,7 @@ configuration_sing_box_warp_config() {
       ],
       "tls": {
         "enabled": true,
-        "server_name": "$sub.$host",
+        "server_name": "$host",
         "certificate_path": "${CADDY_TLS_PATH}/certificates/acme-v02.api.letsencrypt.org-directory/$host/$host.crt",
         "key_path": "${CADDY_TLS_PATH}/certificates/acme-v02.api.letsencrypt.org-directory/$host/$host.key"
       },
