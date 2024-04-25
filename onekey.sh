@@ -518,6 +518,14 @@ configuration_sing_box_warp_config() {
   },
   "inbounds": [
     {
+      "type": "mixed",
+      "tag": "mixed-in",
+      "listen": "127.0.0.1",
+      "listen_port": 1080,
+      "sniff": true,
+      "sniff_override_destination": false
+    },
+    {
       "type": "trojan",
       "tag": "trojan-in",
       "listen": "::",
