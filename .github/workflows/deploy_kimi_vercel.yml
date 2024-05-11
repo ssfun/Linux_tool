@@ -20,7 +20,7 @@ jobs:
       run: npm i -g vercel --registry http://registry.npmmirror.com
 
     - name: Login to Vercel
-      run: vercel login --token ${{ secrets.VERCEL_TOKEN }}
+      run: vercel login VERCEL_TOKEN
       env:
         VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
