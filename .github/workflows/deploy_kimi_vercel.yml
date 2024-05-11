@@ -19,16 +19,10 @@ jobs:
     - name: Install Vercel CLI
       run: npm i -g vercel --registry http://registry.npmmirror.com
 
-    - name: Login to Vercel
-      run: vercel login VERCEL_TOKEN
-      env:
-        VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-
-    - name: Clone repository
-      run: git clone https://github.com/LLM-Red-Team/kimi-free-api
-
     - name: Change directory
       run: cd kimi-free-api
 
     - name: Deploy to Vercel
-      run: vercel --prod
+      run: vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
+      env:
+        VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
