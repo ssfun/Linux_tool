@@ -3,22 +3,19 @@ name: Deploy Kimi to Vercel
 on:
   push:
     branches:
-      - main # 或者你想要触发部署的分支
+      - main # or the branch you want to trigger the deployment on
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-
     - name: Clone repository
-      run: |
-        docker run -t --rm -v $PWD:/app -w /app sineverba/vercel-cli git clone https://github.com/LLM-Red-Team/kimi-free-api
-
-    - name: Change directory
-      run: |
-        docker run -t --rm -v $PWD:/app -w /app sineverba/vercel-cli cd kimi-free-api
+      uses: actions/checkout@v2
+      with:
+        repository: 'LLM-Red-Team/kimi-free-api'
+        path: 'kimi-free-api'
 
     - name: Deploy to Vercel
       run: |
-        docker run -t --rm -v $PWD:/app -w /app -e VERCEL_TOKEN=${{ secrets.VERCEL_TOKEN }} sineverba/vercel-cli vercel --prod --token ${{ secrets.VERCEL_TOKEN }} --yes --name kimi-free-api
+        docker run -t --rm -v $PWD/kimi-free-api:/app -w /app -e VERCEL_TOKEN=${{ secrets.VERCEL_TOKEN }} sineverba/vercel-cli vercel --prod --token ${{ secrets.VERCEL_TOKEN }} --yes --name kimi-free-api
