@@ -1,4 +1,4 @@
-name: Deploy Kimi to Vercel
+name: Deploy to Vercel
 
 on:
   workflow_dispatch:
@@ -11,24 +11,18 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: '22'
-
-    - name: Install Vercel CLI
-      run: npm i -g vercel --registry http://registry.npmmirror.com
-
     - name: Login to Vercel
-      run: vercel login YOUR_VERCEL_TOKEN
-      env:
-        YOUR_VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      run: |
+        docker run -t --rm -v $PWD:/app -w /app -e VERCEL_TOKEN=${{ secrets.VERCEL_TOKEN }} vercel/vercel vercel login
 
     - name: Clone repository
-      run: git clone https://github.com/LLM-Red-Team/kimi-free-api
+      run: |
+        docker run -t --rm -v $PWD:/app -w /app vercel/vercel git clone https://github.com/LLM-Red-Team/kimi-free-api
 
     - name: Change directory
-      run: cd kimi-free-api
+      run: |
+        docker run -t --rm -v $PWD:/app -w /app vercel/vercel cd kimi-free-api
 
     - name: Deploy to Vercel
-      run: vercel --prod
+      run: |
+        docker run -t --rm -v $PWD:/app -w /app vercel/vercel vercel --prod
