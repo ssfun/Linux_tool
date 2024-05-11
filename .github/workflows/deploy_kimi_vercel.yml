@@ -13,16 +13,16 @@ jobs:
 
     - name: Login to Vercel
       run: |
-        docker run -t --rm -v $PWD:/app -w /app -e VERCEL_TOKEN=${{ secrets.VERCEL_TOKEN }} vercel/vercel vercel login
+        docker run -t --rm -v $PWD:/app -w /app -e VERCEL_TOKEN=${{ secrets.VERCEL_TOKEN }} sineverba/vercel-cli vercel login
 
     - name: Clone repository
       run: |
-        docker run -t --rm -v $PWD:/app -w /app vercel/vercel git clone https://github.com/LLM-Red-Team/kimi-free-api
+        docker run -t --rm -v $PWD:/app -w /app sineverba/vercel-cli git clone https://github.com/LLM-Red-Team/kimi-free-api
 
     - name: Change directory
       run: |
-        docker run -t --rm -v $PWD:/app -w /app vercel/vercel cd kimi-free-api
+        docker run -t --rm -v $PWD:/app -w /app sineverba/vercel-cli cd kimi-free-api
 
     - name: Deploy to Vercel
       run: |
-        docker run -t --rm -v $PWD:/app -w /app vercel/vercel vercel --prod
+        docker run -t --rm -v $PWD:/app -w /app sineverba/vercel-cli vercel --prod
