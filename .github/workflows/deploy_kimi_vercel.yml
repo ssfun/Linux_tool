@@ -1,4 +1,4 @@
-name: Deploy to Vercel
+name: Deploy Kimi to Vercel
 
 on:
   push:
