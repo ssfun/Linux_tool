@@ -1,4 +1,4 @@
-name: Deploy Kimi to Vercel
+name: Deploy to Vercel
 
 on:
   workflow_dispatch:
@@ -18,6 +18,9 @@ jobs:
 
     - name: Install Vercel CLI
       run: npm i -g vercel --registry http://registry.npmmirror.com
+
+    - name: Clone repository
+      run: git clone https://github.com/LLM-Red-Team/kimi-free-api
 
     - name: Change directory
       run: cd kimi-free-api
