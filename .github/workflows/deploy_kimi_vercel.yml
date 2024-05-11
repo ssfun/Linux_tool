@@ -20,9 +20,9 @@ jobs:
       run: npm i -g vercel --registry http://registry.npmmirror.com
 
     - name: Login to Vercel
-      run: vercel login YOUR_VERCEL_TOKEN
+      run: vercel login --token ${{ secrets.VERCEL_TOKEN }}
       env:
-        YOUR_VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
     - name: Clone repository
       run: git clone https://github.com/LLM-Red-Team/kimi-free-api
