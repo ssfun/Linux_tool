@@ -26,6 +26,6 @@ jobs:
       run: cd kimi-free-api
 
     - name: Deploy to Vercel
-      run: vercel --prod --token ${{ secrets.VERCEL_TOKEN }} --yes
+      run: vercel --prod --token ${{ secrets.VERCEL_TOKEN }} --yes --name free-kimi-api
       env:
         VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
