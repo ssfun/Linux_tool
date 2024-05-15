@@ -1,0 +1,32 @@
+name: Run Token Script
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'  # 或者您需要的 Python 版本
+
+      - name: Install dependencies
+        run: |
+          pip install requests DrissionPage click pyinstaller
+
+      - name: Write token.py from environment variable
+        env:
+          # 假设在 GitHub Secrets 中添加了一个名为 `TOKEN_PY_CONTENT` 的环境变量
+          TOKEN_PY_CONTENT: ${{ secrets.TOKEN_PY_CONTENT }}
+        run: |
+          echo "${TOKEN_PY_CONTENT}" > token.py
+
+      - name: Run token script
+        run: |
+          python token.py -r
