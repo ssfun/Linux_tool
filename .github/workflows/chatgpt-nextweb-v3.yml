@@ -24,7 +24,6 @@ jobs:
 
     - name: Deploy to Vercel
       run: |
-        npm run buil
         dvercel --prod --token ${{ secrets.VERCEL_TOKEN }} --yes --name ChatGPT-Next-Web-V3
       env:
         VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
