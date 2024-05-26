@@ -1,21 +1,30 @@
 name: Deploy Kimi to Vercel
 
 on:
-  push:
-    branches:
-      - main # or the branch you want to trigger the deployment on
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Clone repository
-      uses: actions/checkout@v2
+    - name: Setup Node.js
+      uses: actions/setup-node@v2
       with:
-        repository: 'LLM-Red-Team/kimi-free-api'
-        path: 'kimi-free-api'
+        node-version: '20'
+
+    - name: Install Vercel CLI
+      run: npm i -g vercel --registry http://registry.npmmirror.com
+
+    - name: Clone repository
+      run: git clone https://github.com/LLM-Red-Team/kimi-free-api.git
+
+    - name: Change directory
+      run: cd kimi-free-api
 
     - name: Deploy to Vercel
       run: |
-        docker run -t --rm -v $PWD/kimi-free-api:/app -w /app -e VERCEL_TOKEN=${{ secrets.VERCEL_TOKEN }} sineverba/vercel-cli vercel --prod --token ${{ secrets.VERCEL_TOKEN }} --yes --name kimi-free-api
+        npm run buil
+        dvercel --prod --token ${{ secrets.VERCEL_TOKEN }} --yes --name kimi-free-api
+      env:
+        VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
