@@ -219,40 +219,14 @@ configuration_sing_box_config() {
   },
   "inbounds": [
     {
-      "type": "trojan",
-      "tag": "trojan-in",
+      "type": "shadowsocks",
+      "tag": "ss-in",
       "listen": "::",
-      "listen_port": $tport,
+      "listen_port": $port,
       "sniff": true,
       "sniff_override_destination": false,
-      "users": [
-        {
-          "name": "trojan",
-          "password": "$tpswd"
-        }
-      ],
-      "tls": {
-        "enabled": true,
-        "server_name": "$thost",
-        "certificate_path": "/home/tls/certificates/acme-v02.api.letsencrypt.org-directory/wildcard_.$host/wildcard_.$host.crt",
-        "key_path": "/home/tls/certificates/acme-v02.api.letsencrypt.org-directory/wildcard_.$host/wildcard_.$host.key"
-      },
-      "fallback": {
-        "server": "127.0.0.1",
-        "server_port": 80
-      },
-      "fallback_for_alpn": {
-        "http/1.1": {
-          "server": "127.0.0.1",
-          "server_port": 443
-        }
-      },
-      "transport": {
-        "type": "ws",
-        "path": "$tpath",
-        "max_early_data": 2048,
-        "early_data_header_name": "Sec-WebSocket-Protocol"
-      }
+      "method": "aes-128-gcm",
+      "password": "$pswd"
     }
   ],
   "outbounds": [
@@ -329,22 +303,10 @@ install_sing-box() {
         show_menu
     fi
     LOGI "开始安装"
-    read -p "请输入泛域名:" host
-        [ -z "${host}" ]
-    read -p "请输入 trojan 域名:" thost
-        [ -z "${thost}" ]
-    read -p "请输入 trojan 端口:" tport
-        [ -z "${tport}" ]
-    read -p "请输入 trojan 密码:" tpswd
-        [ -z "${tpswd}" ]
-    read -p "请输入 ws path:" tpath
-        [ -z "${tpath}" ]
-    read -p "请输入 warp ipv6:" warpv6
-        [ -z "${warpv6}" ]  
-    read -p "请输入 warp private key:" warpkey
-        [ -z "${warpkey}" ]  
-    read -p "请输入 warp reserved:" warpreserved
-        [ -z "${warpreserved}" ]  
+    read -p "请输入 ss 端口:" port
+        [ -z "${port}" ]
+    read -p "请输入 ss 密码:" pswd
+        [ -z "${pswd}" ]
     os_check && arch_check && install_base
     mkdir -p "${SING_BOX_CONFIG_PATH}"
     mkdir -p "${SING_BOX_LOG_PATH}"
