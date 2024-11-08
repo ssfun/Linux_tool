@@ -213,11 +213,24 @@ configuration_sing_box_config() {
     cat <<EOF >${SING_BOX_CONFIG_PATH}/config.json
 {
   "log": {
+  	"disabled": false,
     "level": "info",
     "output": "${SING_BOX_LOG_PATH}/sing-box.log",
     "timestamp": true
   },
   "inbounds": [
+    {
+      "type": "shadowsocks",
+      "tag": "ss-in",
+      "listen": "::",
+      "listen_port": $sport,
+      "tcp_fast_open": true,
+      "method": "2022-blake3-aes-128-gcm",
+      "password": "$pswd",
+      "sniff": true,
+      "sniff_override_destination": false,
+      "udp_disable_domain_unmapping": true
+    },
     {
       "type": "trojan",
       "tag": "trojan-in",
@@ -228,28 +241,12 @@ configuration_sing_box_config() {
       "users": [
         {
           "name": "trojan",
-          "password": "$tpswd"
+          "password": "$pswd"
         }
       ],
-      "tls": {
-        "enabled": true,
-        "server_name": "$thost",
-        "certificate_path": "/home/tls/certificates/acme-v02.api.letsencrypt.org-directory/wildcard_.$host/wildcard_.$host.crt",
-        "key_path": "/home/tls/certificates/acme-v02.api.letsencrypt.org-directory/wildcard_.$host/wildcard_.$host.key"
-      },
-      "fallback": {
-        "server": "127.0.0.1",
-        "server_port": 80
-      },
-      "fallback_for_alpn": {
-        "http/1.1": {
-          "server": "127.0.0.1",
-          "server_port": 443
-        }
-      },
       "transport": {
         "type": "ws",
-        "path": "$tpath",
+        "path": "/media-cdn",
         "max_early_data": 2048,
         "early_data_header_name": "Sec-WebSocket-Protocol"
       }
@@ -259,6 +256,12 @@ configuration_sing_box_config() {
     {
       "type": "direct",
       "tag": "direct"
+    },
+    {
+      "type":"direct",
+      "tag":"warp-IPv6-out",
+      "detour":"wireguard-out",
+      "domain_strategy":"ipv6_only"
     },
     {
       "type": "wireguard",
@@ -272,34 +275,48 @@ configuration_sing_box_config() {
       "private_key": "$warpkey",
       "peer_public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
       "reserved": [$warpreserved],
-      "mtu": 1280,
-      "domain_strategy": "prefer_ipv6",
-      "fallback_delay": "300ms"
+      "mtu": 1280
     }
   ],
   "route": {
     "rules": [
       {
-        "inbound": ["trojan-in"],
-        "ip_version": 6,
-        "domain_suffix": ["imgur.com"],
-        "geosite": ["openai"],
+        "domain": ["speedysub.itunes.apple.com","fpinit.itunes.apple.com","entitlements.itunes.apple.com"],
+        "outbound": "wireguard-out"
+      },
+      {
         "ip_cidr": ["1.1.1.1/32"],
         "outbound": "wireguard-out"
+      },
+      {
+        "rule_set": "openai",
+        "outbound": "warp-IPv6-out"
+      },
+      {
+        "domain_keyword": ["ipv6"],
+        "outbound": "warp-IPv6-out"
+      },
+      {
+        "ip_version": 6,
+        "outbound": "warp-IPv6-out"
       }
     ],
-    "geoip": {
-      "path": "geoip.db",
-      "download_url": "https://github.com/SagerNet/sing-geoip/releases/latest/download/geoip.db",
-      "download_detour": "direct"
-    },
-    "geosite": {
-      "path": "geosite.db",
-      "download_url": "https://github.com/SagerNet/sing-geosite/releases/latest/download/geosite.db",
-      "download_detour": "direct"
-    },
+    "rule_set": [
+      {
+        "tag": "openai",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-openai.srs",
+        "download_detour": "direct"
+      }
+    ],
     "final": "direct",
     "auto_detect_interface": true
+  },
+  "experimental": {
+    "cache_file": {
+      "enabled": true
+    }
   }
 }
 EOF
@@ -314,16 +331,12 @@ install_sing-box() {
         show_menu
     fi
     LOGI "开始安装"
-    read -p "请输入泛域名:" host
-        [ -z "${host}" ]
-    read -p "请输入 trojan 域名:" thost
-        [ -z "${thost}" ]
+    read -p "请输入 ss 端口:" sport
+        [ -z "${sport}" ]
     read -p "请输入 trojan 端口:" tport
         [ -z "${tport}" ]
-    read -p "请输入 trojan 密码:" tpswd
-        [ -z "${tpswd}" ]
-    read -p "请输入 ws path:" tpath
-        [ -z "${tpath}" ]
+    read -p "请输密码:" pswd
+        [ -z "${pswd}" ]
     read -p "请输入 warp ipv6:" warpv6
         [ -z "${warpv6}" ]  
     read -p "请输入 warp private key:" warpkey
