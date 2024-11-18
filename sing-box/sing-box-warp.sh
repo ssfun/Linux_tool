@@ -258,12 +258,6 @@ configuration_sing_box_config() {
       "tag": "direct"
     },
     {
-      "type":"direct",
-      "tag":"warp-IPv6-out",
-      "detour":"wireguard-out",
-      "domain_strategy":"ipv6_only"
-    },
-    {
       "type": "wireguard",
       "tag": "wireguard-out",
       "server": "engage.cloudflareclient.com",
@@ -281,6 +275,11 @@ configuration_sing_box_config() {
   "route": {
     "rules": [
       {
+        "rule_set": "openai",
+        "action": "resolve",
+        "strategy": "prefer_ipv6"
+      },
+      {
         "domain": ["speedysub.itunes.apple.com","fpinit.itunes.apple.com","entitlements.itunes.apple.com"],
         "outbound": "wireguard-out"
       },
@@ -290,15 +289,15 @@ configuration_sing_box_config() {
       },
       {
         "rule_set": "openai",
-        "outbound": "warp-IPv6-out"
+        "outbound": "wireguard-out"
       },
       {
         "domain_keyword": ["ipv6"],
-        "outbound": "warp-IPv6-out"
+        "outbound": "wireguard-out"
       },
       {
         "ip_version": 6,
-        "outbound": "warp-IPv6-out"
+        "outbound": "wireguard-out"
       }
     ],
     "rule_set": [
