@@ -218,6 +218,34 @@ configuration_sing_box_config() {
     "output": "${SING_BOX_LOG_PATH}/sing-box.log",
     "timestamp": true
   },
+  "endpoints": [
+    {
+      "type": "wireguard",
+      "tag": "wg-ep",
+      "system": false,
+      "name": "wg0",
+      "mtu": 1280,
+      "address": [
+        "172.16.0.2/32",
+        "$warpv6"
+      ],
+      "private_key": "$warpkey",
+      "listen_port": 2408,
+      "peers": [
+        {
+          "address": "engage.cloudflareclient.com",
+          "port": 2408,
+          "public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
+          "allowed_ips": [
+            "0.0.0.0/0",
+            "::/0"
+          ],
+          "persistent_keepalive_interval": 30,
+          "reserved": [$warpreserved]
+        }
+      ]
+    }
+  ],
   "inbounds": [
     {
       "type": "shadowsocks",
@@ -256,20 +284,6 @@ configuration_sing_box_config() {
     {
       "type": "direct",
       "tag": "direct"
-    },
-    {
-      "type": "wireguard",
-      "tag": "wireguard-out",
-      "server": "engage.cloudflareclient.com",
-      "server_port": 2408,
-      "local_address": [
-        "172.16.0.2/32",
-        "$warpv6"
-      ],
-      "private_key": "$warpkey",
-      "peer_public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
-      "reserved": [$warpreserved],
-      "mtu": 1280
     }
   ],
   "route": {
@@ -280,24 +294,38 @@ configuration_sing_box_config() {
         "strategy": "prefer_ipv6"
       },
       {
-        "domain": ["speedysub.itunes.apple.com","fpinit.itunes.apple.com","entitlements.itunes.apple.com"],
-        "outbound": "wireguard-out"
+        "domain_suffix": "oyunfor.com",
+        "action": "resolve",
+        "strategy": "ipv4_only"
+      },
+      {
+        "domain": [
+          "speedysub.itunes.apple.com",
+          "fpinit.itunes.apple.com",
+          "entitlements.itunes.apple.com"
+        ],
+        "action": "route",
+        "outbound": "wg-ep"
       },
       {
         "ip_cidr": ["1.1.1.1/32"],
-        "outbound": "wireguard-out"
+        "action": "route",
+        "outbound": "wg-ep"
       },
       {
         "rule_set": "openai",
-        "outbound": "wireguard-out"
+        "action": "route",
+        "outbound": "wg-ep"
       },
       {
         "domain_keyword": ["ipv6"],
-        "outbound": "wireguard-out"
+        "action": "route",
+        "outbound": "wg-ep"
       },
       {
         "ip_version": 6,
-        "outbound": "wireguard-out"
+        "action": "route",
+        "outbound": "wg-ep"
       }
     ],
     "rule_set": [
