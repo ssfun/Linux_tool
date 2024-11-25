@@ -265,7 +265,7 @@ configuration_sing_box_config() {
         "action": "resolve",
         "strategy": "ipv4_only"
       }
-    ]
+    ],
     "final": "direct",
     "auto_detect_interface": true
   },
