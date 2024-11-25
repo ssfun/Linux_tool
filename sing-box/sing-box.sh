@@ -259,6 +259,13 @@ configuration_sing_box_config() {
     }
   ],
   "route": {
+    "rules": [
+      {
+        "domain_suffix": "oyunfor.com",
+        "action": "resolve",
+        "strategy": "ipv4_only"
+      }
+    ]
     "final": "direct",
     "auto_detect_interface": true
   },
