@@ -374,7 +374,7 @@ install_sing-box() {
     mkdir -p "${SING_BOX_CONFIG_PATH}"
     mkdir -p "${SING_BOX_LOG_PATH}"
     mkdir -p "${SING_BOX_LIB_PATH}"
-    download_sing-box
+    download_sing_box
     install_sing_box_systemd_service
     configuration_sing_box_config
     systemctl start sing-box
@@ -392,7 +392,7 @@ update_sing-box() {
     systemctl stop sing-box
     rm -f ${SING_BOX_BINARY}
     # getting the latest version of sing-box"
-    download_sing-box
+    download_sing_box
     LOGI "sing-box 启动成功"
     systemctl restart sing-box
     LOGI "sing-box 已完成升级"
