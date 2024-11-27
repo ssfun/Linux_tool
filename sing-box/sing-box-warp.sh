@@ -174,6 +174,7 @@ download_sing_box() {
     # getting the latest stable version of sing-box
     RELEASES=$(wget -qO- -t1 -T2 "https://api.github.com/repos/SagerNet/sing-box/releases")
     LATEST_VERSION=$(echo "$RELEASES" | grep -E 'tag_name|prerelease' | grep -B1 'true' | head -n1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
+    LOGD "LATEST_VERSION $RELEASES"
     LATEST_NAME=$(echo "$RELEASES" | grep -E 'name|prerelease' | grep -B1 'true' | head -n1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
     LINK="https://github.com/SagerNet/sing-box/releases/download/${LATEST_VERSION}/sing-box-${LATEST_NAME}-linux-${ARCH}.tar.gz"
     cd `mktemp -d`
