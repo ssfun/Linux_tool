@@ -778,7 +778,6 @@ update_sing-box() {
     rm -f ${SING_BOX_BINARY}
     
     download_sing_box
-    configuration_sing_box_config
     
     systemctl restart sing-box
     
