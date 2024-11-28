@@ -833,14 +833,17 @@ ${green}0.${plain} 退出脚本
 ————————————————
 ${green}1.${plain} 安装 sing-box
 ${green}2.${plain} 更新 sing-box
-${green}3.${plain} 卸载 sing-box
+${green}3.${plain} 重启 sing-box
+${green}4.${plain} 卸载 sing-box
 ————————————————
-${green}4.${plain} 修改 sing-box 配置
-${green}5.${plain} 重启 sing-box 服务
-${green}6.${plain} 查看 sing-box 日志
+${green}5.${plain} 更新 sing-box 配置
+${green}6.${plain} 修改 sing-box 配置
+${green}7.${plain} 查看 sing-box 日志
+${green}8.${plain} 查看 sing-box 报错
+
 "
     show_sing_box_status
-    echo && read -p "请输入选择 [0-6]:" num
+    echo && read -p "请输入选择 [0-8]:" num
     case "${num}" in
         0) exit 0
         ;;
@@ -848,15 +851,19 @@ ${green}6.${plain} 查看 sing-box 日志
         ;;
         2) update_sing-box && show_menu
         ;;
-        3) uninstall_sing-box && show_menu
+        3) systemctl restart sing-box && show_menu
         ;;
-        4) nano ${SING_BOX_CONFIG_PATH}/config.json && show_menu
+        4) uninstall_sing-box && show_menu
         ;;
-        5) systemctl restart sing-box && show_menu
+        5) configuration_sing_box_config && show_menu
         ;;
-        6) systemctl status sing-box && show_menu
+        6) nano ${SING_BOX_CONFIG_PATH}/config.json && show_menu
         ;;
-        *) LOGE "请输入正确的选项 [0-6]" && show_menu
+        7) systemctl status sing-box && show_menu
+        ;;
+        8) journalctl -u sing-box.service -n 10 && show_menu
+        ;;
+        *) LOGE "请输入正确的选项 [0-8]" && show_menu
         ;;
     esac
 }
