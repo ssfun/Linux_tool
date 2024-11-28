@@ -137,10 +137,31 @@ show_sing_box_status() {
     case $? in
         0)
             echo -e "[INF] sing-box状态: ${yellow}未运行${plain}"
+            if [ -f "${SING_BOX_BINARY}" ]; then
+                local version_info=$(${SING_BOX_BINARY} version)
+                local version=$(echo "$version_info" | head -n1 | awk '{print $3}')
+                echo -e "[INF] sing-box版本: ${green}${version}${plain}"
+            fi
             show_sing_box_enable_status
             ;;
         1)
             echo -e "[INF] sing-box状态: ${green}已运行${plain}"
+            if [ -f "${SING_BOX_BINARY}" ]; then
+                local version_info=$(${SING_BOX_BINARY} version)
+                local version=$(echo "$version_info" | head -n1 | awk '{print $3}')
+                echo -e "[INF] sing-box版本: ${green}${version}${plain}"
+                
+                # 显示更多版本信息
+                local environment=$(echo "$version_info" | grep "Environment:" | awk '{print $2" "$3}')
+                local tags=$(echo "$version_info" | grep "Tags:" | cut -d':' -f2-)
+                local revision=$(echo "$version_info" | grep "Revision:" | awk '{print $2}')
+                local cgo=$(echo "$version_info" | grep "CGO:" | awk '{print $2}')
+                
+                echo -e "[INF] 环境信息: ${green}${environment}${plain}"
+                echo -e "[INF] 包含功能: ${green}${tags}${plain}"
+                echo -e "[INF] 修订版本: ${green}${revision}${plain}"
+                echo -e "[INF] CGO状态: ${green}${cgo}${plain}"
+            fi
             if [ -f "${SING_BOX_CONFIG_PATH}/install.info" ]; then
                 source ${SING_BOX_CONFIG_PATH}/install.info
                 echo -e "[INF] 版本类型: ${green}${SING_BOX_VERSION_TYPE}${plain}"
