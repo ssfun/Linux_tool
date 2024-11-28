@@ -170,15 +170,14 @@ show_sing_box_enable_status() {
 
 #download sing-box  binary
 download_sing_box() {
-    LOGD "开始获取 sing-box 当前版本"
+    LOGD "开始获取 sing-box 最新版本"
     # getting the latest stable version of sing-box
-    RELEASES=$(wget -qO- -t1 -T2 "https://api.github.com/repos/SagerNet/sing-box/releases")
-    LATEST_VERSION=$(echo "$RELEASES" | grep -E 'tag_name|prerelease' | grep -B1 'true' | head -n1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
-    LOGD "LATEST_VERSION $RELEASES"
-    LATEST_NAME=$(echo "$RELEASES" | grep -E 'name|prerelease' | grep -B1 'true' | head -n1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
+    LATEST_VERSION=$(wget -qO- -t1 -T2 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep -E 'tag_name|prerelease' | grep -B1 'false' | head -n1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
+    LOGD "LATEST_VERSION:${LATEST_VERSION}"
+    LATEST_NAME=$(wget -qO- -t1 -T2 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep -E 'name|prerelease' | grep -B1 'false' | head -n1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
     LINK="https://github.com/SagerNet/sing-box/releases/download/${LATEST_VERSION}/sing-box-${LATEST_NAME}-linux-${ARCH}.tar.gz"
-     LOGD "开始获取 sing-box ${LATEST_NAME} "
     cd `mktemp -d`
+    LOGD "开始下载 sing-box_${LATEST_NAME}"
     wget -nv "${LINK}" -O sing-box.tar.gz
     tar -zxvf sing-box.tar.gz --strip-components=1
     mv sing-box ${SING_BOX_BINARY} && chmod +x ${SING_BOX_BINARY}
