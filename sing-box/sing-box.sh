@@ -262,9 +262,25 @@ EOF
     LOGD "安装 sing-box systemd 服务成功"
 }
 
+
+# 检测是否支持IPv6
+check_ipv6_support() {
+    if lsmod | grep -q ipv6; then
+        LOGI "系统支持 IPv6"
+        return 0  # 支持IPv6
+    else
+        LOGI "系统不支持 IPv6"
+        return 1  # 不支持IPv6
+    fi
+}
+
 # Configuration sing-box config
 configuration_sing_box_config() {
     LOGD "开始配置sing-box配置文件..."
+    
+    # 检测IPv6支持
+    check_ipv6_support
+    local ipv6_support=$?
     
     # 让用户选择是否启用 WARP
     echo -e "请选择配置类型:"
@@ -299,18 +315,411 @@ configuration_sing_box_config() {
     read -p "请输入密码:" pswd
     [ -z "${pswd}" ] && LOGE "密码不能为空" && return 1
 
-    # 根据版本类型和配置类型选择模板
+    # 根据版本类型、配置类型和IPv6支持情况选择模板
     if [[ "${SING_BOX_VERSION_TYPE}" == "stable" ]]; then
         if [[ "${SING_BOX_CONFIG_TYPE}" == "warp" ]]; then
-            # 稳定版 + WARP 配置
-            cat <<EOF >${SING_BOX_CONFIG_PATH}/config.json
+            if [[ ${ipv6_support} == 0 ]]; then
+                # 1. 稳定版 + WARP + 本机有IPv6配置
+                generate_config_stable_warp_ipv6
+            else
+                # 2. 稳定版 + WARP + 本机无IPv6配置
+                generate_config_stable_warp_noipv6
+            fi
+        else
+            # 3. 稳定版 + 无WARP配置
+            generate_config_stable_nowarp
+        fi
+    else
+        if [[ "${SING_BOX_CONFIG_TYPE}" == "warp" ]]; then
+            if [[ ${ipv6_support} == 0 ]]; then
+                # 4. 测试版 + WARP + 本机有IPv6配置
+                generate_config_beta_warp_ipv6
+            else
+                # 5. 测试版 + WARP + 本机无IPv6配置
+                generate_config_beta_warp_noipv6
+            fi
+        else
+            # 6. 测试版 + 无WARP配置
+            generate_config_beta_nowarp
+        fi
+    fi
+
+    # 保存版本和配置信息
+    echo "SING_BOX_VERSION_TYPE=${SING_BOX_VERSION_TYPE}" > ${SING_BOX_CONFIG_PATH}/install.info
+    echo "SING_BOX_CONFIG_TYPE=${SING_BOX_CONFIG_TYPE}" >> ${SING_BOX_CONFIG_PATH}/install.info
+    if [[ "${SING_BOX_CONFIG_TYPE}" == "warp" ]]; then
+        echo "IPV6_SUPPORT=$([ ${ipv6_support} == 0 ] && echo "yes" || echo "no")" >> ${SING_BOX_CONFIG_PATH}/install.info
+    fi
+
+    LOGD "sing-box 配置文件完成"
+}
+
+# 以下是各种配置模板生成函数
+generate_config_stable_warp_ipv6() {
+    cat <<EOF >${SING_BOX_CONFIG_PATH}/config.json
 {
+  # 稳定版 + WARP + 本机有IPv6 配置
+  "log": {
+    "disabled": false,
+    "level": "info",
+    "output": "/var/log/sing-box/sing-box.log",
+    "timestamp": true
+  },
+  "inbounds": [
+    {
+      "type": "shadowsocks",
+      "tag": "ss-in",
+      "listen": "::",
+      "listen_port": $sport,
+      "tcp_fast_open": true,
+      "method": "2022-blake3-aes-128-gcm",
+      "password": "$pswd",
+      "sniff": true,
+      "sniff_override_destination": false,
+      "udp_disable_domain_unmapping": true
+    },
+    {
+      "type": "trojan",
+      "tag": "trojan-in",
+      "listen": "::",
+      "listen_port": $tport,
+      "sniff": true,
+      "sniff_override_destination": false,
+      "users": [
+        {
+          "name": "trojan",
+          "password": "$pswd"
+        }
+      ],
+      "transport": {
+        "type": "ws",
+        "path": "/media-cdn",
+        "max_early_data": 2048,
+        "early_data_header_name": "Sec-WebSocket-Protocol"
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "direct"
+    },
+    {
+      "type": "direct",
+      "tag": "direct-v4",
+      "detour":"direct",
+      "domain_strategy":"ipv4_only"
+    },
+    {
+      "type":"direct",
+      "tag":"warp-v6-out",
+      "detour":"warp-out",
+      "domain_strategy":"ipv6_only"
+    },
+    {
+      "type": "wireguard",
+      "tag": "warp-out",
+      "server": "engage.cloudflareclient.com",
+      "server_port": 2408,
+      "local_address": [
+        "172.16.0.2/32",
+        "$warpv6"
+      ],
+      "private_key": "$warpkey",
+      "peer_public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
+      "reserved": [$warpreserved],
+      "mtu": 1280,
+      "fallback_delay": "300ms"
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "domain_suffix": "oyunfor.com",
+        "outbound": "direct-v4"
+      },
+      {
+        "domain": [
+          "speedysub.itunes.apple.com",
+          "fpinit.itunes.apple.com",
+          "entitlements.itunes.apple.com"
+        ],
+        "outbound": "warp-out"
+      },
+      {
+        "ip_cidr": ["1.1.1.1/32"],
+        "outbound": "warp-out"
+      },
+      {
+        "rule_set": "openai",
+        "outbound": "warp-v6-out"
+      }
+    ],
+    "rule_set": [
+      {
+        "tag": "openai",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-openai.srs",
+        "download_detour": "direct"
+      }
+    ],
+    "final": "direct",
+    "auto_detect_interface": true
+  },
+  "experimental": {
+    "cache_file": {
+      "enabled": true
+    }
+  }
+}
+EOF
+}
+
+generate_config_stable_warp_noipv6() {
+    cat <<EOF >${SING_BOX_CONFIG_PATH}/config.json
+{
+  # 稳定版 + WARP + 本机无IPv6 配置
+  "log": {
+    "disabled": false,
+    "level": "info",
+    "output": "/var/log/sing-box/sing-box.log",
+    "timestamp": true
+  },
+  "inbounds": [
+    {
+      "type": "shadowsocks",
+      "tag": "ss-in",
+      "listen": "::",
+      "listen_port": $sport,
+      "tcp_fast_open": true,
+      "method": "2022-blake3-aes-128-gcm",
+      "password": "$pswd",
+      "sniff": true,
+      "sniff_override_destination": false,
+      "udp_disable_domain_unmapping": true
+    },
+    {
+      "type": "trojan",
+      "tag": "trojan-in",
+      "listen": "::",
+      "listen_port": $tport,
+      "sniff": true,
+      "sniff_override_destination": false,
+      "users": [
+        {
+          "name": "trojan",
+          "password": "$pswd"
+        }
+      ],
+      "transport": {
+        "type": "ws",
+        "path": "/media-cdn",
+        "max_early_data": 2048,
+        "early_data_header_name": "Sec-WebSocket-Protocol"
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "direct"
+    },
+    {
+      "type": "direct",
+      "tag": "direct-v4",
+      "detour":"direct",
+      "domain_strategy":"ipv4_only"
+    },
+    {
+      "type":"direct",
+      "tag":"warp-v6-out",
+      "detour":"warp-out",
+      "domain_strategy":"ipv6_only"
+    },
+    {
+      "type": "wireguard",
+      "tag": "warp-out",
+      "server": "engage.cloudflareclient.com",
+      "server_port": 2408,
+      "local_address": [
+        "172.16.0.2/32",
+        "$warpv6"
+      ],
+      "private_key": "$warpkey",
+      "peer_public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
+      "reserved": [$warpreserved],
+      "mtu": 1280,
+      "fallback_delay": "300ms"
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "domain_suffix": "oyunfor.com",
+        "outbound": "direct-v4"
+      },
+      {
+        "domain": [
+          "speedysub.itunes.apple.com",
+          "fpinit.itunes.apple.com",
+          "entitlements.itunes.apple.com"
+        ],
+        "outbound": "warp-out"
+      },
+      {
+        "ip_cidr": ["1.1.1.1/32"],
+        "outbound": "warp-out"
+      },
+      {
+        "rule_set": "openai",
+        "outbound": "warp-v6-out"
+      },
+      {
+        "domain_keyword": ["ipv6"],
+        "outbound": "warp-v6-out"
+      },
+      {
+        "ip_version": 6,
+        "outbound": "warp-v6-out"
+      }
+    ],
+    "rule_set": [
+      {
+        "tag": "openai",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-openai.srs",
+        "download_detour": "direct"
+      }
+    ],
+    "final": "direct",
+    "auto_detect_interface": true
+  },
+  "experimental": {
+    "cache_file": {
+      "enabled": true
+    }
+  }
+}
+}
+EOF
+}
+
+generate_config_stable_nowarp() {
+    cat <<EOF >${SING_BOX_CONFIG_PATH}/config.json
+{
+  # 稳定版基础配置
+  "log": {
+    "disabled": false,
+    "level": "info",
+    "output": "/var/log/sing-box/sing-box.log",
+    "timestamp": true
+  },
+  "inbounds": [
+    {
+      "type": "shadowsocks",
+      "tag": "ss-in",
+      "listen": "::",
+      "listen_port": $sport,
+      "tcp_fast_open": true,
+      "method": "2022-blake3-aes-128-gcm",
+      "password": "$pswd",
+      "sniff": true,
+      "sniff_override_destination": false,
+      "udp_disable_domain_unmapping": true
+    },
+    {
+      "type": "trojan",
+      "tag": "trojan-in",
+      "listen": "::",
+      "listen_port": $tport,
+      "sniff": true,
+      "sniff_override_destination": false,
+      "users": [
+        {
+          "name": "trojan",
+          "password": "$pswd"
+        }
+      ],
+      "transport": {
+        "type": "ws",
+        "path": "/media-cdn",
+        "max_early_data": 2048,
+        "early_data_header_name": "Sec-WebSocket-Protocol"
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "direct"
+    },
+    {
+      "type": "direct",
+      "tag": "direct-v4",
+      "detour":"direct",
+      "domain_strategy":"ipv4_only"
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "domain_suffix": "oyunfor.com",
+        "outbound": "direct-v4"
+      }
+    ],
+    "rule_set": [],
+    "final": "direct",
+    "auto_detect_interface": true
+  },
+  "experimental": {
+    "cache_file": {
+      "enabled": true
+    }
+  }
+}
+EOF
+}
+
+generate_config_beta_warp_ipv6() {
+    cat <<EOF >${SING_BOX_CONFIG_PATH}/config.json
+{
+    # 测试版 + WARP + 本机有IPv6 配置
     "log": {
         "disabled": false,
         "level": "info",
         "output": "${SING_BOX_LOG_PATH}/sing-box.log",
         "timestamp": true
     },
+    "endpoints": [
+        {
+            "type": "wireguard",
+            "tag": "wg-ep",
+            "system": false,
+            "name": "wg0",
+            "mtu": 1280,
+            "address": [
+                "172.16.0.2/32",
+                "$warpv6"
+            ],
+            "private_key": "$warpkey",
+            "listen_port": 2408,
+            "peers": [
+                {
+                    "address": "engage.cloudflareclient.com",
+                    "port": 2408,
+                    "public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
+                    "allowed_ips": [
+                        "0.0.0.0/0",
+                        "::/0"
+                    ],
+                    "persistent_keepalive_interval": 30,
+                    "reserved": [$warpreserved]
+                }
+            ]
+        }
+    ],
     "inbounds": [
         {
             "type": "shadowsocks",
@@ -320,18 +729,12 @@ configuration_sing_box_config() {
             "tcp_fast_open": true,
             "method": "2022-blake3-aes-128-gcm",
             "password": "$pswd",
-            "sniff": true,
-            "sniff_override_destination": false,
-            "udp_disable_domain_unmapping": true
         },
         {
             "type": "trojan",
             "tag": "trojan-in",
             "listen": "::",
             "listen_port": $tport,
-            "sniff": true,
-            "sniff_override_destination": false,
-            "udp_disable_domain_unmapping": true,
             "users": [
                 {
                     "name": "trojan",
@@ -350,40 +753,24 @@ configuration_sing_box_config() {
         {
             "type": "direct",
             "tag": "direct"
-        },
-        {
-            "type": "direct",
-            "tag": "direct-v4",
-            "detour":"direct",
-            "domain_strategy":"ipv4_only"
-        },
-        {
-            "type":"direct",
-            "tag":"warp-v6-out",
-            "detour":"warp-out",
-            "domain_strategy":"ipv6_only"
-        },
-        {
-            "type": "wireguard",
-            "tag": "warp-out",
-            "server": "engage.cloudflareclient.com",
-            "server_port": 2408,
-            "local_address": [
-                "172.16.0.2/32",
-                "$warpv6"
-            ],
-            "private_key": "$warpkey",
-            "peer_public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
-            "reserved": [$warpreserved],
-            "mtu": 1280,
-            "fallback_delay": "300ms"
         }
     ],
     "route": {
         "rules": [
             {
+                "inbound": ["ss-in","trojan-in"],
+                "action": "sniff",
+                "timeout": "1s"
+            }，
+            {
+                "rule_set": "openai",
+                "action": "resolve",
+                "strategy": "prefer_ipv6"
+            },
+            {
                 "domain_suffix": "oyunfor.com",
-                "outbound": "direct-v4"
+                "action": "resolve",
+                "strategy": "ipv4_only"
             },
             {
                 "domain": [
@@ -391,23 +778,18 @@ configuration_sing_box_config() {
                     "fpinit.itunes.apple.com",
                     "entitlements.itunes.apple.com"
                 ],
-                "outbound": "warp-out"
+                "action": "route",
+                "outbound": "wg-ep"
             },
             {
                 "ip_cidr": ["1.1.1.1/32"],
-                "outbound": "warp-out"
+                "action": "route",
+                "outbound": "wg-ep"
             },
             {
                 "rule_set": "openai",
-                "outbound": "warp-v6-out"
-            },
-            {
-                "domain_keyword": ["ipv6"],
-                "outbound": "warp-v6-out"
-            },
-            {
-                "ip_version": 6,
-                "outbound": "warp-v6-out"
+                "action": "route",
+                "outbound": "wg-ep"
             }
         ],
         "rule_set": [
@@ -429,107 +811,12 @@ configuration_sing_box_config() {
     }
 }
 EOF
+}
 
-        else
-            # 稳定版 + 无WARP配置
-            cat <<EOF >${SING_BOX_CONFIG_PATH}/config.json
+generate_config_beta_warp_noipv6() {
+    cat <<EOF >${SING_BOX_CONFIG_PATH}/config.json
 {
-    "log": {
-        "disabled": false,
-        "level": "info",
-        "output": "${SING_BOX_LOG_PATH}/sing-box.log",
-        "timestamp": true
-    },
-    "inbounds": [
-        {
-            "type": "shadowsocks",
-            "tag": "ss-in",
-            "listen": "::",
-            "listen_port": $sport,
-            "tcp_fast_open": true,
-            "method": "2022-blake3-aes-128-gcm",
-            "password": "$pswd",
-            "sniff": true,
-            "sniff_override_destination": false,
-            "udp_disable_domain_unmapping": true
-        },
-        {
-            "type": "trojan",
-            "tag": "trojan-in",
-            "listen": "::",
-            "listen_port": $tport,
-            "sniff": true,
-            "sniff_override_destination": false,
-            "udp_disable_domain_unmapping": true,
-            "users": [
-                {
-                    "name": "trojan",
-                    "password": "$pswd"
-                }
-            ],
-            "transport": {
-                "type": "ws",
-                "path": "/media-cdn",
-                "max_early_data": 2048,
-                "early_data_header_name": "Sec-WebSocket-Protocol"
-            }
-        }
-    ],
-    "outbounds": [
-        {
-            "type": "direct",
-            "tag": "direct"
-        },
-        {
-            "type": "direct",
-            "tag": "direct-v4",
-            "detour":"direct",
-            "domain_strategy":"prefer_ipv4"
-        },
-        {
-            "type": "direct",
-            "tag": "direct-v6",
-            "detour":"direct",
-            "domain_strategy":"prefer_ipv6"
-        },
-    ],
-    "route": {
-        "rules": [
-            {
-                "rule_set": "openai",
-                "outbound": "direct-v6"
-            },
-            {
-                "domain_suffix": "oyunfor.com",
-                "outbound": "direct-v4"
-            }
-        ],
-        "rule_set": [
-            {
-                "tag": "openai",
-                "type": "remote",
-                "format": "binary",
-                "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-openai.srs",
-                "download_detour": "direct"
-            }
-        ],
-        "final": "direct",
-        "auto_detect_interface": true
-    },
-    "experimental": {
-        "cache_file": {
-            "enabled": true
-        }
-    }
-}
-EOF
-        fi
-    else
-        if [[ "${SING_BOX_CONFIG_TYPE}" == "warp" ]]; then
-            # 测试版 + WARP 配置 (可添加测试版特有功能)
-            cat <<EOF >${SING_BOX_CONFIG_PATH}/config.json
-cat <<EOF >${SING_BOX_CONFIG_PATH}/config.json
-{
+    # 测试版 + WARP + 本机无IPv6 配置
     "log": {
         "disabled": false,
         "level": "info",
@@ -665,13 +952,12 @@ cat <<EOF >${SING_BOX_CONFIG_PATH}/config.json
     }
 }
 EOF
+}
 
-        else
-            # 测试版 + 无WARP配置 (可添加测试版特有功能)
-            cat <<EOF >${SING_BOX_CONFIG_PATH}/config.json
+generate_config_beta_nowarp() {
+    cat <<EOF >${SING_BOX_CONFIG_PATH}/config.json
 {
-    # 与稳定版 + 无WARP配置基本相同，可以添加测试版特有功能
-    # 这里使用相同配置
+    # 测试版基础配置
     "log": {
         "disabled": false,
         "level": "info",
@@ -686,7 +972,7 @@ EOF
             "listen_port": $sport,
             "tcp_fast_open": true,
             "method": "2022-blake3-aes-128-gcm",
-            "password": "$pswd"
+            "password": "$pswd",
         },
         {
             "type": "trojan",
@@ -716,25 +1002,17 @@ EOF
     "route": {
         "rules": [
             {
-                "rule_set": "openai",
-                "action": "resolve",
-                "strategy": "prefer_ipv6"
-            },
+                "inbound": ["ss-in","trojan-in"],
+                "action": "sniff",
+                "timeout": "1s"
+            }
             {
                 "domain_suffix": "oyunfor.com",
                 "action": "resolve",
                 "strategy": "ipv4_only"
             }
         ],
-        "rule_set": [
-            {
-                "tag": "openai",
-                "type": "remote",
-                "format": "binary",
-                "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-openai.srs",
-                "download_detour": "direct"
-            }
-        ],
+        "rule_set": [],
         "final": "direct",
         "auto_detect_interface": true
     },
@@ -745,14 +1023,6 @@ EOF
     }
 }
 EOF
-        fi
-    fi
-
-    # 保存版本和配置信息
-    echo "SING_BOX_VERSION_TYPE=${SING_BOX_VERSION_TYPE}" > ${SING_BOX_CONFIG_PATH}/install.info
-    echo "SING_BOX_CONFIG_TYPE=${SING_BOX_CONFIG_TYPE}" >> ${SING_BOX_CONFIG_PATH}/install.info
-
-    LOGD "sing-box 配置文件完成"
 }
 
 # Install sing-box
@@ -855,7 +1125,7 @@ ${green}8.${plain} 查看 sing-box 报错
         ;;
         4) uninstall_sing-box && show_menu
         ;;
-        5) configuration_sing_box_config && show_menu
+        5) configuration_sing_box_config && systemctl status sing-box && show_menu
         ;;
         6) nano ${SING_BOX_CONFIG_PATH}/config.json && show_menu
         ;;
