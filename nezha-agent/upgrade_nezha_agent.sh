@@ -76,7 +76,7 @@ check_nezha_agent() {
 
 download_latest_agent() {
     GITHUB_URL="github.com"
-    NZ_AGENT_URL="https://proxy.ssfun.nyc.mn/https://${GITHUB_URL}/nezhahq/agent/releases/latest/download/nezha-agent_${os}_${os_arch}.zip"
+    NZ_AGENT_URL="https://${GITHUB_URL}/nezhahq/agent/releases/latest/download/nezha-agent_${os}_${os_arch}.zip"
 
     _cmd="wget -t 2 -T 60 -O /tmp/nezha-agent_${os}_${os_arch}.zip $NZ_AGENT_URL >/dev/null 2>&1"
     if ! eval "$_cmd"; then
@@ -97,6 +97,19 @@ restart_nezha_agent() {
     success "nezha-agent service restarted"
 }
 
+show_version() {
+    if [ -f "$NZ_AGENT_PATH/nezha-agent" ]; then
+        version=$(sudo "$NZ_AGENT_PATH/nezha-agent" --version 2>&1)
+        if [ $? -eq 0 ]; then
+            success "Current nezha-agent version: ${version}"
+        else
+            err "Failed to retrieve nezha-agent version."
+        fi
+    else
+        err "nezha-agent binary not found in $NZ_AGENT_PATH."
+    fi
+}
+
 main() {
     deps_check
     env_check
@@ -104,6 +117,7 @@ main() {
     download_latest_agent
     upgrade_nezha_agent
     restart_nezha_agent
+    show_version
 }
 
 main
