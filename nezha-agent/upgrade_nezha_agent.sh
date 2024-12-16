@@ -75,8 +75,9 @@ check_nezha_agent() {
 }
 
 download_latest_agent() {
-    GITHUB_URL="github.com"
-    NZ_AGENT_URL="https://${GITHUB_URL}/nezhahq/agent/releases/latest/download/nezha-agent_${os}_${os_arch}.zip"
+    # 默认 PPOXY_URL 为空，如果环境变量中设置了 PPOXY_URL，则使用传入的值
+    PPOXY_URL="${PPOXY_URL:-}"
+    NZ_AGENT_URL="${PPOXY_URL}https://github.com/nezhahq/agent/releases/latest/download/nezha-agent_${os}_${os_arch}.zip"
 
     _cmd="wget -t 2 -T 60 -O /tmp/nezha-agent_${os}_${os_arch}.zip $NZ_AGENT_URL >/dev/null 2>&1"
     if ! eval "$_cmd"; then
