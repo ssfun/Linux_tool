@@ -263,14 +263,28 @@ EOF
 }
 
 
-# 检测是否支持IPv6
+# 检测 IPv6 连通性
 check_ipv6_support() {
-    if lsmod | grep -q ipv6; then
-        LOGI "系统支持 IPv6"
-        return 0  # 支持IPv6
+    # 测试地址：Google IPv6 DNS
+    local test_ipv6="2001:4860:4860::8888"
+    local ping_count=1
+    local timeout=3
+
+    # 确定使用的 ping 命令
+    local ping_cmd=""
+    if command -v ping6 >/dev/null 2>&1; then
+        ping_cmd="ping6"
     else
-        LOGI "系统不支持 IPv6"
-        return 1  # 不支持IPv6
+        ping_cmd="ping -6"
+    fi
+
+    # 测试连通性
+    if $ping_cmd -c ${ping_count} -W ${timeout} ${test_ipv6} >/dev/null 2>&1; then
+        LOGI "IPv6 连通正常"
+        return 0
+    else
+        LOGE "IPv6 无法连通"
+        return 1
     fi
 }
 
