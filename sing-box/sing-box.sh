@@ -546,8 +546,7 @@ generate_config_stable_warp_noipv6() {
       "peer_public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
       "reserved": [$warpreserved],
       "mtu": 1280,
-      "fallback_delay": "300ms",
-      "domain_strategy": "prefer_ipv6"
+      "fallback_delay": "300ms"
     }
   ],
   "route": {
