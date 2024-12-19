@@ -407,13 +407,11 @@ generate_config_stable_warp_ipv6() {
     {
       "type": "direct",
       "tag": "direct-v4",
-      "detour":"direct",
       "domain_strategy":"ipv4_only"
     },
     {
       "type":"direct",
-      "tag":"warp-v6-out",
-      "detour":"warp-out",
+      "tag":"direct-v6",
       "domain_strategy":"ipv6_only"
     },
     {
@@ -429,7 +427,8 @@ generate_config_stable_warp_ipv6() {
       "peer_public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
       "reserved": [$warpreserved],
       "mtu": 1280,
-      "fallback_delay": "300ms"
+      "fallback_delay": "300ms",
+      "domain_strategy": "prefer_ipv6"
     }
   ],
   "route": {
@@ -437,6 +436,10 @@ generate_config_stable_warp_ipv6() {
       {
         "domain_suffix": "oyunfor.com",
         "outbound": "direct-v4"
+      },
+      {
+        "domain_suffix": "perplexity.ai",
+        "outbound": "warp-out"
       },
       {
         "domain": [
@@ -452,7 +455,7 @@ generate_config_stable_warp_ipv6() {
       },
       {
         "rule_set": "openai",
-        "outbound": "warp-v6-out"
+        "outbound": "warp-out"
       }
     ],
     "rule_set": [
@@ -528,14 +531,7 @@ generate_config_stable_warp_noipv6() {
     {
       "type": "direct",
       "tag": "direct-v4",
-      "detour":"direct",
       "domain_strategy":"ipv4_only"
-    },
-    {
-      "type":"direct",
-      "tag":"warp-v6-out",
-      "detour":"warp-out",
-      "domain_strategy":"ipv6_only"
     },
     {
       "type": "wireguard",
@@ -550,7 +546,8 @@ generate_config_stable_warp_noipv6() {
       "peer_public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
       "reserved": [$warpreserved],
       "mtu": 1280,
-      "fallback_delay": "300ms"
+      "fallback_delay": "300ms",
+      "domain_strategy": "prefer_ipv6"
     }
   ],
   "route": {
@@ -558,6 +555,10 @@ generate_config_stable_warp_noipv6() {
       {
         "domain_suffix": "oyunfor.com",
         "outbound": "direct-v4"
+      },
+      {
+        "domain_suffix": "perplexity.ai",
+        "outbound": "warp-out"
       },
       {
         "domain": [
@@ -573,15 +574,15 @@ generate_config_stable_warp_noipv6() {
       },
       {
         "rule_set": "openai",
-        "outbound": "warp-v6-out"
+        "outbound": "warp-out"
       },
       {
         "domain_keyword": ["ipv6"],
-        "outbound": "warp-v6-out"
+        "outbound": "warp-out"
       },
       {
         "ip_version": 6,
-        "outbound": "warp-v6-out"
+        "outbound": "warp-out"
       }
     ],
     "rule_set": [
@@ -658,7 +659,6 @@ generate_config_stable_nowarp() {
     {
       "type": "direct",
       "tag": "direct-v4",
-      "detour":"direct",
       "domain_strategy":"ipv4_only"
     }
   ],
@@ -768,6 +768,11 @@ generate_config_beta_warp_ipv6() {
                 "strategy": "prefer_ipv6"
             },
             {
+                "domain_suffix": "perplexity.ai",
+                "action": "resolve",
+                "strategy": "prefer_ipv6"
+            },
+            {
                 "domain_suffix": "oyunfor.com",
                 "action": "resolve",
                 "strategy": "ipv4_only"
@@ -778,6 +783,11 @@ generate_config_beta_warp_ipv6() {
                     "fpinit.itunes.apple.com",
                     "entitlements.itunes.apple.com"
                 ],
+                "action": "route",
+                "outbound": "wg-ep"
+            },
+            {
+                "domain_suffix": "perplexity.ai",
                 "action": "route",
                 "outbound": "wg-ep"
             },
@@ -899,6 +909,11 @@ generate_config_beta_warp_noipv6() {
                 "strategy": "prefer_ipv6"
             },
             {
+                "domain_suffix": "perplexity.ai",
+                "action": "resolve",
+                "strategy": "prefer_ipv6"
+            },
+            {
                 "domain_suffix": "oyunfor.com",
                 "action": "resolve",
                 "strategy": "ipv4_only"
@@ -909,6 +924,11 @@ generate_config_beta_warp_noipv6() {
                     "fpinit.itunes.apple.com",
                     "entitlements.itunes.apple.com"
                 ],
+                "action": "route",
+                "outbound": "wg-ep"
+            },
+            {
+                "domain_suffix": "perplexity.ai",
                 "action": "route",
                 "outbound": "wg-ep"
             },
