@@ -26,7 +26,7 @@ decompression() {
 
 # 安装 nezha-agent 的函数
 install_agent() {
-    install -m 755 ${TMP_DIRECTORY}/nezha-agent ${WORKDIR}/nezha-agent
+    install -m 755 ${TMP_DIRECTORY}/nezha-agent ${WORKDIR}/nezha-agent-v1
 }
 
 # 生成 config.yml 的函数
@@ -83,9 +83,9 @@ generate_run_agent() {
 
     cat > ${WORKDIR}/start.sh << EOF
 #!/bin/bash
-pgrep -f 'nezha-agent' | xargs -r kill
+pgrep -f 'nezha-agent-v1' | xargs -r kill
 cd ${WORKDIR}
-TMPDIR="${WORKDIR}" exec ${WORKDIR}/nezha-agent -c config.yml >/dev/null 2>&1
+TMPDIR="${WORKDIR}" exec ${WORKDIR}/nezha-agent-v1 -c config.yml >/dev/null 2>&1
 EOF
     chmod +x ${WORKDIR}/start.sh
 }
@@ -93,20 +93,20 @@ EOF
 # 启动 nezha-agent 的函数
 run_agent() {
     nohup ${WORKDIR}/start.sh >/dev/null 2>&1 &
-    printf "nezha-agent已经准备就绪，请按下回车键启动\n"
+    printf "nezha-agent-v1已经准备就绪，请按下回车键启动\n"
     read
-    printf "正在启动nezha-agent，请耐心等待...\n"
+    printf "正在启动nezha-agent-v1，请耐心等待...\n"
     sleep 3
-    if pgrep -f "nezha-agent -c" > /dev/null; then
-        echo "nezha-agent 已启动！"
+    if pgrep -f "nezha-agent-v1 -c" > /dev/null; then
+        echo "nezha-agen-v1t 已启动！"
         echo "如果面板处未上线，请检查参数是否填写正确，并停止 agent 进程，删除已安装的 agent 后重新安装！"
-        echo "停止 agent 进程的命令：pgrep -f 'nezha-agent' | xargs -r kill"
-        echo "删除已安装的 agent 的命令：rm -rf ~/.nezha-agent"
+        echo "停止 agent 进程的命令：pgrep -f 'nezha-agent-v1' | xargs -r kill"
+        echo "删除已安装的 agent 的命令：rm -rf ~/.nezha-agent-v1"
         echo
-        echo "如果你想使用 pm2 管理 agent 进程，请执行：pm2 start ~/.nezha-agent/start.sh --name nezha-agent"
+        echo "如果你想使用 pm2 管理 agent 进程，请执行：pm2 start ~/.nezha-agent-v1/start.sh --name nezha-agent-v1"
     else
         rm -rf "${WORKDIR}"
-        echo "nezha-agent 启动失败，请检查参数填写是否正确，并重新安装！"
+        echo "nezha-agent-v1 启动失败，请检查参数填写是否正确，并重新安装！"
     fi
 }
 
@@ -117,7 +117,7 @@ TMP_DIRECTORY="$(mktemp -d)"
 ZIP_FILE="${TMP_DIRECTORY}/nezha-agent_freebsd_amd64.zip"
 
 [ ! -e ${WORKDIR}/start.sh ] && generate_run_agent
-[ ! -e ${WORKDIR}/nezha-agent ] && download_agent \
+[ ! -e ${WORKDIR}/nezha-agent-v1 ] && download_agent \
 && decompression "${ZIP_FILE}" \
 && install_agent
 
