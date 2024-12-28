@@ -17,7 +17,7 @@ fi
 # getting the latest version of frps
 PPOXY_URL="${PPOXY_URL:-}"
 latest_version="$(wget -qO- -t1 -T2 "${PPOXY_URL}https://api.github.com/repos/fatedier/frp/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
-echo -e "get the latest version of caddy: ${latest_version}"
+echo -e "get the latest version of frps: ${latest_version}"
 latest_name="$(wget -qO- -t1 -T2 "${PPOXY_URL}https://api.github.com/repos/fatedier/frp/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/v//g;s/,//g;s/ //g')"
 echo "${latest_name}"
 frps_link="${PPOXY_URL}https://github.com/fatedier/frp/releases/download/${latest_version}/frp_${latest_name}_linux_${arch}.tar.gz"
@@ -57,7 +57,6 @@ read -p "请设置Web管理员账号:" webuser
 read -p "请设置Web管理员密码:" webpass
     [ -z "${webpass}" ]
 cat <<EOF >/usr/local/etc/frps/frps.toml
-[common]
 #bindPort是服务端与客户端之间通信使用的端口号
 bindPort = $port
 
@@ -66,7 +65,7 @@ auth.method = "token" # 选择token方式验证
 auth.token = "$token$" # 必须与客户端的token一致，token用于验证连接，只有服务端和客户端token相同的时候才能正常访问。如果不使用token，那么所有人都可以直接连接上。
 
 #服务端开启仪表板
-webServer.addr = "0.0.0.0"
+webServer.addr = "::"
 webServer.port = $webport
 webServer.user = "$webuser"
 webServer.password = "$webpass"
