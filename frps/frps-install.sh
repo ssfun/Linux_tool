@@ -50,12 +50,6 @@ read -p "请输入需要监听的端口:" port
     [ -z "${port}" ]
 read -p "请输入连接的 token:" token
     [ -z "${token}" ]
-read -p "请输入需要监听的Web端口:" webport
-    [ -z "${webport}" ]
-read -p "请设置Web管理员账号:" webuser
-    [ -z "${webuser}" ]
-read -p "请设置Web管理员密码:" webpass
-    [ -z "${webpass}" ]
 cat <<EOF >/usr/local/etc/frps/frps.toml
 #bindPort是服务端与客户端之间通信使用的端口号
 bindPort = $port
@@ -63,12 +57,6 @@ bindPort = $port
 # 配置验证方式
 auth.method = "token" # 选择token方式验证
 auth.token = "$token$" # 必须与客户端的token一致，token用于验证连接，只有服务端和客户端token相同的时候才能正常访问。如果不使用token，那么所有人都可以直接连接上。
-
-#服务端开启仪表板
-webServer.addr = "::"
-webServer.port = $webport
-webServer.user = "$webuser"
-webServer.password = "$webpass"
 
 # https证书配置
 # webServer.tls.certFile = "server.crt"
