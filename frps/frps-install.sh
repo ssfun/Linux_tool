@@ -38,7 +38,7 @@ Wants = network.target
 
 [Service]
 Type = simple
-ExecStart = /usr/local/bin/frps -c /usr/local/etc/frps/frps.ini
+ExecStart = /usr/local/bin/frps -c /usr/local/etc/frps/frps.toml
 
 [Install]
 WantedBy = multi-user.target
@@ -49,11 +49,35 @@ read -p "请输入需要监听的端口:" port
     [ -z "${port}" ]
 read -p "请输入连接的 token:" token
     [ -z "${token}" ]
-cat <<EOF >/usr/local/etc/frps/frps.ini
+read -p "请输入需要监听的Web端口:" webport
+    [ -z "${webport}" ]
+read -p "请设置Web管理员账号:" webuser
+    [ -z "${webuser}" ]
+read -p "请设置Web管理员密码:" webpass
+    [ -z "${webpass}" ]
+cat <<EOF >/usr/local/etc/frps/frps.toml
 [common]
-bind_port = $port
-authentication_method = token
-token = $token
+#bindPort是服务端与客户端之间通信使用的端口号
+bindPort = $port
+
+# 配置验证方式
+auth.method = "token" # 选择token方式验证
+auth.token = "$token$" # 必须与客户端的token一致，token用于验证连接，只有服务端和客户端token相同的时候才能正常访问。如果不使用token，那么所有人都可以直接连接上。
+
+#服务端开启仪表板
+webServer.addr = "0.0.0.0"
+webServer.port = $webport
+webServer.user = "$webuser"
+webServer.password = "$webpass"
+
+# https证书配置
+# webServer.tls.certFile = "server.crt"
+# webServer.tls.keyFile = "server.key"
+
+# 多路复用
+transport.tcpMux = true
+# 最大连接池数量
+transport.maxPoolCount = 10
 EOF
 
 echo -e "start frps"
@@ -63,4 +87,4 @@ systemctl enable frps
 systemctl start frps
 
 echo -e "frps is installed, and started."
-echo -e "use 'nano /usr/local/etc/frps/frps.ini' edit frps config."
+echo -e "use 'nano /usr/local/etc/frps/frps.toml' edit frps config."
