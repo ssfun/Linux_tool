@@ -15,11 +15,12 @@ else
 fi
 
 # getting the latest version of frps
-latest_version="$(wget -qO- -t1 -T2 "https://api.github.com/repos/fatedier/frp/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
-echo -e "get the latest version of caddy: ${latest_version}"
-latest_name="$(wget -qO- -t1 -T2 "https://api.github.com/repos/fatedier/frp/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/v//g;s/,//g;s/ //g')"
+PPOXY_URL="${PPOXY_URL:-}"
+latest_version="$(wget -qO- -t1 -T2 "${PPOXY_URL}https://api.github.com/repos/fatedier/frp/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')"
+echo -e "get the latest version of frps: ${latest_version}"
+latest_name="$(wget -qO- -t1 -T2 "${PPOXY_URL}https://api.github.com/repos/fatedier/frp/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/v//g;s/,//g;s/ //g')"
 echo "${latest_name}"
-frps_link="https://github.com/fatedier/frp/releases/download/${latest_version}/frp_${latest_name}_linux_${arch}.tar.gz"
+frps_link="${PPOXY_URL}https://github.com/fatedier/frp/releases/download/${latest_version}/frp_${latest_name}_linux_${arch}.tar.gz"
 
 systemctl stop frps
 rm -f /usr/local/bin/frps
@@ -38,4 +39,4 @@ systemctl reset-failed
 systemctl restart frps
 
 echo -e "frps is updated, and restarted."
-echo -e "use 'nano /usr/local/etc/frps/frps.ini' edit frps config."
+echo -e "use 'nano /usr/local/etc/frps/frps.toml' edit frps config."
