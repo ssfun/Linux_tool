@@ -129,8 +129,25 @@ download_webdav() {
     local download_url="https://github.com/hacdias/webdav/releases/download/${version}/linux-${ARCH}-webdav.tar.gz"
     LOGD "下载链接: ${download_url}"
     curl -L -o /tmp/webdav.tar.gz ${download_url} || { LOGE "下载 WebDAV 失败"; return 1; }
-    tar -zxvf /tmp/webdav.tar.gz -C /usr/bin/ || { LOGE "解压 WebDAV 失败"; return 1; }
-    chmod +x ${WEBDAV_BINARY}
+
+    # 解压到临时目录
+    local temp_dir=$(mktemp -d)
+    tar -zxvf /tmp/webdav.tar.gz -C ${temp_dir} || { LOGE "解压 WebDAV 失败"; return 1; }
+
+    # 移动 webdav 二进制文件到目标路径
+    local webdav_binary_path=$(find ${temp_dir} -name "webdav" -type f)
+    if [[ -z "${webdav_binary_path}" ]]; then
+        LOGE "未找到 webdav 二进制文件"
+        return 1
+    fi
+    mv ${webdav_binary_path} ${WEBDAV_BINARY} || { LOGE "移动 webdav 二进制文件失败"; return 1; }
+
+    # 设置权限
+    chmod +x ${WEBDAV_BINARY} || { LOGE "设置 webdav 二进制文件权限失败"; return 1; }
+
+    # 清理临时文件
+    rm -rf ${temp_dir} /tmp/webdav.tar.gz
+
     LOGI "WebDAV 下载并解压完成"
 }
 
