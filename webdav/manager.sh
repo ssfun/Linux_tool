@@ -16,7 +16,7 @@ yellow='\033[0;33m'
 
 # WebDAV 环境变量
 WEBDAV_BINARY="/usr/local/bin/webdav"
-WEBDAV_CONFIG="/usr/local/etc/webdav/config.yml"
+WEBDAV_CONFIG="/usr/local/etc/webdav"
 WEBDAV_SERVICE="/etc/systemd/system/webdav.service"
 
 # WebDAV 状态定义
@@ -166,7 +166,7 @@ create_webdav_config() {
     read -p "请输入 WebDAV 密码 (默认 admin): " password
     [[ -z "${password}" ]] && password="admin"
 
-    cat <<EOF >${WEBDAV_CONFIG}
+    cat <<EOF >${WEBDAV_CONFIG}/config.yml
 address: 0.0.0.0
 port: ${port}
 
