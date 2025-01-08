@@ -376,4 +376,8 @@ ${green}6.${plain} 查看 WebDAV 报错
     esac
 }
 
-main()
+main() {
+    show_menu
+}
+
+main
