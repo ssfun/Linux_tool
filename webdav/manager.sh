@@ -146,8 +146,8 @@ create_webdav_config() {
     read -p "请输入 WebDAV 监听端口 (默认 6065): " port
     [[ -z "${port}" ]] && port=6065
 
-    read -p "请输入 WebDAV 根目录 (默认 /data): " directory
-    [[ -z "${directory}" ]] && directory="/data"
+    read -p "请输入 WebDAV 根目录 (默认 /home): " directory
+    [[ -z "${directory}" ]] && directory="/home"
 
     read -p "请输入 WebDAV 用户名 (默认 admin): " username
     [[ -z "${username}" ]] && username="admin"
