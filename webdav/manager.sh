@@ -57,19 +57,19 @@ confirm() {
 # 系统检测
 os_check() {
     LOGI "检测当前系统中..."
-    if grep -qi "centos" /etc/redhat-release; then
+    if grep -qi "centos" /etc/redhat-release 2>/dev/null; then
         OS="centos"
-    elif grep -qi "debian" /etc/issue; then
+    elif grep -qi "debian" /etc/issue 2>/dev/null; then
         OS="debian"
-    elif grep -qi "ubuntu" /etc/issue; then
+    elif grep -qi "ubuntu" /etc/issue 2>/dev/null; then
         OS="ubuntu"
-    elif grep -qi "centos|red hat|redhat" /etc/issue; then
+    elif grep -qi "centos|red hat|redhat" /etc/issue 2>/dev/null; then
         OS="centos"
-    elif grep -qi "debian" /proc/version; then
+    elif grep -qi "debian" /proc/version 2>/dev/null; then
         OS="debian"
-    elif grep -qi "ubuntu" /proc/version; then
+    elif grep -qi "ubuntu" /proc/version 2>/dev/null; then
         OS="ubuntu"
-    elif grep -qi "centos|red hat|redhat" /proc/version; then
+    elif grep -qi "centos|red hat|redhat" /proc/version 2>/dev/null; then
         OS="centos"
     else
         LOGE "系统检测错误,当前系统不支持!" && exit 1
@@ -108,6 +108,7 @@ install_base() {
 
 # 获取最新版本号
 get_latest_version() {
+    LOGD "从 GitHub API 获取最新版本号..."
     local api_url="https://api.github.com/repos/hacdias/webdav/releases/latest"
     local version=$(curl -s ${api_url} | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
     if [[ -z "${version}" ]]; then
@@ -121,11 +122,15 @@ get_latest_version() {
 download_webdav() {
     LOGD "开始下载 WebDAV 二进制文件..."
     local version=$(get_latest_version)
+    if [[ -z "${version}" ]]; then
+        LOGE "无法获取最新版本号"
+        return 1
+    fi
     LOGI "最新版本号: ${version}"
     local download_url="https://github.com/hacdias/webdav/releases/download/${version}/linux-${ARCH}-webdav.tar.gz"
     LOGD "下载链接: ${download_url}"
-    curl -L -o /tmp/webdav.tar.gz ${download_url} || { LOGE "下载 WebDAV 失败"; exit 1; }
-    tar -zxvf /tmp/webdav.tar.gz -C /usr/bin/ || { LOGE "解压 WebDAV 失败"; exit 1; }
+    curl -L -o /tmp/webdav.tar.gz ${download_url} || { LOGE "下载 WebDAV 失败"; return 1; }
+    tar -zxvf /tmp/webdav.tar.gz -C /usr/bin/ || { LOGE "解压 WebDAV 失败"; return 1; }
     chmod +x ${WEBDAV_BINARY}
     LOGI "WebDAV 下载并解压完成"
 }
