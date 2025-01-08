@@ -108,7 +108,6 @@ install_base() {
 
 # 获取最新版本号
 get_latest_version() {
-    LOGD "从 GitHub API 获取最新版本号..."
     local api_url="https://api.github.com/repos/hacdias/webdav/releases/latest"
     local version=$(curl -s ${api_url} | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
     if [[ -z "${version}" ]]; then
