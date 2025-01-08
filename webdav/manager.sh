@@ -94,16 +94,7 @@ arch_check() {
 
 # 安装基础依赖
 install_base() {
-    LOGI "检查并安装依赖: curl 和 tar..."
-    if ! command -v curl >/dev/null 2>&1; then
-        LOGI "curl 未安装，正在安装..."
-        if [[ ${OS} == "ubuntu" || ${OS} == "debian" ]]; then
-            apt install curl -y || { LOGE "安装 curl 失败"; exit 1; }
-        elif [[ ${OS} == "centos" ]]; then
-            yum install curl -y || { LOGE "安装 curl 失败"; exit 1; }
-        fi
-    fi
-
+    LOGI "检查并安装依赖: tar..."
     if ! command -v tar >/dev/null 2>&1; then
         LOGI "tar 未安装，正在安装..."
         if [[ ${OS} == "ubuntu" || ${OS} == "debian" ]]; then
@@ -247,6 +238,71 @@ EOF
     LOGI "WebDAV systemd 服务已创建并启用"
 }
 
+# WebDAV 状态检查
+webdav_status_check() {
+    if [[ ! -f "${WEBDAV_SERVICE}" ]]; then
+        return ${WEBDAV_STATUS_NOT_INSTALL}
+    fi
+    if systemctl is-active webdav >/dev/null 2>&1; then
+        return ${WEBDAV_STATUS_RUNNING}
+    else
+        return ${WEBDAV_STATUS_NOT_RUNNING}
+    fi
+}
+
+# 显示 WebDAV 状态
+show_webdav_status() {
+    webdav_status_check
+    case $? in
+        ${WEBDAV_STATUS_RUNNING})
+            echo -e "[INF] WebDAV 状态: ${green}已运行${plain}"
+            local installed_version=$(${WEBDAV_BINARY} --version | awk '{print $2}')
+            echo -e "[INF] 当前安装版本: ${green}${installed_version}${plain}"
+            show_webdav_enable_status
+            show_webdav_running_status
+            ;;
+        ${WEBDAV_STATUS_NOT_RUNNING})
+            echo -e "[INF] WebDAV 状态: ${yellow}未运行${plain}"
+            if [[ -f "${WEBDAV_BINARY}" ]]; then
+                local installed_version=$(${WEBDAV_BINARY} --version | awk '{print $2}')
+                echo -e "[INF] 当前安装版本: ${green}${installed_version}${plain}"
+            fi
+            show_webdav_enable_status
+            ;;
+        ${WEBDAV_STATUS_NOT_INSTALL})
+            echo -e "[INF] WebDAV 状态: ${red}未安装${plain}"
+            ;;
+    esac
+
+    # 获取并显示 GitHub 上的最新版本号
+    local latest_version=$(get_latest_version)
+    if [[ -n "${latest_version}" ]]; then
+        echo -e "[INF] 最新版本号: ${green}${latest_version}${plain}"
+    else
+        LOGE "获取最新版本号失败"
+    fi
+}
+
+# 显示 WebDAV 运行状态
+show_webdav_running_status() {
+    webdav_status_check
+    if [[ $? == ${WEBDAV_STATUS_RUNNING} ]]; then
+        local runTime=$(systemctl show -p ActiveEnterTimestamp webdav | cut -d= -f2)
+        LOGI "WebDAV 运行时长：${runTime}"
+    else
+        LOGE "WebDAV 未运行"
+    fi
+}
+
+# 显示 WebDAV 是否开机自启
+show_webdav_enable_status() {
+    if systemctl is-enabled webdav >/dev/null 2>&1; then
+        echo -e "[INF] WebDAV 是否开机自启: ${green}是${plain}"
+    else
+        echo -e "[INF] WebDAV 是否开机自启: ${red}否${plain}"
+    fi
+}
+
 # 安装 WebDAV
 install_webdav() {
     LOGD "开始安装 WebDAV..."
@@ -290,60 +346,6 @@ uninstall_webdav() {
     rm -f ${WEBDAV_BINARY}
     rm -f ${WEBDAV_CONFIG}
     LOGI "WebDAV 卸载完成"
-}
-
-# 显示 WebDAV 状态
-show_webdav_status() {
-    webdav_status_check
-    case $? in
-        ${WEBDAV_STATUS_RUNNING})
-            echo -e "[INF] WebDAV 状态: ${green}已运行${plain}"
-            local installed_version=$(${WEBDAV_BINARY} --version | awk '{print $2}')
-            echo -e "[INF] 当前安装版本: ${green}${installed_version}${plain}"
-            show_webdav_enable_status
-            show_webdav_running_status
-            ;;
-        ${WEBDAV_STATUS_NOT_RUNNING})
-            echo -e "[INF] WebDAV 状态: ${yellow}未运行${plain}"
-            if [[ -f "${WEBDAV_BINARY}" ]]; then
-                local installed_version=$(${WEBDAV_BINARY} --version | awk '{print $2}')
-                echo -e "[INF] 当前安装版本: ${green}${installed_version}${plain}"
-            fi
-            show_webdav_enable_status
-            ;;
-        ${WEBDAV_STATUS_NOT_INSTALL})
-            echo -e "[INF] WebDAV 状态: ${red}未安装${plain}"
-            ;;
-    esac
-
-    # 获取并显示 GitHub 上的最新版本号
-    LOGI "从 GitHub API 获取最新版本号..."
-    local latest_version=$(get_latest_version)
-    if [[ -n "${latest_version}" ]]; then
-        echo -e "[INF] 最新版本号: ${green}${latest_version}${plain}"
-    else
-        LOGE "获取最新版本号失败"
-    fi
-}
-
-# 显示 WebDAV 运行状态
-show_webdav_running_status() {
-    webdav_status_check
-    if [[ $? == ${WEBDAV_STATUS_RUNNING} ]]; then
-        local runTime=$(systemctl show -p ActiveEnterTimestamp webdav | cut -d= -f2)
-        LOGI "WebDAV 运行时长：${runTime}"
-    else
-        LOGE "WebDAV 未运行"
-    fi
-}
-
-# 显示 WebDAV 是否开机自启
-show_webdav_enable_status() {
-    if systemctl is-enabled webdav >/dev/null 2>&1; then
-        echo -e "[INF] WebDAV 是否开机自启: ${green}是${plain}"
-    else
-        echo -e "[INF] WebDAV 是否开机自启: ${red}否${plain}"
-    fi
 }
 
 # 显示菜单
