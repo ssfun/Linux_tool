@@ -360,11 +360,9 @@ ${green}4.${plain} 卸载 WebDAV
 ————————————————
 ${green}5.${plain} 查看 WebDAV 日志
 ${green}6.${plain} 查看 WebDAV 报错
-————————————————
-${green}7.${plain} 查看 WebDAV 状态
 "
     show_webdav_status
-    echo && read -p "请输入选择 [0-7] (默认0): " num
+    echo && read -p "请输入选择 [0-6] (默认0): " num
     [[ -z "${num}" ]] && num=0
     case "${num}" in
         0) exit 0 ;;
@@ -374,8 +372,7 @@ ${green}7.${plain} 查看 WebDAV 状态
         4) uninstall_webdav && show_menu ;;
         5) systemctl status webdav && show_menu ;;
         6) journalctl -u webdav -n 10 && show_menu ;;
-        7) show_webdav_status && show_menu ;;
-        *) LOGE "请输入正确的选项 [0-7]" && show_menu ;;
+        *) LOGE "请输入正确的选项 [0-6]" && show_menu ;;
     esac
 }
 
