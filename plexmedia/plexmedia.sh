@@ -266,7 +266,7 @@ show_menu() {
         journalctl -u plexmediaserver -p 3 -xb --no-pager && show_menu
         ;;
     *)
-        LOGE "请输入正确的选项 [0-5]"
+        LOGE "请输入正确的选项 [0-6]"
         ;;
     esac
 }
