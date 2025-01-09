@@ -3,7 +3,7 @@
 # ssfun's Linux Tool For WEBDAV
 # Author: ssfun
 # Date: 2025-01-08
-# Version: 0.0.2
+# Version: 1.0.0
 #####################################################
 
 # 基本定义
@@ -18,6 +18,7 @@ yellow='\033[0;33m'
 WEBDAV_BINARY="/usr/local/bin/webdav"
 WEBDAV_CONFIG="/usr/local/etc/webdav"
 WEBDAV_SERVICE="/etc/systemd/system/webdav.service"
+WEBDAV_VERSION_FILE="/usr/local/etc/webdav/version"
 
 # WebDAV 状态定义
 declare -r WEBDAV_STATUS_RUNNING=1
@@ -144,6 +145,9 @@ download_webdav() {
 
     # 设置权限
     chmod +x ${WEBDAV_BINARY} || { LOGE "设置 webdav 二进制文件权限失败"; return 1; }
+
+    # 记录版本号
+    echo "${version}" > ${WEBDAV_VERSION_FILE}
 
     # 清理临时文件
     rm -rf ${temp_dir} /tmp/webdav.tar.gz
@@ -276,16 +280,22 @@ show_webdav_status() {
     case $? in
         ${WEBDAV_STATUS_RUNNING})
             echo -e "[INF] WebDAV 状态: ${green}已运行${plain}"
-            local installed_version=$(${WEBDAV_BINARY} --version | awk '{print $2}')
-            echo -e "[INF] 当前安装版本: ${green}${installed_version}${plain}"
+            if [[ -f "${WEBDAV_VERSION_FILE}" ]]; then
+                local installed_version=$(cat ${WEBDAV_VERSION_FILE})
+                echo -e "[INF] 当前安装版本: ${green}${installed_version}${plain}"
+            else
+                echo -e "[INF] 当前安装版本: ${red}未知${plain}"
+            fi
             show_webdav_enable_status
             show_webdav_running_status
             ;;
         ${WEBDAV_STATUS_NOT_RUNNING})
             echo -e "[INF] WebDAV 状态: ${yellow}未运行${plain}"
-            if [[ -f "${WEBDAV_BINARY}" ]]; then
-                local installed_version=$(${WEBDAV_BINARY} --version | awk '{print $2}')
+            if [[ -f "${WEBDAV_VERSION_FILE}" ]]; then
+                local installed_version=$(cat ${WEBDAV_VERSION_FILE})
                 echo -e "[INF] 当前安装版本: ${green}${installed_version}${plain}"
+            else
+                echo -e "[INF] 当前安装版本: ${red}未知${plain}"
             fi
             show_webdav_enable_status
             ;;
@@ -365,6 +375,7 @@ uninstall_webdav() {
     systemctl daemon-reload
     rm -f ${WEBDAV_BINARY}
     rm -f ${WEBDAV_CONFIG}
+    rm -f ${WEBDAV_VERSION_FILE}
     LOGI "WebDAV 卸载完成"
 }
 
