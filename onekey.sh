@@ -23,9 +23,9 @@ show_menu() {
   ${green}Q.${plain} 退出脚本
   ————————————————
   ${green}1.${plain} 管理 sing-box
-  ${green}2.${plain} 管理 qBittorrent
+  ${green}2.${plain} 管理 frps
   ${green}3.${plain} 管理 webdav
-  ${green}4.${plain} 管理 frps
+  ${green}4.${plain} 管理 qBittorrent
  "
     echo && read -p "请输入选择[0-4]:" num
 
@@ -37,13 +37,13 @@ show_menu() {
         bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/sing-box/sing-box.sh)
         ;;
     2)
-        bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/qBittorrent/qbittorrent.sh)
+        bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/frps/frps.sh)
         ;;
     3)
         bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/webdav/webdav.sh)
         ;;
     4)
-        bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/frps/frps.sh)
+        bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/qbittorrent/qbittorrent.sh)
         ;;
     *)
         LOGE "请输入正确的选项 [0-4]"
