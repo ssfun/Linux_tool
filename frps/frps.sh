@@ -1,10 +1,10 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 #####################################################
-# FRPS 管理脚本
-# 功能：安装、更新、重启、卸载、查看日志、查看报错
-# 作者：优化版
-# 版本：1.4.0
+# ssfun's Linux Tool For FRPS
+# Author: ssfun
+# Date: 2025-01-08
+# Version: 1.0.0
 #####################################################
 
 # 颜色定义
@@ -53,6 +53,18 @@ get_latest_version() {
     fi
 }
 
+# 检查 FRPS 状态
+check_frps_status() {
+    if [[ ! -f "/usr/local/bin/frps" ]]; then
+        return ${FRPS_STATUS_NOT_INSTALL}
+    fi
+    if systemctl is-active frps >/dev/null 2>&1; then
+        return ${FRPS_STATUS_RUNNING}
+    else
+        return ${FRPS_STATUS_NOT_RUNNING}
+    fi
+}
+
 # 显示 FRPS 状态
 show_frps_status() {
     check_frps_status
@@ -87,6 +99,18 @@ show_frps_status() {
     echo -e "${green}[INF] FRPS 最新版本: ${LATEST_VERSION_CACHE}${plain}"
 }
 
+# 询问用户是否设置 PPOXY_URL
+ask_pproxy_url() {
+    read -p "是否设置代理 URL (PPOXY_URL)? [y/n]: " set_pproxy
+    if [[ "${set_pproxy,,}" == "y" || "${set_pproxy,,}" == "yes" ]]; then
+        read -p "请输入 PPOXY_URL (例如: http://example.com/): " PPOXY_URL
+        echo -e "${green}[INF] 已设置 PPOXY_URL: ${PPOXY_URL}${plain}"
+    else
+        PPOXY_URL=""
+        echo -e "${yellow}[INF] 未设置 PPOXY_URL${plain}"
+    fi
+}
+
 # 下载 FRPS
 download_frps() {
     ask_pproxy_url
@@ -99,18 +123,6 @@ download_frps() {
     cd frp_${LATEST_NAME_CACHE}_linux_${arch}
     mv frps /usr/local/bin/frps && chmod +x /usr/local/bin/frps
     echo -e "${green}FRPS 下载完成！${plain}"
-}
-
-# 询问用户是否设置 PPOXY_URL
-ask_pproxy_url() {
-    read -p "是否设置代理 URL (PPOXY_URL)? [y/n]: " set_pproxy
-    if [[ "${set_pproxy,,}" == "y" || "${set_pproxy,,}" == "yes" ]]; then
-        read -p "请输入 PPOXY_URL (例如: http://example.com/): " PPOXY_URL
-        echo -e "${green}[INF] 已设置 PPOXY_URL: ${PPOXY_URL}${plain}"
-    else
-        PPOXY_URL=""
-        echo -e "${yellow}[INF] 未设置 PPOXY_URL${plain}"
-    fi
 }
 
 # 安装 FRPS
