@@ -29,3 +29,8 @@ bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/webdav/w
 ```
 bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/qbittorrent/qbittorrent.sh)
 ```
+
+## Plexmedia
+```
+bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/plexmedia/plexmedia.sh)
+```
