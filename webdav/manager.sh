@@ -158,6 +158,13 @@ download_webdav() {
 # 创建 WebDAV 配置文件
 create_webdav_config() {
     LOGD "创建 WebDAV 配置文件..."
+
+    # 确保配置目录存在
+    if [[ ! -d "${WEBDAV_CONFIG}" ]]; then
+        LOGI "创建配置目录: ${WEBDAV_CONFIG}"
+        mkdir -p "${WEBDAV_CONFIG}" || { LOGE "创建配置目录失败"; return 1; }
+    fi
+
     read -p "请输入 WebDAV 监听端口 (默认 6065): " port
     [[ -z "${port}" ]] && port=6065
 
