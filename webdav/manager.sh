@@ -251,7 +251,7 @@ After=network.target
 [Service]
 Type=simple
 User=root
-ExecStart=${WEBDAV_BINARY} --config ${WEBDAV_CONFIG}
+ExecStart=${WEBDAV_BINARY} --config ${WEBDAV_CONFIG}/config.yml
 Restart=on-failure
 
 [Install]
