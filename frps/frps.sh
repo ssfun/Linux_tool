@@ -46,10 +46,8 @@ get_arch() {
 # 获取最新版本号（带缓存）
 get_latest_version() {
     if [[ -z "${LATEST_VERSION_CACHE}" ]]; then
-        echo -e "${yellow}正在从 GitHub 获取最新版本号...${plain}"
         LATEST_VERSION_CACHE=$(wget -qO- -t1 -T2 "${PPOXY_URL}https://api.github.com/repos/fatedier/frp/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
         LATEST_NAME_CACHE=$(echo "${LATEST_VERSION_CACHE}" | sed 's/v//g')
-        echo -e "${green}最新版本号: ${LATEST_VERSION_CACHE}${plain}"
     fi
 }
 
