@@ -26,6 +26,9 @@ QB_DIRTEMP_PATH='/home/downloads-temp'
 QB_BINARY='/usr/local/bin/qbittorrent-nox'
 QB_SERVICE='/etc/systemd/system/qbt.service'
 
+# Cache the latest version number
+LATEST_VERSION_CACHE=""
+
 # qBittorrent status define
 declare -r QB_STATUS_RUNNING=1
 declare -r QB_STATUS_NOT_RUNNING=0
@@ -106,6 +109,16 @@ install_base() {
     fi
 }
 
+# Retrieve the latest version number of qBittorrent (with cache)
+get_latest_qBittorrent_version() {
+    if [[ -z "${LATEST_VERSION_CACHE}" ]]; then
+        LOGD "从 GitHub API 获取最新版本号..."
+        LATEST_VERSION_CACHE=$(wget -qO- -t1 -T2 "https://api.github.com/repos/userdocs/qbittorrent-nox-static/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
+        LOGD "最新版本号: ${LATEST_VERSION_CACHE}"
+    fi
+    echo "${LATEST_VERSION_CACHE}"
+}
+
 # qBittorrent status check
 qBittorrent_status_check() {
     if [[ ! -f "${QB_SERVICE}" ]]; then
@@ -139,6 +152,10 @@ show_qBittorrent_status() {
             echo -e "[INF] qBittorrent状态: ${red}未安装${plain}"
             ;;
     esac
+
+    # 显示最新版本号
+    local latest_version=$(get_latest_qBittorrent_version)
+    echo -e "[INF] qBittorrent最新版本: ${green}${latest_version}${plain}"
 }
 
 # Show qBittorrent running status
@@ -164,9 +181,8 @@ show_qBittorrent_enable_status() {
 # Download qBittorrent binary
 download_qBittorrent() {
     LOGD "开始获取 qBittorrent 版本信息"
-    LATEST_VERSION=$(wget -qO- -t1 -T2 "https://api.github.com/repos/userdocs/qbittorrent-nox-static/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
-    LOGD "LATEST_VERSION:${LATEST_VERSION}"
-    LINK="https://github.com/userdocs/qbittorrent-nox-static/releases/download/${LATEST_VERSION}/${ARCH}-qbittorrent-nox"
+    local latest_version=$(get_latest_qBittorrent_version)
+    LINK="https://github.com/userdocs/qbittorrent-nox-static/releases/download/${latest_version}/${ARCH}-qbittorrent-nox"
     LOGD "开始下载 qBittorrent"
     wget -qO ${QB_BINARY} ${LINK} && chmod +x ${QB_BINARY} || { LOGE "下载 qBittorrent 失败"; exit 1; }
     LOGI "qBittorrent 下载完毕"
