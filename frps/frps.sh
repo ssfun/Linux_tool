@@ -69,8 +69,12 @@ show_frps_status() {
     case $? in
         ${FRPS_STATUS_RUNNING})
             echo -e "${green}[INF] FRPS 状态: 已运行${plain}"
-            local version=$(/usr/local/bin/frps --version | grep -oP '(?<=frps version )\d+\.\d+\.\d+')
-            echo -e "${green}[INF] FRPS 版本: ${version}${plain}"
+            local version=$(/usr/local/bin/frps --version 2>/dev/null | grep -oP '\d+\.\d+\.\d+')
+            if [[ -n "${version}" ]]; then
+                echo -e "${green}[INF] FRPS 版本: ${version}${plain}"
+            else
+                echo -e "${red}[INF] FRPS 版本: 无法获取版本号${plain}"
+            fi
             if systemctl is-enabled frps >/dev/null 2>&1; then
                 echo -e "${green}[INF] FRPS 是否开机自启: 是${plain}"
             else
@@ -81,8 +85,12 @@ show_frps_status() {
             ;;
         ${FRPS_STATUS_NOT_RUNNING})
             echo -e "${yellow}[INF] FRPS 状态: 未运行${plain}"
-            local version=$(/usr/local/bin/frps --version | grep -oP '(?<=frps version )\d+\.\d+\.\d+')
-            echo -e "${green}[INF] FRPS 版本: ${version}${plain}"
+            local version=$(/usr/local/bin/frps --version 2>/dev/null | grep -oP '\d+\.\d+\.\d+')
+            if [[ -n "${version}" ]]; then
+                echo -e "${green}[INF] FRPS 版本: ${version}${plain}"
+            else
+                echo -e "${red}[INF] FRPS 版本: 无法获取版本号${plain}"
+            fi
             if systemctl is-enabled frps >/dev/null 2>&1; then
                 echo -e "${green}[INF] FRPS 是否开机自启: 是${plain}"
             else
