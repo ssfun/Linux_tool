@@ -26,8 +26,9 @@ show_menu() {
   ${green}2.${plain} 管理 frps
   ${green}3.${plain} 管理 webdav
   ${green}4.${plain} 管理 qBittorrent
+  ${green}5.${plain} 管理 Plexmedia
  "
-    echo && read -p "请输入选择[0-4]:" num
+    echo && read -p "请输入选择[0-5]:" num
 
     case "${num}" in
     Q)
@@ -45,8 +46,11 @@ show_menu() {
     4)
         bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/qbittorrent/qbittorrent.sh)
         ;;
+    5)
+        bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/plexmedia/plexmedia.sh)
+        ;;
     *)
-        LOGE "请输入正确的选项 [0-4]"
+        LOGE "请输入正确的选项 [0-5]"
         ;;
     esac
 }
