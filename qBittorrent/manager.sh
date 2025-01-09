@@ -112,9 +112,7 @@ install_base() {
 # Retrieve the latest version number of qBittorrent (with cache)
 get_latest_qBittorrent_version() {
     if [[ -z "${LATEST_VERSION_CACHE}" ]]; then
-        LOGD "从 GitHub API 获取最新版本号..."
         LATEST_VERSION_CACHE=$(wget -qO- -t1 -T2 "https://api.github.com/repos/userdocs/qbittorrent-nox-static/releases" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
-        LOGD "最新版本号: ${LATEST_VERSION_CACHE}"
     fi
     echo "${LATEST_VERSION_CACHE}"
 }
