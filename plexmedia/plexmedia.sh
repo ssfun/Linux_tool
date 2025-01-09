@@ -1,13 +1,13 @@
 #!/bin/bash
 
 #####################################################
-# ssfun's Linux Tool
+# ssfun's Linux Tool For Plexmedia
 # Author: ssfun
-# Date: 2023-04-01
+# Date: 2025-01-09
 # Version: 1.0.0
 #####################################################
 
-#Basic definitions
+# Basic definitions
 plain='\033[0m'
 red='\033[0;31m'
 blue='\033[1;34m'
@@ -15,20 +15,20 @@ pink='\033[1;35m'
 green='\033[0;32m'
 yellow='\033[0;33m'
 
-#os arch evn
+# OS arch env
 OS=''
 ARCH=''
 
-#plex env
+# Plex env
 PLEX_LIBRARY_PATH='/var/lib/plexmediaserver'
 PLEX_SERVICE='/lib/systemd/system/plexmediaserver.service'
 
-#plex status define
+# Plex status define
 declare -r PLEX_STATUS_RUNNING=1
 declare -r PLEX_STATUS_NOT_RUNNING=0
 declare -r PLEX_STATUS_NOT_INSTALL=255
 
-#utils 
+# Utils
 function LOGE() {
     echo -e "${red}[ERR] $* ${plain}"
 }
@@ -57,10 +57,10 @@ confirm() {
     fi
 }
 
-#root user check
+# Root user check
 [[ $EUID -ne 0 ]] && LOGE "请使用root用户运行该脚本" && exit 1
 
-#System check
+# System check
 os_check() {
     LOGI "检测当前系统中..."
     if [[ -f /etc/redhat-release ]]; then
@@ -83,7 +83,7 @@ os_check() {
     LOGI "系统检测完毕,当前系统为:${OS}"
 }
 
-#arch check
+# Arch check
 arch_check() {
     LOGI "检测当前系统架构中..."
     ARCH=$(arch)
@@ -98,7 +98,7 @@ arch_check() {
     LOGI "系统架构检测完毕,当前系统架构为:${ARCH}"
 }
 
-#install some common utils
+# Install some common utils
 install_base() {
     if [[ ${OS} == "ubuntu" || ${OS} == "debian" ]]; then
         if ! dpkg -s wget tar >/dev/null 2>&1; then
@@ -111,7 +111,7 @@ install_base() {
     fi
 }
 
-#plex status check,-1 means didn't install,0 means failed,1 means running
+# Plex status check
 plex_status_check() {
     if [[ ! -f "${PLEX_SERVICE}" ]]; then
         return ${PLEX_STATUS_NOT_INSTALL}
@@ -124,91 +124,120 @@ plex_status_check() {
     fi
 }
 
-#show plex status
+# Get current Plex version
+get_current_plex_version() {
+    if [[ -f "/usr/lib/plexmediaserver/Plex Media Server" ]]; then
+        echo "$(/usr/lib/plexmediaserver/Plex\ Media\ Server --version 2>/dev/null | grep -oP '\d+\.\d+\.\d+\.\d+-\w+')"
+    else
+        echo ""
+    fi
+}
+
+# Get latest Plex version
+get_latest_plex_version() {
+    echo "$(wget -qO- -t1 -T2 "https://plex.tv/api/downloads/5.json" | grep -o '"version":"[^"]*' | grep -o '[^"]*$' | head -n 1)"
+}
+
+# Show Plex status
 show_plex_status() {
     plex_status_check
     case $? in
     0)
-        echo -e "[INF] plex状态: ${yellow}未运行${plain}"
+        echo -e "[INF] Plex 状态: ${yellow}未运行${plain}"
         show_plex_enable_status
         ;;
     1)
-        echo -e "[INF] plex状态: ${green}已运行${plain}"
+        echo -e "[INF] Plex 状态: ${green}已运行${plain}"
         show_plex_enable_status
         show_plex_running_status
         ;;
     255)
-        echo -e "[INF] plex状态: ${red}未安装${plain}"
+        echo -e "[INF] Plex 状态: ${red}未安装${plain}"
         ;;
     esac
+
+    # 显示当前版本和最新版本
+    local current_version=$(get_current_plex_version)
+    local latest_version=$(get_latest_plex_version)
+    if [[ -n "${current_version}" ]]; then
+        echo -e "[INF] Plex 当前版本: ${green}${current_version}${plain}"
+    else
+        echo -e "[INF] Plex 当前版本: ${red}无法获取${plain}"
+    fi
+    if [[ -n "${latest_version}" ]]; then
+        echo -e "[INF] Plex 最新版本: ${green}${latest_version}${plain}"
+    else
+        echo -e "[INF] Plex 最新版本: ${red}无法获取${plain}"
+    fi
 }
 
-#show plex running status
+# Show Plex running status
 show_plex_running_status() {
     plex_status_check
     if [[ $? == ${PLEX_STATUS_RUNNING} ]]; then
         local plex_runTime=$(systemctl status plexmediaserver | grep Active | awk '{for (i=5;i<=NF;i++)printf("%s ", $i);print ""}')
-        LOGI "plex运行时长：${plex_runTime}"
+        LOGI "Plex 运行时长：${plex_runTime}"
     else
-        LOGE "plex未运行"
+        LOGE "Plex 未运行"
     fi
 }
 
-#show plex enable statusn
+# Show Plex enable status
 show_plex_enable_status() {
     local plex_enable_status_temp=$(systemctl is-enabled plexmediaserver)
     if [[ "${plex_enable_status_temp}" == "enabled" ]]; then
-        echo -e "[INF] plex是否开机自启: ${green}是${plain}"
+        echo -e "[INF] Plex 是否开机自启: ${green}是${plain}"
     else
-        echo -e "[INF] plex是否开机自启: ${red}否${plain}"
+        echo -e "[INF] Plex 是否开机自启: ${red}否${plain}"
     fi
 }
 
-#install plex
+# Install Plex
 install_plex() {
-    LOGD "开始下载 plex..."
-    # getting the latest version of plex"
-    LATEST_PLEX_VERSION="$(wget -qO- -t1 -T2 "https://plex.tv/api/downloads/5.json" | grep -o '"version":"[^"]*' | grep -o '[^"]*$' | head -n 1)"
+    LOGD "开始下载 Plex..."
+    # Getting the latest version of Plex
+    LATEST_PLEX_VERSION=$(get_latest_plex_version)
     PLEX_LINK="https://downloads.plex.tv/plex-media-server-new/${LATEST_PLEX_VERSION}/debian/plexmediaserver_${LATEST_PLEX_VERSION}_${ARCH}.deb"
-    cd `mktemp -d`
+    cd $(mktemp -d)
     wget -nv "${PLEX_LINK}" -O plexmediaserver.deb
     dpkg -i plexmediaserver.deb
-    LOGI "plex 已完成安装"
+    LOGI "Plex 已完成安装"
 }
 
-#update plex
+# Update Plex
 update_plex() {
-    LOGD "开始更新plex..."
+    LOGD "开始更新 Plex..."
     if [[ ! -f "${PLEX_SERVICE}" ]]; then
-        LOGE "当前系统未安装plex,更新失败"
+        LOGE "当前系统未安装 Plex, 更新失败"
         show_menu
+        return
     fi
     os_check && arch_check
     install_plex
-    LOGI "plex 已完成升级"
+    LOGI "Plex 已完成升级"
 }
 
-#uninstall plex
+# Uninstall Plex
 uninstall_plex() {
-    LOGD "开始卸载plex..."
+    LOGD "开始卸载 Plex..."
     dpkg -r plexmediaserver
     rm -rf ${PLEX_LIBRARY_PATH}
-    LOGI "卸载plex成功"
+    LOGI "卸载 Plex 成功"
 }
 
-#show menu
+# Show menu
 show_menu() {
     echo -e "
   ${green}Plex 管理脚本${plain}
   ————————————————
   ${green}0.${plain} 退出脚本
   ————————————————
-  ${green}1.${plain} 安装 plex
-  ${green}2.${plain} 更新 plex
-  ${green}3.${plain} 卸载 plex
+  ${green}1.${plain} 安装 Plex
+  ${green}2.${plain} 更新 Plex
+  ${green}3.${plain} 卸载 Plex
   ————————————————
-  ${green}4.${plain} 重启 plex 服务
-  ${green}5.${plain} 查看 plex 日志
+  ${green}4.${plain} 重启 Plex 服务
+  ${green}5.${plain} 查看 Plex 日志
  "
     show_plex_status
     echo && read -p "请输入选择[0-5]:" num
@@ -238,8 +267,8 @@ show_menu() {
     esac
 }
 
-main(){
+main() {
     show_menu
 }
 
-main $*
+main "$@"
