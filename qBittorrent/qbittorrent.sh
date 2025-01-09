@@ -3,7 +3,7 @@
 # ssfun's Linux Tool For qBittorrent
 # Author: ssfun
 # Date: 2025-01-08
-# Version: 0.0.1
+# Version: 1.0.0
 #####################################################
 
 # Basic definitions
