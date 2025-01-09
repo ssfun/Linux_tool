@@ -3,7 +3,7 @@
 # ssfun's Linux Tool For WEBDAV
 # Author: ssfun
 # Date: 2025-01-08
-# Version: 0.0.1
+# Version: 0.0.2
 #####################################################
 
 # 基本定义
