@@ -146,6 +146,12 @@ download_webdav() {
     # 设置权限
     chmod +x ${WEBDAV_BINARY} || { LOGE "设置 webdav 二进制文件权限失败"; return 1; }
 
+    # 确保配置目录存在
+    if [[ ! -d "${WEBDAV_CONFIG}" ]]; then
+        LOGI "创建配置目录: ${WEBDAV_CONFIG}"
+        mkdir -p "${WEBDAV_CONFIG}" || { LOGE "创建配置目录失败"; return 1; }
+    fi
+    
     # 记录版本号
     echo "${version}" > ${WEBDAV_VERSION_FILE}
 
