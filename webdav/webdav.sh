@@ -402,10 +402,12 @@ ${green}0.${plain} 退出脚本
 ${green}1.${plain} 安装 WebDAV
 ${green}2.${plain} 更新 WebDAV
 ${green}3.${plain} 重启 WebDAV
-${green}4.${plain} 卸载 WebDAV
 ————————————————
-${green}5.${plain} 查看 WebDAV 日志
-${green}6.${plain} 查看 WebDAV 报错
+${green}4.${plain} 查看 WebDAV 日志
+${green}5.${plain} 查看 WebDAV 报错
+————————————————
+${green}6.${plain} 卸载 WebDAV
+
 "
     show_webdav_status
     echo && read -p "请输入选择 [0-6] (默认0): " num
@@ -415,9 +417,9 @@ ${green}6.${plain} 查看 WebDAV 报错
         1) install_webdav && show_menu ;;
         2) update_webdav && show_menu ;;
         3) systemctl restart webdav && show_menu ;;
-        4) uninstall_webdav && show_menu ;;
-        5) systemctl status webdav && show_menu ;;
-        6) journalctl -u webdav -n 10 && show_menu ;;
+        4) systemctl status webdav && show_menu ;;
+        5) journalctl -u webdav -n 10 && show_menu ;;
+        6) uninstall_webdav && show_menu ;;
         *) LOGE "请输入正确的选项 [0-6]" && show_menu ;;
     esac
 }
