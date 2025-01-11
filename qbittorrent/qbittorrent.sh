@@ -269,10 +269,11 @@ ${green}0.${plain} 退出脚本
 ${green}1.${plain} 安装 qBittorrent
 ${green}2.${plain} 更新 qBittorrent
 ${green}3.${plain} 重启 qBittorrent
-${green}4.${plain} 卸载 qBittorrent
 ————————————————
-${green}5.${plain} 查看 qBittorrent 日志
-${green}6.${plain} 查看 qBittorrent 报错
+${green}4.${plain} 查看 qBittorrent 日志
+${green}5.${plain} 查看 qBittorrent 报错
+————————————————
+${green}6.${plain} 卸载 qBittorrent
 
 "
     show_qBittorrent_status
@@ -287,11 +288,11 @@ ${green}6.${plain} 查看 qBittorrent 报错
         ;;
         3) systemctl restart qbt && show_menu
         ;;
-        4) uninstall_qBittorrent && show_menu
+        4) systemctl status qbt && show_menu
         ;;
-        5) systemctl status qbt && show_menu
+        5) journalctl -u qbt -n 10 && show_menu
         ;;
-        6) journalctl -u qbt -n 10 && show_menu
+        6) uninstall_qBittorrent && show_menu
         ;;
         *) LOGE "请输入正确的选项 [0-6]" && show_menu
         ;;
