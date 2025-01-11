@@ -230,11 +230,12 @@ ${green}0.${plain} 退出脚本
 ${green}1.${plain} 安装 FRPS
 ${green}2.${plain} 更新 FRPS
 ${green}3.${plain} 重启 FRPS
-${green}4.${plain} 卸载 FRPS
 ————————————————
-${green}5.${plain} 查看 FRPS 日志
-${green}6.${plain} 查看 FRPS 报错
+${green}4.${plain} 查看 FRPS 日志
+${green}5.${plain} 查看 FRPS 报错
 ————————————————
+${green}6.${plain} 卸载 FRPS
+
 "
     show_frps_status
     read -p "请输入选择 [0-6]: " num
@@ -243,9 +244,9 @@ ${green}6.${plain} 查看 FRPS 报错
         1) install_frps && show_menu ;;
         2) update_frps && show_menu ;;
         3) systemctl restart frps && show_menu ;;
-        4) uninstall_frps && show_menu ;;
-        5) systemctl status frps && show_menu ;;
-        6) journalctl -u frps -p 3 -xb --no-pager && show_menu ;;
+        4) systemctl status frps && show_menu ;;
+        5) journalctl -u frps -p 3 -xb --no-pager && show_menu ;;
+        6) uninstall_frps && show_menu ;;
         *) echo -e "${red}请输入正确的选项 [0-6]${plain}" && show_menu ;;
     esac
 }
