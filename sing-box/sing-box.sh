@@ -118,6 +118,28 @@ install_base() {
     fi
 }
 
+# Get latest version info
+get_latest_version() {
+    local type=$1  # stable or beta
+    local info_type=$2  # version or name
+    
+    local api_response=$(curl -s -m 10 "https://api.github.com/repos/SagerNet/sing-box/releases")
+    
+    if [[ "${type}" == "stable" ]]; then
+        if [[ "${info_type}" == "version" ]]; then
+            echo "$api_response" | grep -E 'tag_name|prerelease' | grep -B1 'false' | head -n1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'
+        else
+            echo "$api_response" | grep -E 'name|prerelease' | grep -B1 'false' | head -n1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'
+        fi
+    else
+        if [[ "${info_type}" == "version" ]]; then
+            echo "$api_response" | grep -E 'tag_name|prerelease' | grep -B1 'true' | head -n1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'
+        else
+            echo "$api_response" | grep -E 'name|prerelease' | grep -B1 'true' | head -n1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g'
+        fi
+    fi
+}
+
 # sing-box status check
 sing_box_status_check() {
     if [[ ! -f "${SING_BOX_SERVICE}" ]]; then
@@ -142,7 +164,7 @@ show_sing_box_status() {
                 local version=$(echo "$version_info" | head -n1 | awk '{print $3}')
                 echo -e "[INF] sing-box版本: ${green}${version}${plain}"
                 # 检查最新版本
-                local latest_stable=$(curl -s -m 10 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep -E 'tag_name|prerelease' | grep -B1 'false' | head -n1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
+                local latest_stable=$(get_latest_version "stable" "version" | sed 's/^v//')
                 echo -e "[INF] 最新版本: ${green}${latest_stable}${plain}"
             fi
             show_sing_box_enable_status
@@ -156,11 +178,7 @@ show_sing_box_status() {
                 # 检查最新版本
                 if [ -f "${SING_BOX_CONFIG_PATH}/install.info" ]; then
                     source ${SING_BOX_CONFIG_PATH}/install.info
-                    if [[ "${SING_BOX_VERSION_TYPE}" == "stable" ]]; then
-                        local latest_version=$(curl -s -m 10 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep -E 'tag_name|prerelease' | grep -B1 'false' | head -n1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
-                    else
-                        local latest_version=$(curl -s -m 10 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep -E 'tag_name|prerelease' | grep -B1 'true' | head -n1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
-                    fi
+                    local latest_version=$(get_latest_version "${SING_BOX_VERSION_TYPE}" "version" | sed 's/^v//')
                     echo -e "[INF] 最新版本: ${green}${latest_version}${plain}"
                     # 比较版本,提示是否需要更新
                     if [ "${version}" != "${latest_version}" ]; then
@@ -188,7 +206,7 @@ show_sing_box_status() {
         255)
             echo -e "[INF] sing-box状态: ${red}未安装${plain}"
             # 显示最新稳定版本信息
-            local latest_stable=$(curl -s -m 10 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep -E 'tag_name|prerelease' | grep -B1 'false' | head -n1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g' | sed 's/^v//')
+            local latest_stable=$(get_latest_version "stable" "version" | sed 's/^v//')
             echo -e "[INF] 最新版本: ${green}${latest_stable}${plain}"
             ;;
     esac
@@ -225,19 +243,19 @@ download_sing_box() {
     case "${version_type}" in
         1)
             SING_BOX_VERSION_TYPE="stable"
-            LATEST_VERSION=$(curl -s -m 10 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep -E 'tag_name|prerelease' | grep -B1 'false' | head -n1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
-            LATEST_NAME=$(curl -s -m 10 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep -E 'name|prerelease' | grep -B1 'false' | head -n1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
             ;;
         2)
             SING_BOX_VERSION_TYPE="beta"
-            LATEST_VERSION=$(curl -s -m 10 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep -E 'tag_name|prerelease' | grep -B1 'true' | head -n1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
-            LATEST_NAME=$(curl -s -m 10 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep -E 'name|prerelease' | grep -B1 'true' | head -n1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
             ;;
         *)
             LOGE "请输入正确的选项 [1-2]"
             return 1
             ;;
     esac
+    
+    LATEST_VERSION=$(get_latest_version "${SING_BOX_VERSION_TYPE}" "version")
+    LATEST_NAME=$(get_latest_version "${SING_BOX_VERSION_TYPE}" "name")
+    
     LOGD "LATEST_VERSION:${LATEST_VERSION}"
     LOGD "VERSION_TYPE:${SING_BOX_VERSION_TYPE}"
     LINK="https://github.com/SagerNet/sing-box/releases/download/${LATEST_VERSION}/sing-box-${LATEST_NAME}-linux-${ARCH}.tar.gz"
@@ -1109,18 +1127,73 @@ update_sing-box() {
         show_menu
         return 1
     fi
-
+    
+    # 获取当前版本信息
+    local current_version=$(${SING_BOX_BINARY} version | head -n1 | awk '{print $3}')
+    LOGD "当前版本: ${current_version}"
+    
+    # 检查安装信息文件
+    if [[ ! -f "${SING_BOX_CONFIG_PATH}/install.info" ]]; then
+        LOGW "未找到安装信息文件,请选择更新版本类型"
+        echo -e "请选择版本类型:"
+        echo -e "${green}1.${plain} 稳定版"
+        echo -e "${green}2.${plain} 测试版"
+        read -p "请输入选择[1-2]:" version_choice
+        case "${version_choice}" in
+            1)
+                SING_BOX_VERSION_TYPE="stable"
+                ;;
+            2)
+                SING_BOX_VERSION_TYPE="beta"
+                ;;
+            *)
+                LOGE "请输入正确的选项 [1-2]"
+                return 1
+                ;;
+        esac
+        # 创建安装信息文件
+        echo "SING_BOX_VERSION_TYPE=${SING_BOX_VERSION_TYPE}" > ${SING_BOX_CONFIG_PATH}/install.info
+    else
+        source ${SING_BOX_CONFIG_PATH}/install.info
+    fi
+    
+    # 获取最新版本
+    LATEST_VERSION=$(get_latest_version "${SING_BOX_VERSION_TYPE}" "version")
+    LATEST_NAME=$(get_latest_version "${SING_BOX_VERSION_TYPE}" "name")
+    
+    # 比较版本号
+    if [[ "${current_version}" == "$(echo ${LATEST_VERSION} | sed 's/^v//')" ]]; then
+        LOGI "当前已是最新版本,无需更新"
+        return 0
+    fi
+    
+    LOGD "最新版本: ${LATEST_VERSION}"
+    LOGD "版本类型: ${SING_BOX_VERSION_TYPE}"
+    
+    # 确认是否更新
+    read -p "确认更新到最新版本? [y/n]: " confirm
+    if [[ "${confirm}" != "y" ]]; then
+        LOGI "取消更新"
+        return 0
+    fi
+    
+    # 执行更新
     os_check && arch_check
-
     systemctl stop sing-box
     rm -f ${SING_BOX_BINARY}
     
-    download_sing_box
+    # 下载新版本
+    LINK="https://github.com/SagerNet/sing-box/releases/download/${LATEST_VERSION}/sing-box-${LATEST_NAME}-linux-${ARCH}.tar.gz"
+    cd `mktemp -d`
+    LOGD "开始下载 sing-box_${LATEST_NAME}"
+    curl -L -o sing-box.tar.gz "${LINK}"
+    tar -zxvf sing-box.tar.gz --strip-components=1
+    mv sing-box ${SING_BOX_BINARY} && chmod +x ${SING_BOX_BINARY}
     
+    # 重启服务
     systemctl restart sing-box
-    
     if [[ $? == 0 ]]; then
-        LOGI "sing-box 已完成升级"
+        LOGI "sing-box 已更新至 ${LATEST_VERSION}"
     else
         LOGE "sing-box 升级失败，请检查日志"
         return 1
