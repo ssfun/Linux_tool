@@ -188,7 +188,7 @@ show_sing_box_status() {
         255)
             echo -e "[INF] sing-box状态: ${red}未安装${plain}"
             # 显示最新稳定版本信息
-            local latest_stable=$(curl -s -m 10 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep -E 'tag_name|prerelease' | grep -B1 'false' | head -n1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
+            local latest_stable=$(curl -s -m 10 "https://api.github.com/repos/SagerNet/sing-box/releases" | grep -E 'tag_name|prerelease' | grep -B1 'false' | head -n1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g' | sed 's/^v//')
             echo -e "[INF] 最新版本: ${green}${latest_stable}${plain}"
             ;;
     esac
