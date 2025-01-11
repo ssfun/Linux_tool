@@ -188,12 +188,8 @@ show_sing_box_status() {
                 # 显示更多版本信息
                 local environment=$(echo "$version_info" | grep "Environment:" | awk '{print $2" "$3}')
                 local tags=$(echo "$version_info" | grep "Tags:" | cut -d':' -f2-)
-                local revision=$(echo "$version_info" | grep "Revision:" | awk '{print $2}')
-                local cgo=$(echo "$version_info" | grep "CGO:" | awk '{print $2}')
                 echo -e "[INF] 环境信息: ${green}${environment}${plain}"
                 echo -e "[INF] 包含功能: ${green}${tags}${plain}"
-                echo -e "[INF] 修订版本: ${green}${revision}${plain}"
-                echo -e "[INF] CGO状态: ${green}${cgo}${plain}"
             fi
             if [ -f "${SING_BOX_CONFIG_PATH}/install.info" ]; then
                 source ${SING_BOX_CONFIG_PATH}/install.info
