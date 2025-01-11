@@ -234,11 +234,13 @@ show_menu() {
   ————————————————
   ${green}1.${plain} 安装 Plex
   ${green}2.${plain} 更新 Plex
-  ${green}3.${plain} 卸载 Plex
+  ${green}3.${plain} 重启 Plex 服务
   ————————————————
-  ${green}4.${plain} 重启 Plex 服务
-  ${green}5.${plain} 查看 Plex 日志
-  ${green}6.${plain} 查看 Plex 报错
+  ${green}4.${plain} 查看 Plex 日志
+  ${green}5.${plain} 查看 Plex 报错
+  ————————————————
+  ${green}6.${plain} 卸载 Plex
+  
  "
     show_plex_status
     echo && read -p "请输入选择[0-6]:" num
@@ -254,16 +256,16 @@ show_menu() {
         update_plex && show_menu
         ;;
     3)
-        uninstall_plex && show_menu
-        ;;
-    4)
         systemctl restart plexmediaserver && show_menu
         ;;
-    5)
+    4)
         systemctl status plexmediaserver && show_menu
         ;;
-    6)
+    5)
         journalctl -u plexmediaserver -p 3 -xb --no-pager && show_menu
+        ;;
+    6)
+        uninstall_plex && show_menu
         ;;
     *)
         LOGE "请输入正确的选项 [0-6]"
