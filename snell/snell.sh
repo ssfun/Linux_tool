@@ -5,8 +5,6 @@ export PATH
 #=================================================
 #	System Required: CentOS/Debian/Ubuntu
 #	Description: Snell Server 管理脚本
-#	Author: 翠花
-#	WebSite: https://about.nange.cn
 #=================================================
 
 Snell_Ver="4.1.1"
@@ -14,7 +12,7 @@ filepath=$(cd "$(dirname "$0")"; pwd)
 file_1=$(echo -e "${filepath}"|awk -F "$0" '{print $1}')
 FOLDER="/usr/local/etc/snell/"
 FILE="/usr/local/bin/snell-server"
-CONF="/usl/local/etc/snell/config.conf"
+CONF="/usr/local/etc/snell/config.conf"
 Now_ver_File="/usr/local/etc/snell/ver.txt"
 Local="/etc/sysctl.d/local.conf"
 
@@ -277,6 +275,14 @@ Install_v4(){
 	setDNS
 	echo -e "${Info} 开始安装/配置 依赖..."
 	InstallationDependency
+
+	# 确保目录存在
+	mkdir -p "${FOLDER}"
+	if [[ ! -d "${FOLDER}" ]]; then
+		echo -e "${Error} 无法创建目录 ${FOLDER}，请检查权限！"
+		exit 1
+	fi
+
 	echo -e "${Info} 开始下载/安装..."
 	v4_download
 	echo -e "${Info} 开始安装 服务脚本..."
@@ -327,7 +333,7 @@ Restart(){
 
 Uninstall(){
 	checkInstalledStatus
-	echo "确定要卸载 Snell Server ? (y/N)"
+	echo "确定要卸载 Snell Server 并清除所有配置文件吗？ (y/N)"
 	echo
 	read -e -p "(默认: n):" unyn
 	[[ -z ${unyn} ]] && unyn="n"
@@ -336,8 +342,12 @@ Uninstall(){
         systemctl disable snell-server
 		echo -e "${Info} 移除主程序..."
 		rm -rf "${FILE}"
-		echo -e "${Info} 配置文件暂保留..."
-		echo && echo "Snell Server 卸载完成！" && echo
+		echo -e "${Info} 移除配置文件..."
+		rm -rf "${FOLDER}"
+		echo -e "${Info} 移除服务文件..."
+		rm -f /etc/systemd/system/snell-server.service
+		systemctl daemon-reload
+		echo && echo "Snell Server 已彻底卸载！" && echo
 	else
 		echo && echo "卸载已取消..." && echo
 	fi
