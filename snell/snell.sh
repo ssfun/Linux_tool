@@ -163,7 +163,7 @@ User=root
 Restart=on-failure
 RestartSec=5s
 ExecStartPre=/bin/sh -c 'ulimit -n 51200'
-ExecStart=/usr/local/bin/snell-server -c /etc/snell/config.conf
+ExecStart=/usr/local/bin/snell-server -c /usr/local/etc/snell/config.conf
 [Install]
 WantedBy=multi-user.target' > /etc/systemd/system/snell-server.service
 	systemctl enable --now snell-server
