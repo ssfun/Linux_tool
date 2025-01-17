@@ -393,9 +393,9 @@ View(){
 	echo -e "—————————————————————————"
 	echo -e "${Info} Surge 配置："
 	if [[ "${ipv4}" != "IPv4_Error" ]]; then
-		echo -e "$(uname -n) = snell, ${ipv4}, ${port}, psk=${psk}, tfo=${tfo}, reuse=true, ecn=true"
+		echo -e "$(uname -n) = snell, ${ipv4}, ${port}, psk=${psk}, tfo=${tfo}, version=4, reuse=true, ecn=true"
 	else
-		echo -e "$(uname -n) = snell, ${ip6}, ${port}, psk=${psk}, tfo=${tfo}, reuse=true, ecn=true"
+		echo -e "$(uname -n) = snell, ${ip6}, ${port}, psk=${psk}, tfo=${tfo}, version=4, reuse=true, ecn=true"
 	fi
    	echo -e "—————————————————————————"
 	beforeStartMenu
