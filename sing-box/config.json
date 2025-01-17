@@ -1,15 +1,29 @@
 {
+  # 稳定版 + WARP + 本机有IPv6 配置
   "log": {
+    "disabled": false,
     "level": "info",
-    "output": "${SING_BOX_LOG_PATH}/sing-box.log",
+    "output": "/var/log/sing-box/sing-box.log",
     "timestamp": true
   },
   "inbounds": [
     {
+      "type": "shadowsocks",
+      "tag": "ss-in",
+      "listen": "::",
+      "listen_port": $sport,
+      "tcp_fast_open": true,
+      "method": "2022-blake3-aes-128-gcm",
+      "password": "$pswd",
+      "sniff": true,
+      "sniff_override_destination": false,
+      "udp_disable_domain_unmapping": true
+    },
+    {
       "type": "trojan",
       "tag": "trojan-in",
       "listen": "::",
-      "listen_port": $port,
+      "listen_port": $tport,
       "sniff": true,
       "sniff_override_destination": false,
       "users": [
@@ -20,23 +34,28 @@
       ],
       "tls": {
         "enabled": true,
-        "server_name": "$sub.$host",
-        "certificate_path": "${CADDY_TLS_PATH}/certificates/acme-v02.api.letsencrypt.org-directory/$host/$host.crt",
-        "key_path": "${CADDY_TLS_PATH}/certificates/acme-v02.api.letsencrypt.org-directory/$host/$host.key"
-      },
-      "fallback": {
-        "server": "127.0.0.1",
-        "server_port": 80
-      },
-      "fallback_for_alpn": {
-        "http/1.1": {
-          "server": "127.0.0.1",
-          "server_port": 443
+        "server_name": "$host",
+        "alpn": [
+          "h2",
+          "http/1.1"
+        ],
+        "min_version": "1.2",
+        "max_version": "1.3",
+        "cipher_suites": [
+        "TLS_CHACHA20_POLY1305_SHA256",
+        "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+        "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256"
+        ],
+        "acme": {
+          "domain": ["$host"],
+          "data_directory": "/usr/local/etc/sing-box",
+          "email": "$mail",
+          "provider": "letsencrypt"
         }
       },
       "transport": {
         "type": "ws",
-        "path": "$path",
+        "path": "/media-cdn",
         "max_early_data": 2048,
         "early_data_header_name": "Sec-WebSocket-Protocol"
       }
@@ -46,21 +65,76 @@
     {
       "type": "direct",
       "tag": "direct"
+    },
+    {
+      "type": "direct",
+      "tag": "direct-v4",
+      "domain_strategy":"ipv4_only"
+    },
+    {
+      "type":"direct",
+      "tag":"direct-v6",
+      "domain_strategy":"ipv6_only"
+    },
+    {
+      "type": "wireguard",
+      "tag": "warp-out",
+      "server": "engage.cloudflareclient.com",
+      "server_port": 2408,
+      "local_address": [
+        "172.16.0.2/32",
+        "$warpv6"
+      ],
+      "private_key": "$warpkey",
+      "peer_public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
+      "reserved": [$warpreserved],
+      "mtu": 1280,
+      "fallback_delay": "300ms",
+      "domain_strategy": "prefer_ipv6"
     }
   ],
   "route": {
-    "rules": [],
-    "geoip": {
-      "path": "${SING_BOX_CONFIG_PATH}/geoip.db",
-      "download_url": "https://github.com/SagerNet/sing-geoip/releases/latest/download/geoip.db",
-      "download_detour": "direct"
-    },
-    "geosite": {
-      "path": "${SING_BOX_CONFIG_PATH}/geosite.db",
-      "download_url": "https://github.com/SagerNet/sing-geosite/releases/latest/download/geosite.db",
-      "download_detour": "direct"
-    },
+    "rules": [
+      {
+        "domain_suffix": "oyunfor.com",
+        "outbound": "direct-v4"
+      },
+      {
+        "domain_suffix": "perplexity.ai",
+        "outbound": "warp-out"
+      },
+      {
+        "domain": [
+          "speedysub.itunes.apple.com",
+          "fpinit.itunes.apple.com",
+          "entitlements.itunes.apple.com"
+        ],
+        "outbound": "warp-out"
+      },
+      {
+        "ip_cidr": ["1.1.1.1/32"],
+        "outbound": "warp-out"
+      },
+      {
+        "rule_set": "openai",
+        "outbound": "warp-out"
+      }
+    ],
+    "rule_set": [
+      {
+        "tag": "openai",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-openai.srs",
+        "download_detour": "direct"
+      }
+    ],
     "final": "direct",
     "auto_detect_interface": true
+  },
+  "experimental": {
+    "cache_file": {
+      "enabled": true
+    }
   }
 }
