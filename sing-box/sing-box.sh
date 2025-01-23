@@ -802,7 +802,7 @@ generate_config_beta_warp_ipv6() {
                 "inbound": ["ss-in","trojan-in"],
                 "action": "sniff",
                 "timeout": "1s"
-            }，
+            },
             {
                 "rule_set": "openai",
                 "action": "resolve",
@@ -943,7 +943,7 @@ generate_config_beta_warp_noipv6() {
                 "inbound": ["ss-in","trojan-in"],
                 "action": "sniff",
                 "timeout": "1s"
-            }，
+            },
             {
                 "rule_set": "openai",
                 "action": "resolve",
@@ -1066,7 +1066,7 @@ generate_config_beta_nowarp() {
                 "inbound": ["ss-in","trojan-in"],
                 "action": "sniff",
                 "timeout": "1s"
-            }
+            },
             {
                 "domain_suffix": "oyunfor.com",
                 "action": "resolve",
