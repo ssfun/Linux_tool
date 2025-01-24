@@ -1,0 +1,32 @@
+name: Build Tailscaled for macOS ARM
+
+on:
+  workflow_dispatch:  # 允许手动触发工作流
+
+jobs:
+  build:
+    runs-on: macos-latest  # 使用最新的 macOS 环境（支持 ARM）
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'  # 使用 Go 1.21
+
+      - name: Install dependencies
+        run: |
+          brew install go
+
+      - name: Compile Tailscale
+        run: |
+          go install tailscale.com/cmd/tailscale{,d}@main
+          mkdir -p dist
+          cp $HOME/go/bin/tailscale $HOME/go/bin/tailscaled dist/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: tailscale-binaries
+          path: dist/
