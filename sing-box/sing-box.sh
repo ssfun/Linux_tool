@@ -2,15 +2,14 @@
 #####################################################
 # ssfun's Linux Tool
 # Author: ssfun
-# Date: 2025-01-30
-# Version: 2.0.0
+# Date: 2026-04-22
+# Version: 3.0.0
 #####################################################
 
 # 基本定义
 plain='\033[0m'
 red='\033[0;31m'
 blue='\033[1;34m'
-pink='\033[1;35m'
 green='\033[0;32m'
 yellow='\033[0;33m'
 
@@ -23,7 +22,6 @@ SING_BOX_VERSION_TYPE="stable" # 稳定版
 SING_BOX_CONFIG_TYPE="warp" # warp 或 nowarp
 
 # sing-box 环境
-SING_BOX_VERSION=''
 SING_BOX_CONFIG_PATH='/usr/local/etc/sing-box'
 SING_BOX_LOG_PATH='/var/log/sing-box'
 SING_BOX_LIB_PATH='/var/lib/sing-box'
@@ -69,17 +67,17 @@ os_check() {
     LOGI "检测当前系统中..."
     if [[ -f /etc/redhat-release ]]; then
         OS="centos"
-    elif cat /etc/issue | grep -Eqi "debian"; then
+    elif grep -Eqi "debian" /etc/issue 2>/dev/null; then
         OS="debian"
-    elif cat /etc/issue | grep -Eqi "ubuntu"; then
+    elif grep -Eqi "ubuntu" /etc/issue 2>/dev/null; then
         OS="ubuntu"
-    elif cat /etc/issue | grep -Eqi "centos|red hat|redhat"; then
+    elif grep -Eqi "centos|red hat|redhat" /etc/issue 2>/dev/null; then
         OS="centos"
-    elif cat /proc/version | grep -Eqi "debian"; then
+    elif grep -Eqi "debian" /proc/version 2>/dev/null; then
         OS="debian"
-    elif cat /proc/version | grep -Eqi "ubuntu"; then
+    elif grep -Eqi "ubuntu" /proc/version 2>/dev/null; then
         OS="ubuntu"
-    elif cat /proc/version | grep -Eqi "centos|red hat|redhat"; then
+    elif grep -Eqi "centos|red hat|redhat" /proc/version 2>/dev/null; then
         OS="centos"
     else
         LOGE "系统检测错误,当前系统不支持!" && exit 1
@@ -117,13 +115,15 @@ install_base() {
 
 # 获取最新版本信息
 get_latest_version() {
-    local type=$1  # 只有 stable
-    local info_type=$2  # version 或 name
+    local info_type=$1  # version 或 name
     local api_response
     local latest_version
 
-    api_response=$(curl -fsSL -m 10 "https://api.github.com/repos/SagerNet/sing-box/releases/latest") || return 1
-    latest_version=$(echo "$api_response" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n1)
+    # 使用缓存避免重复 API 调用
+    if [[ -z "${_CACHED_API_RESPONSE}" ]]; then
+        _CACHED_API_RESPONSE=$(curl -fsSL -m 10 "https://api.github.com/repos/SagerNet/sing-box/releases/latest") || return 1
+    fi
+    latest_version=$(echo "$_CACHED_API_RESPONSE" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n1)
 
     if [[ -z "${latest_version}" ]]; then
         return 1
@@ -134,6 +134,11 @@ get_latest_version() {
     else
         echo "${latest_version}"
     fi
+}
+
+# 清除版本缓存
+clear_version_cache() {
+    unset _CACHED_API_RESPONSE
 }
 
 # sing-box 状态检查
@@ -152,36 +157,32 @@ sing_box_status_check() {
 # 显示 sing-box 状态
 show_sing_box_status() {
     sing_box_status_check
-    case $? in
+    local status=$?
+    local version="" version_info="" latest_version=""
+
+    if [[ ${status} != ${SING_BOX_STATUS_NOT_INSTALL} ]] && [ -f "${SING_BOX_BINARY}" ]; then
+        version_info=$(${SING_BOX_BINARY} version)
+        version=$(echo "$version_info" | head -n1 | awk '{print $3}')
+    fi
+    latest_version=$(get_latest_version "version" | sed 's/^v//')
+
+    case ${status} in
         0)
             echo -e "[信息] sing-box 状态: ${yellow}未运行${plain}"
-            if [ -f "${SING_BOX_BINARY}" ]; then
-                local version_info=$(${SING_BOX_BINARY} version)
-                local version=$(echo "$version_info" | head -n1 | awk '{print $3}')
+            if [[ -n "${version}" ]]; then
                 echo -e "[信息] sing-box 版本: ${green}${version}${plain}"
-                # 检查最新版本
-                local latest_stable=$(get_latest_version "stable" "version" | sed 's/^v//')
-                echo -e "[信息] 最新版本: ${green}${latest_stable}${plain}"
+                echo -e "[信息] 最新版本: ${green}${latest_version}${plain}"
             fi
             show_sing_box_enable_status
             ;;
         1)
             echo -e "[信息] sing-box 状态: ${green}已运行${plain}"
-            if [ -f "${SING_BOX_BINARY}" ]; then
-                local version_info=$(${SING_BOX_BINARY} version)
-                local version=$(echo "$version_info" | head -n1 | awk '{print $3}')
+            if [[ -n "${version}" ]]; then
                 echo -e "[信息] sing-box 版本: ${green}${version}${plain}"
-                # 检查最新版本
-                if [ -f "${SING_BOX_CONFIG_PATH}/install.info" ]; then
-                    source ${SING_BOX_CONFIG_PATH}/install.info
-                    local latest_version=$(get_latest_version "${SING_BOX_VERSION_TYPE}" "version" | sed 's/^v//')
-                    echo -e "[信息] 最新版本: ${green}${latest_version}${plain}"
-                    # 比较版本,提示是否需要更新
-                    if [ "${version}" != "${latest_version}" ]; then
-                        echo -e "[信息] 发现新版本: ${yellow}建议更新${plain}"
-                    fi
+                echo -e "[信息] 最新版本: ${green}${latest_version}${plain}"
+                if [ "${version}" != "${latest_version}" ]; then
+                    echo -e "[信息] 发现新版本: ${yellow}建议更新${plain}"
                 fi
-                 # 显示更多版本信息
                 local environment=$(echo "$version_info" | grep "Environment:" | awk '{print $2" "$3}')
                 local tags=$(echo "$version_info" | grep "Tags:" | cut -d':' -f2-)
                 echo -e "[信息] 环境信息: ${green}${environment}${plain}"
@@ -197,9 +198,7 @@ show_sing_box_status() {
             ;;
         255)
             echo -e "[信息] sing-box 状态: ${red}未安装${plain}"
-            # 显示最新稳定版本信息
-            local latest_stable=$(get_latest_version "stable" "version" | sed 's/^v//')
-            echo -e "[信息] 最新版本: ${green}${latest_stable}${plain}"
+            echo -e "[信息] 最新版本: ${green}${latest_version}${plain}"
             ;;
     esac
 }
@@ -252,12 +251,6 @@ install_sing_box_binary() {
     if ! tar -xzf "${temp_dir}/sing-box.tar.gz" -C "${temp_dir}" --strip-components=1; then
         rm -rf "${temp_dir}"
         LOGE "sing-box 解压失败"
-        return 1
-    fi
-
-    if [[ ! -f "${temp_dir}/sing-box" ]]; then
-        rm -rf "${temp_dir}"
-        LOGE "sing-box 二进制文件缺失"
         return 1
     fi
 
@@ -334,61 +327,145 @@ validate_sing_box_config() {
     fi
 }
 
+# 检查 HE IPv6 隧道接口
+check_he_ipv6_interface() {
+    ip link show he-ipv6 >/dev/null 2>&1
+}
+
 # 配置 sing-box 配置
 configuration_sing_box_config() {
     local config_backup=''
+    local enable_warp=false
+    local enable_ipv6_via_warp=false
+    local enable_openai_rule=false
+    local enable_apple_rule=false
+    local enable_perplexity_rule=false
+    local enable_ss=false
+    local enable_trojan=false
+    local enable_mixed=false
+    local enable_he_ipv6=false
+    local enable_he_ss=false
+    local warpv6='' warpkey='' warpreserved=''
+    local warpv4_he='' warpv6_he='' warpkey_he='' warpreserved_he=''
+    local sport='' tport='' mport='' muser='' pswd=''
+    local he_sport=''
 
     LOGD "开始配置 sing-box 配置文件..."
-    # 检测IPv6支持
-    check_ipv6_support
-    local ipv6_support=$?
 
     if [[ -f "${SING_BOX_CONFIG_PATH}/config.json" ]]; then
         config_backup=$(mktemp) || return 1
         cp "${SING_BOX_CONFIG_PATH}/config.json" "${config_backup}" || return 1
     fi
 
-    # 让用户选择是否启用 WARP
-    echo -e "请选择配置类型:"
-    echo -e "${green}1.${plain} 启用 WARP"
-    echo -e "${green}2.${plain} 不启用 WARP"
-    read -p "请输入选择[1-2]:" config_type
-    case "${config_type}" in
-        1)
-            SING_BOX_CONFIG_TYPE="warp"
-            # 获取 WARP 配置所需参数
-            read -p "请输入 warp ipv6:" warpv6
-            [ -z "${warpv6}" ] && LOGE "warp ipv6 不能为空" && return 1
-            read -p "请输入 warp private key:" warpkey
-            [ -z "${warpkey}" ] && LOGE "warp private key 不能为空" && return 1
-            read -p "请输入 warp reserved:" warpreserved
-            [ -z "${warpreserved}" ] && LOGE "warp reserved 不能为空" && return 1
-            ;;
-        2)
-            SING_BOX_CONFIG_TYPE="nowarp"
-            ;;
-        *)
-            LOGE "请输入正确的选项 [1-2]"
-            return 1
-            ;;
-    esac
-    # 获取通用配置参数
-    read -p "请输入 ss 端口:" sport
-    [ -z "${sport}" ] && LOGE "ss端口不能为空" && return 1
-    read -p "请输入 trojan 端口:" tport
-    [ -z "${tport}" ] && LOGE "trojan端口不能为空" && return 1
-    read -p "请输入密码:" pswd
-    [ -z "${pswd}" ] && LOGE "密码不能为空" && return 1
-    # 根据配置类型和IPv6支持情况选择模板
-    if [[ "${SING_BOX_CONFIG_TYPE}" == "warp" ]]; then
+    # 步骤1: 是否启用 WARP
+    echo -e "\n${blue}=== 步骤 1/4: WARP 配置 ===${plain}"
+    if confirm "是否启用 WARP"; then
+        enable_warp=true
+        SING_BOX_CONFIG_TYPE="warp"
+
+        read -p "请输入 warp ipv6: " warpv6
+        [ -z "${warpv6}" ] && LOGE "warp ipv6 不能为空" && return 1
+        read -p "请输入 warp private key: " warpkey
+        [ -z "${warpkey}" ] && LOGE "warp private key 不能为空" && return 1
+        read -p "请输入 warp reserved: " warpreserved
+        [ -z "${warpreserved}" ] && LOGE "warp reserved 不能为空" && return 1
+
+        # 步骤2: WARP 策略配置
+        echo -e "\n${blue}=== 步骤 2/4: WARP 策略配置 ===${plain}"
+        check_ipv6_support
+        local ipv6_support=$?
+
         if [[ ${ipv6_support} == 0 ]]; then
-            generate_config_warp_ipv6
+            LOGI "检测到本机支持 IPv6"
         else
-            generate_config_warp_noipv6
+            LOGI "检测到本机不支持 IPv6"
+            if confirm "是否开启 IPv6 访问全局走 WARP"; then
+                enable_ipv6_via_warp=true
+            fi
+        fi
+
+        if confirm "是否启用 OpenAI 规则 (走 WARP IPv6)"; then
+            enable_openai_rule=true
+        fi
+
+        if confirm "是否启用 Apple 特殊规则 (走 WARP)"; then
+            enable_apple_rule=true
+        fi
+
+        if confirm "是否启用 Perplexity 规则 (走 WARP IPv6)"; then
+            enable_perplexity_rule=true
         fi
     else
-        generate_config_nowarp
+        SING_BOX_CONFIG_TYPE="nowarp"
+        echo -e "${yellow}未启用 WARP，跳过策略配置${plain}"
     fi
+
+    # 步骤3: HE IPv6 配置
+    echo -e "\n${blue}=== 步骤 3/4: HE IPv6 配置 ===${plain}"
+    if check_he_ipv6_interface; then
+        LOGI "检测到 he-ipv6 隧道接口"
+        if confirm "是否启用 HE IPv6 配置"; then
+            enable_he_ipv6=true
+
+            read -p "请输入 HE warp ipv4: " warpv4_he
+            [ -z "${warpv4_he}" ] && LOGE "HE warp ipv4 不能为空" && return 1
+            read -p "请输入 HE warp ipv6: " warpv6_he
+            [ -z "${warpv6_he}" ] && LOGE "HE warp ipv6 不能为空" && return 1
+            read -p "请输入 HE warp private key: " warpkey_he
+            [ -z "${warpkey_he}" ] && LOGE "HE warp private key 不能为空" && return 1
+            read -p "请输入 HE warp reserved: " warpreserved_he
+            [ -z "${warpreserved_he}" ] && LOGE "HE warp reserved 不能为空" && return 1
+
+            if confirm "是否配置 HE Shadowsocks"; then
+                enable_he_ss=true
+                read -p "请输入 HE Shadowsocks 端口: " he_sport
+                [ -z "${he_sport}" ] && LOGE "HE Shadowsocks 端口不能为空" && return 1
+            fi
+        fi
+    else
+        echo -e "${yellow}未检测到 he-ipv6 隧道接口，跳过 HE IPv6 配置${plain}"
+    fi
+
+    # 步骤4: Inbounds 配置 (顺序: mixed -> ss -> trojan -> he-ss)
+    echo -e "\n${blue}=== 步骤 4/4: Inbounds 配置 ===${plain}"
+
+    if confirm "是否配置 Mixed (SOCKS/HTTP)"; then
+        enable_mixed=true
+        read -p "请输入 Mixed 端口: " mport
+        [ -z "${mport}" ] && LOGE "Mixed 端口不能为空" && return 1
+        read -p "请输入 Mixed 用户名: " muser
+        [ -z "${muser}" ] && LOGE "Mixed 用户名不能为空" && return 1
+        read -p "请输入 Mixed 密码: " pswd
+        [ -z "${pswd}" ] && LOGE "Mixed 密码不能为空" && return 1
+    fi
+
+    if confirm "是否配置 Shadowsocks"; then
+        enable_ss=true
+        read -p "请输入 Shadowsocks 端口: " sport
+        [ -z "${sport}" ] && LOGE "Shadowsocks 端口不能为空" && return 1
+        if [[ "${enable_mixed}" == false ]]; then
+            read -p "请输入 Shadowsocks 密码: " pswd
+            [ -z "${pswd}" ] && LOGE "Shadowsocks 密码不能为空" && return 1
+        fi
+    fi
+
+    if confirm "是否配置 Trojan"; then
+        enable_trojan=true
+        read -p "请输入 Trojan 端口: " tport
+        [ -z "${tport}" ] && LOGE "Trojan 端口不能为空" && return 1
+        if [[ "${enable_mixed}" == false && "${enable_ss}" == false ]]; then
+            read -p "请输入 Trojan 密码: " pswd
+            [ -z "${pswd}" ] && LOGE "Trojan 密码不能为空" && return 1
+        fi
+    fi
+
+    if [[ "${enable_ss}" == false && "${enable_trojan}" == false && "${enable_mixed}" == false && "${enable_he_ss}" == false ]]; then
+        LOGE "至少需要配置一个 Inbound (Mixed、Shadowsocks、Trojan 或 HE Shadowsocks)"
+        return 1
+    fi
+
+    # 生成配置
+    generate_dynamic_config
 
     if ! validate_sing_box_config; then
         if [[ -n "${config_backup}" ]]; then
@@ -400,17 +477,37 @@ configuration_sing_box_config() {
     fi
 
     rm -f "${config_backup}"
-    echo "SING_BOX_VERSION_TYPE=${SING_BOX_VERSION_TYPE}" > "${SING_BOX_CONFIG_PATH}/install.info"
-    echo "SING_BOX_CONFIG_TYPE=${SING_BOX_CONFIG_TYPE}" >> "${SING_BOX_CONFIG_PATH}/install.info"
-    if [[ "${SING_BOX_CONFIG_TYPE}" == "warp" ]]; then
-        echo "IPV6_SUPPORT=$([ ${ipv6_support} == 0 ] && echo "yes" || echo "no")" >> "${SING_BOX_CONFIG_PATH}/install.info"
-    fi
-    LOGD "sing-box 配置文件完成"
+
+    # 保存安装信息
+    cat > "${SING_BOX_CONFIG_PATH}/install.info" <<EOF
+SING_BOX_VERSION_TYPE=${SING_BOX_VERSION_TYPE}
+SING_BOX_CONFIG_TYPE=${SING_BOX_CONFIG_TYPE}
+IPV6_SUPPORT=$([ ${ipv6_support:-1} == 0 ] && echo "yes" || echo "no")
+ENABLE_WARP=${enable_warp}
+ENABLE_IPV6_VIA_WARP=${enable_ipv6_via_warp}
+ENABLE_OPENAI_RULE=${enable_openai_rule}
+ENABLE_APPLE_RULE=${enable_apple_rule}
+ENABLE_PERPLEXITY_RULE=${enable_perplexity_rule}
+ENABLE_SS=${enable_ss}
+ENABLE_TROJAN=${enable_trojan}
+ENABLE_MIXED=${enable_mixed}
+ENABLE_HE_IPV6=${enable_he_ipv6}
+ENABLE_HE_SS=${enable_he_ss}
+EOF
+
+    LOGI "sing-box 配置文件完成"
 }
 
-# 以下是各种配置模板生成函数
-generate_config_warp_ipv6() {
-  cat <<EOF >${SING_BOX_CONFIG_PATH}/config.json
+# 动态生成配置文件
+generate_dynamic_config() {
+    local config_json="${SING_BOX_CONFIG_PATH}/config.json"
+    local inbound_tags=()
+
+    # 在文件最后一个 } 后追加逗号 (用于 JSON 数组元素间分隔)
+    _append_comma() { sed -i '$ s/}$/},/' "${config_json}"; }
+
+    # 开始构建 JSON
+    cat > "${config_json}" <<EOF_LOG
 {
     "log": {
         "disabled": false,
@@ -418,7 +515,29 @@ generate_config_warp_ipv6() {
         "output": "${SING_BOX_LOG_PATH}/sing-box.log",
         "timestamp": true
     },
-    "endpoints": [
+EOF_LOG
+
+    # 添加 DNS (WARP 需要)
+    if [[ "${enable_warp}" == true || "${enable_he_ipv6}" == true ]]; then
+        cat >> "${config_json}" <<'EOF_DNS'
+    "dns": {
+        "servers": [
+            {
+                "type": "local",
+                "tag": "local"
+            }
+        ]
+    },
+EOF_DNS
+    fi
+
+    # 添加 endpoints (WARP)
+    if [[ "${enable_warp}" == true || "${enable_he_ipv6}" == true ]]; then
+        echo '    "endpoints": [' >> "${config_json}"
+        local first_endpoint=true
+
+        if [[ "${enable_warp}" == true ]]; then
+            cat >> "${config_json}" <<EOF_WARP_EP
         {
             "type": "wireguard",
             "tag": "wg-ep",
@@ -427,9 +546,9 @@ generate_config_warp_ipv6() {
             "mtu": 1280,
             "address": [
                 "172.16.0.2/32",
-                "$warpv6"
+                "${warpv6}"
             ],
-            "private_key": "$warpkey",
+            "private_key": "${warpkey}",
             "listen_port": 2408,
             "peers": [
                 {
@@ -441,135 +560,29 @@ generate_config_warp_ipv6() {
                         "::/0"
                     ],
                     "persistent_keepalive_interval": 30,
-                    "reserved": [$warpreserved]
+                    "reserved": [${warpreserved}]
                 }
             ]
         }
-    ],
-    "inbounds": [
-        {
-            "type": "shadowsocks",
-            "tag": "ss-in",
-            "listen": "::",
-            "listen_port": $sport,
-            "tcp_fast_open": true,
-            "method": "2022-blake3-aes-128-gcm",
-            "password": "$pswd"
-        },
-        {
-            "type": "trojan",
-            "tag": "trojan-in",
-            "listen": "::",
-            "listen_port": $tport,
-            "users": [
-                {
-                    "name": "trojan",
-                    "password": "$pswd"
-                }
-            ],
-            "transport": {
-                "type": "ws",
-                "path": "/media-cdn",
-                "max_early_data": 2048,
-                "early_data_header_name": "Sec-WebSocket-Protocol"
-            }
-        }
-    ],
-    "outbounds": [
-        {
-            "type": "direct",
-            "tag": "direct"
-        }
-    ],
-    "route": {
-        "rules": [
-            {
-                "inbound": ["ss-in","trojan-in"],
-                "action": "sniff",
-                "timeout": "1s"
-            },
-            {
-                "rule_set": "openai",
-                "action": "resolve",
-                "strategy": "prefer_ipv6"
-            },
-            {
-                "domain_suffix": "perplexity.ai",
-                "action": "resolve",
-                "strategy": "prefer_ipv6"
-            },
-            {
-                "domain_suffix": "oyunfor.com",
-                "action": "resolve",
-                "strategy": "ipv4_only"
-            },
-            {
-                "domain": [
-                    "speedysub.itunes.apple.com",
-                    "fpinit.itunes.apple.com",
-                    "entitlements.itunes.apple.com"
-                ],
-                "action": "route",
-                "outbound": "wg-ep"
-            },
-            {
-                "domain_suffix": "perplexity.ai",
-                "action": "route",
-                "outbound": "wg-ep"
-            },
-            {
-                "ip_cidr": ["1.1.1.1/32"],
-                "action": "route",
-                "outbound": "wg-ep"
-            },
-            {
-                "rule_set": "openai",
-                "action": "route",
-                "outbound": "wg-ep"
-            }
-        ],
-        "rule_set": [
-            {
-                "tag": "openai",
-                "type": "remote",
-                "format": "binary",
-                "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-openai.srs",
-                "download_detour": "direct"
-            }
-        ],
-        "final": "direct",
-        "auto_detect_interface": true
-    },
-    "experimental": {
-        "cache_file": {
-            "enabled": true
-        }
-    }
-}
-EOF
-}
-generate_config_warp_noipv6() {
-  cat <<EOF >${SING_BOX_CONFIG_PATH}/config.json
-{
-    "log": {
-        "disabled": false,
-        "level": "info",
-        "output": "${SING_BOX_LOG_PATH}/sing-box.log",
-        "timestamp": true
-    },
-    "endpoints": [
+EOF_WARP_EP
+            first_endpoint=false
+        fi
+
+        if [[ "${enable_he_ipv6}" == true ]]; then
+            [[ "${first_endpoint}" == false ]] && _append_comma
+            cat >> "${config_json}" <<EOF_HE_EP
         {
             "type": "wireguard",
-            "tag": "wg-ep",
+            "tag": "wg-ep-he",
             "system": false,
-            "name": "wg0",
+            "name": "wg1",
             "mtu": 1280,
             "address": [
-                "172.16.0.2/32",
-                "$warpv6"
+                "${warpv4_he}",
+                "${warpv6_he}"
             ],
-            "private_key": "$warpkey",
-            "listen_port": 2408,
+            "private_key": "${warpkey_he}",
+            "listen_port": 2409,
             "peers": [
                 {
                     "address": "engage.cloudflareclient.com",
@@ -580,30 +593,70 @@ generate_config_warp_noipv6() {
                         "::/0"
                     ],
                     "persistent_keepalive_interval": 30,
-                    "reserved": [$warpreserved]
+                    "reserved": [${warpreserved_he}]
+                }
+            ],
+            "bind_interface": "he-ipv6"
+        }
+EOF_HE_EP
+        fi
+
+        echo '    ],' >> "${config_json}"
+    fi
+
+    # 添加 inbounds (顺序: mixed -> ss -> trojan -> he-ss)
+    echo '    "inbounds": [' >> "${config_json}"
+    local first_inbound=true
+
+    if [[ "${enable_mixed}" == true ]]; then
+        inbound_tags+=("mixed-in")
+        cat >> "${config_json}" <<EOF_MIXED
+        {
+            "type": "mixed",
+            "tag": "mixed-in",
+            "listen": "::",
+            "listen_port": ${mport},
+            "users": [
+                {
+                    "username": "${muser}",
+                    "password": "${pswd}"
                 }
             ]
         }
-    ],
-    "inbounds": [
+EOF_MIXED
+        first_inbound=false
+    fi
+
+    if [[ "${enable_ss}" == true ]]; then
+        inbound_tags+=("ss-in")
+        [[ "${first_inbound}" == false ]] && _append_comma
+        cat >> "${config_json}" <<EOF_SS
         {
             "type": "shadowsocks",
             "tag": "ss-in",
             "listen": "::",
-            "listen_port": $sport,
+            "listen_port": ${sport},
             "tcp_fast_open": true,
             "method": "2022-blake3-aes-128-gcm",
-            "password": "$pswd"
-        },
+            "password": "${pswd}"
+        }
+EOF_SS
+        first_inbound=false
+    fi
+
+    if [[ "${enable_trojan}" == true ]]; then
+        inbound_tags+=("trojan-in")
+        [[ "${first_inbound}" == false ]] && _append_comma
+        cat >> "${config_json}" <<EOF_TROJAN
         {
             "type": "trojan",
             "tag": "trojan-in",
             "listen": "::",
-            "listen_port": $tport,
+            "listen_port": ${tport},
             "users": [
                 {
                     "name": "trojan",
-                    "password": "$pswd"
+                    "password": "${pswd}"
                 }
             ],
             "transport": {
@@ -613,35 +666,140 @@ generate_config_warp_noipv6() {
                 "early_data_header_name": "Sec-WebSocket-Protocol"
             }
         }
+EOF_TROJAN
+        first_inbound=false
+    fi
+
+    if [[ "${enable_he_ss}" == true ]]; then
+        inbound_tags+=("he-in")
+        [[ "${first_inbound}" == false ]] && _append_comma
+        cat >> "${config_json}" <<EOF_HE_SS
+        {
+            "type": "shadowsocks",
+            "tag": "he-in",
+            "listen": "::",
+            "listen_port": ${he_sport},
+            "tcp_fast_open": true,
+            "method": "2022-blake3-aes-128-gcm",
+            "password": "${pswd}"
+        }
+EOF_HE_SS
+    fi
+    fi
+
+    cat >> "${config_json}" <<'EOF_OUTBOUNDS'
     ],
     "outbounds": [
         {
             "type": "direct",
             "tag": "direct"
         }
+EOF_OUTBOUNDS
+
+    # 添加 HE IPv6 outbound
+    if [[ "${enable_he_ipv6}" == true ]]; then
+        _append_comma
+        cat >> "${config_json}" <<'EOF_HE_OUTBOUND'
+        {
+            "type": "direct",
+            "tag": "he-ipv6",
+            "bind_interface": "he-ipv6"
+        }
+EOF_HE_OUTBOUND
+    fi
+
+    cat >> "${config_json}" <<'EOF_ROUTE_START'
     ],
     "route": {
         "rules": [
+EOF_ROUTE_START
+
+    # 添加 sniff 规则
+    local inbound_list=$(IFS=','; echo "\"${inbound_tags[*]}\"" | sed 's/,/","/g')
+    cat >> "${config_json}" <<EOF_SNIFF
             {
-                "inbound": ["ss-in","trojan-in"],
+                "inbound": [${inbound_list}],
                 "action": "sniff",
                 "timeout": "1s"
+            }
+EOF_SNIFF
+
+    # HE IPv6 专用路由规则
+    if [[ "${enable_he_ipv6}" == true ]]; then
+        _append_comma
+        cat >> "${config_json}" <<'EOF_HE_ROUTE'
+            {
+                "inbound": ["he-in"],
+                "action": "route",
+                "outbound": "wg-ep-he"
+            }
+EOF_HE_ROUTE
+    fi
+
+    # WARP 测试域名路由规则
+    if [[ "${enable_warp}" == true ]]; then
+        _append_comma
+        cat >> "${config_json}" <<'EOF_WARP_TEST'
+            {
+                "domain": ["cfv4.sfun.ip-ddns.com", "cfv6.sfun.ip-ddns.com"],
+                "action": "route",
+                "outbound": "wg-ep"
+            }
+EOF_WARP_TEST
+    fi
+
+    if [[ "${enable_he_ipv6}" == true ]]; then
+        _append_comma
+        cat >> "${config_json}" <<'EOF_HE_WARP_TEST'
+            {
+                "domain": ["he-cfv4.sfun.ip-ddns.com", "he-cfv6.sfun.ip-ddns.com"],
+                "action": "route",
+                "outbound": "wg-ep-he"
             },
+            {
+                "domain": "hev6.sfun.ip-ddns.com",
+                "action": "route",
+                "outbound": "he-ipv6"
+            }
+EOF_HE_WARP_TEST
+    fi
+
+    # 添加路由规则
+    if [[ "${enable_warp}" == true ]]; then
+        if [[ "${enable_openai_rule}" == true ]]; then
+            _append_comma
+            cat >> "${config_json}" <<'EOF_OPENAI_RESOLVE'
             {
                 "rule_set": "openai",
                 "action": "resolve",
                 "strategy": "prefer_ipv6"
-            },
+            }
+EOF_OPENAI_RESOLVE
+        fi
+
+        if [[ "${enable_perplexity_rule}" == true ]]; then
+            _append_comma
+            cat >> "${config_json}" <<'EOF_PERPLEXITY_RESOLVE'
             {
-                 "domain_suffix": "perplexity.ai",
+                "domain_suffix": "perplexity.ai",
                 "action": "resolve",
                 "strategy": "prefer_ipv6"
-            },
+            }
+EOF_PERPLEXITY_RESOLVE
+        fi
+
+        _append_comma
+        cat >> "${config_json}" <<'EOF_OYUNFOR'
             {
                 "domain_suffix": "oyunfor.com",
                 "action": "resolve",
                 "strategy": "ipv4_only"
-            },
+            }
+EOF_OYUNFOR
+
+        if [[ "${enable_apple_rule}" == true ]]; then
+            _append_comma
+            cat >> "${config_json}" <<'EOF_APPLE'
             {
                 "domain": [
                     "speedysub.itunes.apple.com",
@@ -650,23 +808,45 @@ generate_config_warp_noipv6() {
                 ],
                 "action": "route",
                 "outbound": "wg-ep"
-            },
-             {
+            }
+EOF_APPLE
+        fi
+
+        if [[ "${enable_perplexity_rule}" == true ]]; then
+            _append_comma
+            cat >> "${config_json}" <<'EOF_PERPLEXITY_ROUTE'
+            {
                 "domain_suffix": "perplexity.ai",
                 "action": "route",
                 "outbound": "wg-ep"
-            },
-             {
+            }
+EOF_PERPLEXITY_ROUTE
+        fi
+
+        _append_comma
+        cat >> "${config_json}" <<'EOF_CLOUDFLARE'
+            {
                 "ip_cidr": ["1.1.1.1/32"],
                 "action": "route",
                 "outbound": "wg-ep"
-            },
+            }
+EOF_CLOUDFLARE
+
+        if [[ "${enable_openai_rule}" == true ]]; then
+            _append_comma
+            cat >> "${config_json}" <<'EOF_OPENAI_ROUTE'
             {
                 "rule_set": "openai",
                 "action": "route",
                 "outbound": "wg-ep"
-            },
-             {
+            }
+EOF_OPENAI_ROUTE
+        fi
+
+        if [[ "${enable_ipv6_via_warp}" == true ]]; then
+            _append_comma
+            cat >> "${config_json}" <<'EOF_IPV6'
+            {
                 "domain_keyword": ["ipv6"],
                 "action": "route",
                 "outbound": "wg-ep"
@@ -676,16 +856,40 @@ generate_config_warp_noipv6() {
                 "action": "route",
                 "outbound": "wg-ep"
             }
-        ],
+EOF_IPV6
+        fi
+    else
+        _append_comma
+        cat >> "${config_json}" <<'EOF_NOWARP_OYUNFOR'
+            {
+                "domain_suffix": "oyunfor.com",
+                "action": "resolve",
+                "strategy": "ipv4_only"
+            }
+EOF_NOWARP_OYUNFOR
+    fi
+
+    # 添加 rule_set
+    echo '        ],' >> "${config_json}"
+    if [[ "${enable_warp}" == true && "${enable_openai_rule}" == true ]]; then
+        cat >> "${config_json}" <<'EOF_RULESET'
         "rule_set": [
             {
                 "tag": "openai",
                 "type": "remote",
                 "format": "binary",
                 "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-openai.srs",
-                "download_detour": "direct"
+                "download_detour": "direct",
+                "update_interval": "1d"
             }
         ],
+EOF_RULESET
+    else
+        echo '        "rule_set": [],' >> "${config_json}"
+    fi
+
+    # 结束配置
+    cat >> "${config_json}" <<'EOF_END'
         "final": "direct",
         "auto_detect_interface": true
     },
@@ -695,76 +899,7 @@ generate_config_warp_noipv6() {
         }
     }
 }
-EOF
-}
-generate_config_nowarp() {
-  cat <<EOF >${SING_BOX_CONFIG_PATH}/config.json
-{
-    "log": {
-        "disabled": false,
-        "level": "info",
-        "output": "${SING_BOX_LOG_PATH}/sing-box.log",
-        "timestamp": true
-    },
-    "inbounds": [
-        {
-            "type": "shadowsocks",
-            "tag": "ss-in",
-            "listen": "::",
-            "listen_port": $sport,
-            "tcp_fast_open": true,
-            "method": "2022-blake3-aes-128-gcm",
-            "password": "$pswd"
-        },
-        {
-            "type": "trojan",
-            "tag": "trojan-in",
-            "listen": "::",
-            "listen_port": $tport,
-            "users": [
-                {
-                    "name": "trojan",
-                    "password": "$pswd"
-                }
-            ],
-            "transport": {
-                "type": "ws",
-                "path": "/media-cdn",
-                "max_early_data": 2048,
-                "early_data_header_name": "Sec-WebSocket-Protocol"
-            }
-        }
-    ],
-    "outbounds": [
-        {
-            "type": "direct",
-            "tag": "direct"
-        }
-    ],
-    "route": {
-        "rules": [
-             {
-                "inbound": ["ss-in","trojan-in"],
-                "action": "sniff",
-                "timeout": "1s"
-            },
-            {
-                "domain_suffix": "oyunfor.com",
-                "action": "resolve",
-                "strategy": "ipv4_only"
-            }
-        ],
-        "rule_set": [],
-        "final": "direct",
-        "auto_detect_interface": true
-    },
-    "experimental": {
-        "cache_file": {
-            "enabled": true
-        }
-    }
-}
-EOF
+EOF_END
 }
 
 # 安装 sing-box
@@ -782,15 +917,14 @@ install_sing_box() {
     arch_check || return 1
     install_base || return 1
 
-    mkdir -p "${SING_BOX_CONFIG_PATH}" || return 1
-    mkdir -p "${SING_BOX_LOG_PATH}" || return 1
-    mkdir -p "${SING_BOX_LIB_PATH}" || return 1
+    mkdir -p "${SING_BOX_CONFIG_PATH}" "${SING_BOX_LOG_PATH}" "${SING_BOX_LIB_PATH}" || return 1
 
-    latest_version=$(get_latest_version "${SING_BOX_VERSION_TYPE}" "version") || {
+    clear_version_cache
+    latest_version=$(get_latest_version "version") || {
         LOGE "获取 sing-box 最新版本失败"
         return 1
     }
-    latest_name=$(get_latest_version "${SING_BOX_VERSION_TYPE}" "name") || {
+    latest_name=$(get_latest_version "name") || {
         LOGE "获取 sing-box 最新版本名称失败"
         return 1
     }
@@ -830,11 +964,12 @@ update_sing_box() {
         source "${SING_BOX_CONFIG_PATH}/install.info"
     fi
 
-    latest_version=$(get_latest_version "${SING_BOX_VERSION_TYPE}" "version") || {
+    clear_version_cache
+    latest_version=$(get_latest_version "version") || {
         LOGE "获取 sing-box 最新版本失败"
         return 1
     }
-    latest_name=$(get_latest_version "${SING_BOX_VERSION_TYPE}" "name") || {
+    latest_name=$(get_latest_version "name") || {
         LOGE "获取 sing-box 最新版本名称失败"
         return 1
     }
