@@ -685,7 +685,6 @@ EOF_TROJAN
         }
 EOF_HE_SS
     fi
-    fi
 
     cat >> "${config_json}" <<'EOF_OUTBOUNDS'
     ],
