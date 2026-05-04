@@ -520,14 +520,7 @@ EOF_LOG
     # 添加 DNS (WARP 需要)
     if [[ "${enable_warp}" == true || "${enable_he_ipv6}" == true ]]; then
         cat >> "${config_json}" <<'EOF_DNS'
-    "dns": {
-        "servers": [
-            {
-                "type": "local",
-                "tag": "local"
-            }
-        ]
-    },
+    "dns": {},
 EOF_DNS
     fi
 
