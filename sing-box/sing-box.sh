@@ -345,6 +345,8 @@ configuration_sing_box_config() {
     local enable_mixed=false
     local enable_he_ipv6=false
     local enable_he_ss=false
+    local enable_akile_dns=false
+    local akile_dns_server=''
     local warpv6='' warpkey='' warpreserved=''
     local warpv4_he='172.16.0.2/32' warpv6_he='' warpkey_he='' warpreserved_he=''
     local sport='' tport='' mport='' muser='' pswd=''
@@ -398,6 +400,14 @@ configuration_sing_box_config() {
     else
         SING_BOX_CONFIG_TYPE="nowarp"
         echo -e "${yellow}未启用 WARP，跳过策略配置${plain}"
+    fi
+
+    # DNS 配置
+    echo -e "\n${blue}=== DNS 配置 ===${plain}"
+    if confirm "是否启用 Akile DNS"; then
+        enable_akile_dns=true
+        read -p "请输入 Akile DNS server: " akile_dns_server
+        [ -z "${akile_dns_server}" ] && LOGE "Akile DNS server 不能为空" && return 1
     fi
 
     # 步骤3: Inbounds 配置 (顺序: mixed -> ss -> trojan)
@@ -495,6 +505,8 @@ ENABLE_TROJAN=${enable_trojan}
 ENABLE_MIXED=${enable_mixed}
 ENABLE_HE_IPV6=${enable_he_ipv6}
 ENABLE_HE_SS=${enable_he_ss}
+ENABLE_AKILE_DNS=${enable_akile_dns}
+AKILE_DNS_SERVER=${akile_dns_server}
 EOF
 
     LOGI "sing-box 配置文件完成"
@@ -504,6 +516,8 @@ EOF
 generate_dynamic_config() {
     local config_json="${SING_BOX_CONFIG_PATH}/config.json"
     local inbound_tags=()
+    local default_dns_server="cloudflare"
+    [[ "${enable_akile_dns}" == true ]] && default_dns_server="akile"
 
     # 在文件最后一个 } 后追加逗号 (用于 JSON 数组元素间分隔)
     _append_comma() { sed -i '$ s/}$/},/' "${config_json}"; }
@@ -528,16 +542,25 @@ EOF_LOG
                 "tag": "cloudflare",
                 "server": "1.1.1.1",
                 "server_port": 53
-            },
+            }
+EOF_DNS
+
+    if [[ "${enable_akile_dns}" == true ]]; then
+        _append_comma
+        cat >> "${config_json}" <<EOF_AKILE_DNS
             {
                 "type": "udp",
-                "tag": "google",
-                "server": "8.8.8.8",
+                "tag": "akile",
+                "server": "${akile_dns_server}",
                 "server_port": 53
             }
+EOF_AKILE_DNS
+    fi
+
+    cat >> "${config_json}" <<'EOF_DNS_END'
         ]
     },
-EOF_DNS
+EOF_DNS_END
 
     # 添加 endpoints (WARP)
     if [[ "${enable_warp}" == true || "${enable_he_ipv6}" == true ]]; then
@@ -715,11 +738,11 @@ EOF_OUTBOUNDS
 EOF_HE_OUTBOUND
     fi
 
-    cat >> "${config_json}" <<'EOF_ROUTE_START'
+    cat >> "${config_json}" <<EOF_ROUTE_START
     ],
     "route": {
         "default_domain_resolver": {
-            "server": "cloudflare"
+            "server": "${default_dns_server}"
         },
         "rules": [
 EOF_ROUTE_START
@@ -734,10 +757,14 @@ EOF_ROUTE_START
             }
 EOF_SNIFF
 
-    # HE IPv6 专用路由规则
-    if [[ "${enable_he_ipv6}" == true ]]; then
+    if [[ "${enable_he_ss}" == true ]]; then
         _append_comma
         cat >> "${config_json}" <<'EOF_HE_ROUTE'
+            {
+                "inbound": ["he-in"],
+                "action": "resolve",
+                "server": "cloudflare"
+            },
             {
                 "inbound": ["he-in"],
                 "action": "route",
