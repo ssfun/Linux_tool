@@ -346,7 +346,7 @@ configuration_sing_box_config() {
     local enable_he_ipv6=false
     local enable_he_ss=false
     local warpv6='' warpkey='' warpreserved=''
-    local warpv4_he='' warpv6_he='' warpkey_he='' warpreserved_he=''
+    local warpv4_he='172.16.0.2/32' warpv6_he='' warpkey_he='' warpreserved_he=''
     local sport='' tport='' mport='' muser='' pswd=''
     local he_sport=''
 
@@ -400,34 +400,8 @@ configuration_sing_box_config() {
         echo -e "${yellow}未启用 WARP，跳过策略配置${plain}"
     fi
 
-    # 步骤3: HE IPv6 配置
-    echo -e "\n${blue}=== 步骤 3/4: HE IPv6 配置 ===${plain}"
-    if check_he_ipv6_interface; then
-        LOGI "检测到 he-ipv6 隧道接口"
-        if confirm "是否启用 HE IPv6 配置"; then
-            enable_he_ipv6=true
-
-            read -p "请输入 HE warp ipv4: " warpv4_he
-            [ -z "${warpv4_he}" ] && LOGE "HE warp ipv4 不能为空" && return 1
-            read -p "请输入 HE warp ipv6: " warpv6_he
-            [ -z "${warpv6_he}" ] && LOGE "HE warp ipv6 不能为空" && return 1
-            read -p "请输入 HE warp private key: " warpkey_he
-            [ -z "${warpkey_he}" ] && LOGE "HE warp private key 不能为空" && return 1
-            read -p "请输入 HE warp reserved: " warpreserved_he
-            [ -z "${warpreserved_he}" ] && LOGE "HE warp reserved 不能为空" && return 1
-
-            if confirm "是否配置 HE Shadowsocks"; then
-                enable_he_ss=true
-                read -p "请输入 HE Shadowsocks 端口: " he_sport
-                [ -z "${he_sport}" ] && LOGE "HE Shadowsocks 端口不能为空" && return 1
-            fi
-        fi
-    else
-        echo -e "${yellow}未检测到 he-ipv6 隧道接口，跳过 HE IPv6 配置${plain}"
-    fi
-
-    # 步骤4: Inbounds 配置 (顺序: mixed -> ss -> trojan -> he-ss)
-    echo -e "\n${blue}=== 步骤 4/4: Inbounds 配置 ===${plain}"
+    # 步骤3: Inbounds 配置 (顺序: mixed -> ss -> trojan)
+    echo -e "\n${blue}=== 步骤 3/4: Inbounds 配置 ===${plain}"
 
     if confirm "是否配置 Mixed (SOCKS/HTTP)"; then
         enable_mixed=true
@@ -457,6 +431,34 @@ configuration_sing_box_config() {
             read -p "请输入 Trojan 密码: " pswd
             [ -z "${pswd}" ] && LOGE "Trojan 密码不能为空" && return 1
         fi
+    fi
+
+    # 步骤4: HE IPv6 配置
+    echo -e "\n${blue}=== 步骤 4/4: HE IPv6 配置 ===${plain}"
+    if check_he_ipv6_interface; then
+        LOGI "检测到 he-ipv6 隧道接口"
+        if confirm "是否启用 HE IPv6 配置"; then
+            enable_he_ipv6=true
+
+            read -p "请输入 HE warp ipv6: " warpv6_he
+            [ -z "${warpv6_he}" ] && LOGE "HE warp ipv6 不能为空" && return 1
+            read -p "请输入 HE warp private key: " warpkey_he
+            [ -z "${warpkey_he}" ] && LOGE "HE warp private key 不能为空" && return 1
+            read -p "请输入 HE warp reserved: " warpreserved_he
+            [ -z "${warpreserved_he}" ] && LOGE "HE warp reserved 不能为空" && return 1
+
+            if confirm "是否配置 HE Shadowsocks"; then
+                enable_he_ss=true
+                read -p "请输入 HE Shadowsocks 端口: " he_sport
+                [ -z "${he_sport}" ] && LOGE "HE Shadowsocks 端口不能为空" && return 1
+                if [[ -z "${pswd}" ]]; then
+                    read -p "请输入 HE Shadowsocks 密码: " pswd
+                    [ -z "${pswd}" ] && LOGE "HE Shadowsocks 密码不能为空" && return 1
+                fi
+            fi
+        fi
+    else
+        echo -e "${yellow}未检测到 he-ipv6 隧道接口，跳过 HE IPv6 配置${plain}"
     fi
 
     if [[ "${enable_ss}" == false && "${enable_trojan}" == false && "${enable_mixed}" == false && "${enable_he_ss}" == false ]]; then
@@ -520,7 +522,22 @@ EOF_LOG
     # 添加 DNS (WARP 需要)
     if [[ "${enable_warp}" == true || "${enable_he_ipv6}" == true ]]; then
         cat >> "${config_json}" <<'EOF_DNS'
-    "dns": {},
+    "dns": {
+        "servers": [
+            {
+                "type": "udp",
+                "tag": "cloudflare",
+                "server": "1.1.1.1",
+                "server_port": 53
+            },
+            {
+                "type": "udp",
+                "tag": "google",
+                "server": "8.8.8.8",
+                "server_port": 53
+            }
+        ]
+    },
 EOF_DNS
     fi
 
@@ -578,7 +595,7 @@ EOF_WARP_EP
             "listen_port": 2409,
             "peers": [
                 {
-                    "address": "engage.cloudflareclient.com",
+                    "address": "2606:4700:d0::a29f:c001",
                     "port": 2408,
                     "public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
                     "allowed_ips": [
