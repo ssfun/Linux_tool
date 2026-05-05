@@ -519,9 +519,8 @@ generate_dynamic_config() {
     },
 EOF_LOG
 
-    # 添加 DNS (WARP 需要)
-    if [[ "${enable_warp}" == true || "${enable_he_ipv6}" == true ]]; then
-        cat >> "${config_json}" <<'EOF_DNS'
+    # 添加 DNS
+    cat >> "${config_json}" <<'EOF_DNS'
     "dns": {
         "servers": [
             {
@@ -539,7 +538,6 @@ EOF_LOG
         ]
     },
 EOF_DNS
-    fi
 
     # 添加 endpoints (WARP)
     if [[ "${enable_warp}" == true || "${enable_he_ipv6}" == true ]]; then
@@ -720,6 +718,9 @@ EOF_HE_OUTBOUND
     cat >> "${config_json}" <<'EOF_ROUTE_START'
     ],
     "route": {
+        "default_domain_resolver": {
+            "server": "cloudflare"
+        },
         "rules": [
 EOF_ROUTE_START
 
