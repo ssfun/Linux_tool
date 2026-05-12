@@ -27,6 +27,7 @@ SING_BOX_LOG_PATH='/var/log/sing-box'
 SING_BOX_LIB_PATH='/var/lib/sing-box'
 SING_BOX_BINARY='/usr/local/bin/sing-box'
 SING_BOX_SERVICE='/etc/systemd/system/sing-box.service'
+SING_BOX_LOGROTATE='/etc/logrotate.d/sing-box'
 
 # sing-box 状态定义
 declare -r SING_BOX_STATUS_RUNNING=1
@@ -297,6 +298,25 @@ EOF
     LOGD "安装 sing-box systemd 服务成功"
 }
 
+# 安装 sing-box logrotate 配置
+install_sing_box_logrotate() {
+    LOGD "开始安装 sing-box logrotate 配置..."
+    cat <<EOF >"${SING_BOX_LOGROTATE}"
+${SING_BOX_LOG_PATH}/sing-box.log {
+    daily
+    size 10M
+    rotate 7
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
+    create 0644 root root
+}
+EOF
+    LOGD "安装 sing-box logrotate 配置成功"
+}
+
 # 检测 IPv6 连通性
 check_ipv6_support() {
     # 测试地址：Google IPv6 DNS
@@ -338,6 +358,8 @@ configuration_sing_box_config() {
     local enable_warp=false
     local enable_ipv6_via_warp=false
     local enable_openai_rule=false
+    local enable_openai_dns=false
+    local enable_youtube_rule=false
     local enable_apple_rule=false
     local enable_perplexity_rule=false
     local enable_ss=false
@@ -388,6 +410,9 @@ configuration_sing_box_config() {
 
         if confirm "是否启用 OpenAI 规则 (走 WARP IPv6)"; then
             enable_openai_rule=true
+            if confirm "是否启用 OpenAI DNS (使用 Quad9 解析)"; then
+                enable_openai_dns=true
+            fi
         fi
 
         if confirm "是否启用 Apple 特殊规则 (走 WARP)"; then
@@ -408,6 +433,9 @@ configuration_sing_box_config() {
         enable_akile_dns=true
         read -p "请输入 Akile DNS server: " akile_dns_server
         [ -z "${akile_dns_server}" ] && LOGE "Akile DNS server 不能为空" && return 1
+        if confirm "是否启用 YouTube 规则 (使用 Akile DNS 解析)"; then
+            enable_youtube_rule=true
+        fi
     fi
 
     # 步骤3: Inbounds 配置 (顺序: mixed -> ss -> trojan)
@@ -498,6 +526,8 @@ IPV6_SUPPORT=$([ ${ipv6_support:-1} == 0 ] && echo "yes" || echo "no")
 ENABLE_WARP=${enable_warp}
 ENABLE_IPV6_VIA_WARP=${enable_ipv6_via_warp}
 ENABLE_OPENAI_RULE=${enable_openai_rule}
+ENABLE_OPENAI_DNS=${enable_openai_dns}
+ENABLE_YOUTUBE_RULE=${enable_youtube_rule}
 ENABLE_APPLE_RULE=${enable_apple_rule}
 ENABLE_PERPLEXITY_RULE=${enable_perplexity_rule}
 ENABLE_SS=${enable_ss}
@@ -516,8 +546,6 @@ EOF
 generate_dynamic_config() {
     local config_json="${SING_BOX_CONFIG_PATH}/config.json"
     local inbound_tags=()
-    local default_dns_server="cloudflare"
-    [[ "${enable_akile_dns}" == true ]] && default_dns_server="akile"
 
     # 在文件最后一个 } 后追加逗号 (用于 JSON 数组元素间分隔)
     _append_comma() { sed -i '$ s/}$/},/' "${config_json}"; }
@@ -542,6 +570,12 @@ EOF_LOG
                 "tag": "cloudflare",
                 "server": "1.1.1.1",
                 "server_port": 53
+            },
+            {
+                "type": "udp",
+                "tag": "quad9",
+                "server": "9.9.9.9",
+                "server_port": 53
             }
 EOF_DNS
 
@@ -557,8 +591,51 @@ EOF_DNS
 EOF_AKILE_DNS
     fi
 
+    cat >> "${config_json}" <<'EOF_DNS_RULES_START'
+        ],
+        "rules": [
+EOF_DNS_RULES_START
+
+    local first_dns_rule=true
+    if [[ "${enable_he_ss}" == true ]]; then
+        local he_dns_server="cloudflare"
+        [[ "${enable_openai_dns}" == true ]] && he_dns_server="quad9"
+        cat >> "${config_json}" <<EOF_HE_DNS_RULE
+            {
+                "inbound": "he-in",
+                "action": "route",
+                "server": "${he_dns_server}"
+            }
+EOF_HE_DNS_RULE
+        first_dns_rule=false
+    fi
+
+    if [[ "${enable_youtube_rule}" == true ]]; then
+        [[ "${first_dns_rule}" == false ]] && _append_comma
+        cat >> "${config_json}" <<'EOF_YOUTUBE_DNS_RULE'
+            {
+                "rule_set": "youtube",
+                "action": "route",
+                "server": "akile"
+            }
+EOF_YOUTUBE_DNS_RULE
+        first_dns_rule=false
+    fi
+
+    if [[ "${enable_openai_dns}" == true ]]; then
+        [[ "${first_dns_rule}" == false ]] && _append_comma
+        cat >> "${config_json}" <<'EOF_OPENAI_DNS_RULE'
+            {
+                "rule_set": "openai",
+                "action": "route",
+                "server": "quad9"
+            }
+EOF_OPENAI_DNS_RULE
+    fi
+
     cat >> "${config_json}" <<'EOF_DNS_END'
-        ]
+        ],
+        "final": "cloudflare"
     },
 EOF_DNS_END
 
@@ -738,11 +815,11 @@ EOF_OUTBOUNDS
 EOF_HE_OUTBOUND
     fi
 
-    cat >> "${config_json}" <<EOF_ROUTE_START
+    cat >> "${config_json}" <<'EOF_ROUTE_START'
     ],
     "route": {
         "default_domain_resolver": {
-            "server": "${default_dns_server}"
+            "server": "cloudflare"
         },
         "rules": [
 EOF_ROUTE_START
@@ -908,9 +985,11 @@ EOF_NOWARP_OYUNFOR
 
     # 添加 rule_set
     echo '        ],' >> "${config_json}"
+    echo '        "rule_set": [' >> "${config_json}"
+    local first_rule_set=true
+
     if [[ "${enable_warp}" == true && "${enable_openai_rule}" == true ]]; then
-        cat >> "${config_json}" <<'EOF_RULESET'
-        "rule_set": [
+        cat >> "${config_json}" <<'EOF_OPENAI_RULESET'
             {
                 "tag": "openai",
                 "type": "remote",
@@ -919,11 +998,25 @@ EOF_NOWARP_OYUNFOR
                 "download_detour": "direct",
                 "update_interval": "1d"
             }
-        ],
-EOF_RULESET
-    else
-        echo '        "rule_set": [],' >> "${config_json}"
+EOF_OPENAI_RULESET
+        first_rule_set=false
     fi
+
+    if [[ "${enable_youtube_rule}" == true ]]; then
+        [[ "${first_rule_set}" == false ]] && _append_comma
+        cat >> "${config_json}" <<'EOF_YOUTUBE_RULESET'
+            {
+                "tag": "youtube",
+                "type": "remote",
+                "format": "binary",
+                "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-youtube.srs",
+                "download_detour": "direct",
+                "update_interval": "1d"
+            }
+EOF_YOUTUBE_RULESET
+    fi
+
+    echo '        ],' >> "${config_json}"
 
     # 结束配置
     cat >> "${config_json}" <<'EOF_END'
@@ -968,6 +1061,7 @@ install_sing_box() {
 
     install_sing_box_binary "${latest_version}" "${latest_name}" || return 1
     install_sing_box_systemd_service || return 1
+    install_sing_box_logrotate || return 1
     configuration_sing_box_config || return 1
 
     if systemctl start sing-box; then
@@ -1052,6 +1146,7 @@ uninstall_sing_box() {
     systemctl stop sing-box >/dev/null 2>&1
     systemctl disable sing-box >/dev/null 2>&1
     rm -f "${SING_BOX_SERVICE}"
+    rm -f "${SING_BOX_LOGROTATE}"
     systemctl daemon-reload || return 1
     rm -f "${SING_BOX_BINARY}"
     rm -rf "${SING_BOX_CONFIG_PATH}"
