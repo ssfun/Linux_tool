@@ -746,7 +746,7 @@ EOF_MIXED
             "listen": "::",
             "listen_port": ${sport},
             "tcp_fast_open": true,
-            "method": "2022-blake3-aes-128-gcm",
+            "method": "aes-128-gcm",
             "password": "${pswd}"
         }
 EOF_SS
@@ -789,7 +789,7 @@ EOF_TROJAN
             "listen": "::",
             "listen_port": ${he_sport},
             "tcp_fast_open": true,
-            "method": "2022-blake3-aes-128-gcm",
+            "method": "aes-128-gcm",
             "password": "${pswd}"
         }
 EOF_HE_SS
