@@ -475,28 +475,29 @@ configuration_sing_box_config() {
     echo -e "\n${blue}=== 步骤 4/4: HE IPv6 配置 ===${plain}"
     if check_he_ipv6_interface; then
         LOGI "检测到 he-ipv6 隧道接口"
-        if confirm "是否启用 HE IPv6 配置"; then
-            enable_he_ipv6=true
+    else
+        echo -e "${yellow}未检测到 he-ipv6 隧道接口${plain}"
+    fi
 
-            read -p "请输入 HE warp ipv6: " warpv6_he
-            [ -z "${warpv6_he}" ] && LOGE "HE warp ipv6 不能为空" && return 1
-            read -p "请输入 HE warp private key: " warpkey_he
-            [ -z "${warpkey_he}" ] && LOGE "HE warp private key 不能为空" && return 1
-            read -p "请输入 HE warp reserved: " warpreserved_he
-            [ -z "${warpreserved_he}" ] && LOGE "HE warp reserved 不能为空" && return 1
+    if confirm "是否启用 HE IPv6 配置"; then
+        enable_he_ipv6=true
 
-            if confirm "是否配置 HE Shadowsocks"; then
-                enable_he_ss=true
-                read -p "请输入 HE Shadowsocks 端口: " he_sport
-                [ -z "${he_sport}" ] && LOGE "HE Shadowsocks 端口不能为空" && return 1
-                if [[ -z "${pswd}" ]]; then
-                    read -p "请输入 HE Shadowsocks 密码: " pswd
-                    [ -z "${pswd}" ] && LOGE "HE Shadowsocks 密码不能为空" && return 1
-                fi
+        read -p "请输入 HE warp ipv6: " warpv6_he
+        [ -z "${warpv6_he}" ] && LOGE "HE warp ipv6 不能为空" && return 1
+        read -p "请输入 HE warp private key: " warpkey_he
+        [ -z "${warpkey_he}" ] && LOGE "HE warp private key 不能为空" && return 1
+        read -p "请输入 HE warp reserved: " warpreserved_he
+        [ -z "${warpreserved_he}" ] && LOGE "HE warp reserved 不能为空" && return 1
+
+        if confirm "是否配置 HE Shadowsocks"; then
+            enable_he_ss=true
+            read -p "请输入 HE Shadowsocks 端口: " he_sport
+            [ -z "${he_sport}" ] && LOGE "HE Shadowsocks 端口不能为空" && return 1
+            if [[ -z "${pswd}" ]]; then
+                read -p "请输入 HE Shadowsocks 密码: " pswd
+                [ -z "${pswd}" ] && LOGE "HE Shadowsocks 密码不能为空" && return 1
             fi
         fi
-    else
-        echo -e "${yellow}未检测到 he-ipv6 隧道接口，跳过 HE IPv6 配置${plain}"
     fi
 
     if [[ "${enable_ss}" == false && "${enable_trojan}" == false && "${enable_mixed}" == false && "${enable_he_ss}" == false ]]; then
@@ -836,11 +837,13 @@ EOF_SNIFF
 
     if [[ "${enable_he_ss}" == true ]]; then
         _append_comma
-        cat >> "${config_json}" <<'EOF_HE_ROUTE'
+        local he_route_dns_server="cloudflare"
+        [[ "${enable_openai_dns}" == true ]] && he_route_dns_server="quad9"
+        cat >> "${config_json}" <<EOF_HE_ROUTE
             {
                 "inbound": ["he-in"],
                 "action": "resolve",
-                "server": "cloudflare"
+                "server": "${he_route_dns_server}"
             },
             {
                 "inbound": ["he-in"],
