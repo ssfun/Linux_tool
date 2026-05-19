@@ -853,6 +853,25 @@ EOF_SNIFF
 EOF_HE_ROUTE
     fi
 
+    if [[ "${enable_youtube_rule}" == true ]]; then
+        local youtube_inbound_tags=()
+        [[ "${enable_mixed}" == true ]] && youtube_inbound_tags+=("mixed-in")
+        [[ "${enable_ss}" == true ]] && youtube_inbound_tags+=("ss-in")
+        [[ "${enable_trojan}" == true ]] && youtube_inbound_tags+=("trojan-in")
+        if [[ ${#youtube_inbound_tags[@]} -gt 0 ]]; then
+            _append_comma
+            local youtube_inbound_list=$(IFS=','; echo "\"${youtube_inbound_tags[*]}\"" | sed 's/,/","/g')
+            cat >> "${config_json}" <<EOF_YOUTUBE_RESOLVE
+            {
+                "inbound": [${youtube_inbound_list}],
+                "rule_set": "youtube",
+                "action": "resolve",
+                "server": "akile"
+            }
+EOF_YOUTUBE_RESOLVE
+        fi
+    fi
+
     # WARP 测试域名路由规则
     if [[ "${enable_warp}" == true ]]; then
         _append_comma
