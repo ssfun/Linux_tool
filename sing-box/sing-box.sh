@@ -2,8 +2,8 @@
 #####################################################
 # ssfun's Linux Tool
 # Author: ssfun
-# Date: 2026-04-22
-# Version: 3.0.0
+# Date: 2026-09-04
+# Version: 3.2.0
 #####################################################
 
 # 基本定义
@@ -16,6 +16,12 @@ yellow='\033[0;33m'
 # 操作系统架构环境
 OS=''
 ARCH=''
+
+# GitHub 加速前缀, 通过 -p/--proxy 或环境变量 GITHUB_PROXY 设置
+# 用法:
+#   bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/sing-box/sing-box.sh) -p https://proxy.com
+#   GITHUB_PROXY=https://proxy.com bash <(curl -sL https://raw.githubusercontent.com/ssfun/Linux_tool/main/sing-box/sing-box.sh)
+GITHUB_PROXY="${GITHUB_PROXY:-}"
 
 # 版本和配置类型 (稳定版)
 SING_BOX_VERSION_TYPE="stable" # 稳定版
@@ -58,6 +64,46 @@ confirm() {
     else
         return 1
     fi
+}
+
+normalize_github_proxy() {
+    local proxy="${1:-}"
+    proxy="${proxy#"${proxy%%[![:space:]]*}"}"
+    proxy="${proxy%"${proxy##*[![:space:]]}"}"
+    [[ -z "${proxy}" ]] && return 0
+    if [[ "${proxy}" != http://* && "${proxy}" != https://* ]]; then
+        proxy="https://${proxy}"
+    fi
+    [[ "${proxy}" != */ ]] && proxy="${proxy}/"
+    printf '%s' "${proxy}"
+}
+
+github_url() {
+    printf '%s%s' "${GITHUB_PROXY}" "$1"
+}
+
+parse_github_proxy_args() {
+    local proxy="${GITHUB_PROXY:-}"
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -p|--proxy)
+                if [[ -z "${2:-}" || "$2" == -* ]]; then
+                    LOGE "参数 $1 需要代理地址, 例如: -p https://proxy.com"
+                    exit 1
+                fi
+                proxy="$2"
+                shift 2
+                ;;
+            -p=*|--proxy=*)
+                proxy="${1#*=}"
+                shift
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
+    GITHUB_PROXY="$(normalize_github_proxy "${proxy}")"
 }
 
 # 检查是否为 root 用户
@@ -122,7 +168,7 @@ get_latest_version() {
 
     # 使用缓存避免重复 API 调用
     if [[ -z "${_CACHED_API_RESPONSE}" ]]; then
-        _CACHED_API_RESPONSE=$(curl -fsSL -m 10 "https://api.github.com/repos/SagerNet/sing-box/releases/latest") || return 1
+        _CACHED_API_RESPONSE=$(curl -fsSL -m 10 "$(github_url "https://api.github.com/repos/SagerNet/sing-box/releases/latest")") || return 1
     fi
     latest_version=$(echo "$_CACHED_API_RESPONSE" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n1)
 
@@ -239,10 +285,11 @@ install_sing_box_binary() {
     fi
 
     temp_dir=$(mktemp -d) || return 1
-    download_link="https://github.com/SagerNet/sing-box/releases/download/${version}/sing-box-${name}-linux-${ARCH}.tar.gz"
+    download_link="$(github_url "https://github.com/SagerNet/sing-box/releases/download/${version}/sing-box-${name}-linux-${ARCH}.tar.gz")"
     new_binary_path="${SING_BOX_BINARY}.new"
 
     LOGD "开始下载 sing-box_${name}"
+    LOGD "下载地址: ${download_link}"
     if ! curl -fsSL -o "${temp_dir}/sing-box.tar.gz" "${download_link}"; then
         rm -rf "${temp_dir}"
         LOGE "sing-box 下载失败"
@@ -638,6 +685,12 @@ EOF_OPENAI_DNS_RULE
         ],
         "final": "cloudflare"
     },
+    "http_clients": [
+        {
+            "tag": "direct-http",
+            "detour": "direct"
+        }
+    ],
 EOF_DNS_END
 
     # 添加 endpoints (WARP)
@@ -822,6 +875,7 @@ EOF_HE_OUTBOUND
         "default_domain_resolver": {
             "server": "cloudflare"
         },
+        "default_http_client": "direct-http",
         "rules": [
 EOF_ROUTE_START
 
@@ -1017,7 +1071,6 @@ EOF_NOWARP_OYUNFOR
                 "type": "remote",
                 "format": "binary",
                 "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-openai.srs",
-                "download_detour": "direct",
                 "update_interval": "1d"
             }
 EOF_OPENAI_RULESET
@@ -1032,7 +1085,6 @@ EOF_OPENAI_RULESET
                 "type": "remote",
                 "format": "binary",
                 "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-youtube.srs",
-                "download_detour": "direct",
                 "update_interval": "1d"
             }
 EOF_YOUTUBE_RULESET
@@ -1235,6 +1287,10 @@ ${green}8.${plain} 卸载 sing-box
     done
 }
 main() {
+    parse_github_proxy_args "$@"
+    if [[ -n "${GITHUB_PROXY}" ]]; then
+        LOGI "已启用 GitHub 加速: ${GITHUB_PROXY}"
+    fi
     show_menu
 }
 main "$@"
