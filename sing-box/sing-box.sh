@@ -3,7 +3,7 @@
 # ssfun's Linux Tool
 # Author: ssfun
 # Date: 2026-09-04
-# Version: 3.2.1
+# Version: 3.2.2
 #####################################################
 
 # 基本定义
@@ -80,6 +80,15 @@ normalize_github_proxy() {
 
 github_url() {
     printf '%s%s' "${GITHUB_PROXY}" "$1"
+}
+
+format_bytes() {
+    awk -v b="${1:-0}" 'BEGIN {
+        if (b >= 1073741824) printf "%.2f GB", b/1073741824
+        else if (b >= 1048576) printf "%.2f MB", b/1048576
+        else if (b >= 1024) printf "%.2f KB", b/1024
+        else printf "%.0f B", b
+    }'
 }
 
 parse_github_proxy_args() {
@@ -336,11 +345,18 @@ install_sing_box_binary() {
 
     LOGD "开始下载 sing-box_${name}"
     LOGD "下载地址: ${download_link}"
-    if ! curl -fsSL -A "Linux_tool" -o "${temp_dir}/sing-box.tar.gz" "${download_link}"; then
+    local curl_stats
+    if ! curl_stats=$(curl -fL --retry 3 --retry-delay 2 -A "Linux_tool" \
+        -o "${temp_dir}/sing-box.tar.gz" \
+        -w "%{size_download} %{speed_download} %{time_total}" \
+        "${download_link}"); then
         rm -rf "${temp_dir}"
         LOGE "sing-box 下载失败"
         return 1
     fi
+    local size_download speed_download time_total
+    read -r size_download speed_download time_total <<< "${curl_stats}"
+    LOGI "下载完成: $(format_bytes "${size_download}"), 平均速度: $(format_bytes "${speed_download}")/s, 耗时: ${time_total}s"
 
     if ! tar -xzf "${temp_dir}/sing-box.tar.gz" -C "${temp_dir}" --strip-components=1; then
         rm -rf "${temp_dir}"
