@@ -3,7 +3,7 @@
 # ssfun's Linux Tool
 # Author: ssfun
 # Date: 2026-09-04
-# Version: 3.3.0
+# Version: 3.3.1
 #####################################################
 
 # 基本定义
@@ -734,7 +734,7 @@ EOF
         {
             "type": "mixed",
             "tag": "mixed-in",
-            "listen": "::",
+            "listen": "127.0.0.1",
             "listen_port": ${mport},
             "users": [
                 {
@@ -894,14 +894,6 @@ EOF
 )")
         fi
     fi
-    route_rules+=("$(cat <<'EOF'
-            {
-                "domain_suffix": "oyunfor.com",
-                "action": "resolve",
-                "strategy": "ipv4_only"
-            }
-EOF
-)")
     if [[ "${enable_warp}" == true ]]; then
         if [[ "${enable_apple_rule}" == true ]]; then
             route_rules+=("$(cat <<'EOF'
