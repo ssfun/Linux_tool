@@ -3,7 +3,7 @@
 # ssfun's Linux Tool
 # Author: ssfun
 # Date: 2026-09-04
-# Version: 3.2.0
+# Version: 3.2.1
 #####################################################
 
 # 基本定义
@@ -160,32 +160,66 @@ install_base() {
     fi
 }
 
+# 从 URL / HTML 中提取 releases/tag/vX.Y.Z
+_extract_release_tag() {
+    sed -n 's#.*releases/tag/\(v[^/"[:space:]#]*\).*#\1#p' | head -n1
+}
+
+# 通过 GitHub /releases/latest 跳转或页面解析获取 tag (加速站通常支持 github.com)
+_fetch_tag_from_github_latest() {
+    local url="$1"
+    local headers body tag
+
+    headers=$(curl -sSI -m 10 -A "Linux_tool" "${url}" 2>/dev/null) || true
+    tag=$(printf '%s' "${headers}" | tr -d '\r' | awk 'tolower($1)=="location:" {print $2}' | _extract_release_tag)
+    [[ -n "${tag}" ]] && { printf '%s' "${tag}"; return 0; }
+
+    body=$(curl -sSL -m 15 -A "Linux_tool" "${url}" 2>/dev/null) || true
+    tag=$(printf '%s' "${body}" | grep -oE '/releases/tag/v[0-9][^"[:space:]/#]*' | head -n1 | _extract_release_tag)
+    [[ -n "${tag}" ]] && { printf '%s' "${tag}"; return 0; }
+
+    return 1
+}
+
+# 通过 GitHub API 获取 tag (部分加速站会 403)
+_fetch_tag_from_github_api() {
+    local url="$1"
+    local body tag
+
+    body=$(curl -sSL -m 10 -A "Linux_tool" -H "Accept: application/vnd.github+json" "${url}" 2>/dev/null) || true
+    tag=$(printf '%s' "${body}" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n1)
+    [[ -n "${tag}" ]] && { printf '%s' "${tag}"; return 0; }
+    return 1
+}
+
 # 获取最新版本信息
 get_latest_version() {
     local info_type=$1  # version 或 name
-    local api_response
-    local latest_version
+    local latest_version=""
 
-    # 使用缓存避免重复 API 调用
-    if [[ -z "${_CACHED_API_RESPONSE}" ]]; then
-        _CACHED_API_RESPONSE=$(curl -fsSL -m 10 "$(github_url "https://api.github.com/repos/SagerNet/sing-box/releases/latest")") || return 1
-    fi
-    latest_version=$(echo "$_CACHED_API_RESPONSE" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n1)
-
-    if [[ -z "${latest_version}" ]]; then
-        return 1
+    if [[ -z "${_CACHED_LATEST_TAG}" ]]; then
+        latest_version=$(_fetch_tag_from_github_latest "$(github_url "https://github.com/SagerNet/sing-box/releases/latest")") || true
+        [[ -z "${latest_version}" ]] && latest_version=$(_fetch_tag_from_github_api "$(github_url "https://api.github.com/repos/SagerNet/sing-box/releases/latest")") || true
+        if [[ -z "${latest_version}" && -n "${GITHUB_PROXY}" ]]; then
+            latest_version=$(_fetch_tag_from_github_latest "https://github.com/SagerNet/sing-box/releases/latest") || true
+            [[ -z "${latest_version}" ]] && latest_version=$(_fetch_tag_from_github_api "https://api.github.com/repos/SagerNet/sing-box/releases/latest") || true
+        fi
+        if [[ -z "${latest_version}" ]]; then
+            return 1
+        fi
+        _CACHED_LATEST_TAG="${latest_version}"
     fi
 
     if [[ "${info_type}" == "name" ]]; then
-        echo "${latest_version#v}"
+        echo "${_CACHED_LATEST_TAG#v}"
     else
-        echo "${latest_version}"
+        echo "${_CACHED_LATEST_TAG}"
     fi
 }
 
 # 清除版本缓存
 clear_version_cache() {
-    unset _CACHED_API_RESPONSE
+    unset _CACHED_LATEST_TAG
 }
 
 # sing-box 状态检查
@@ -211,14 +245,18 @@ show_sing_box_status() {
         version_info=$(${SING_BOX_BINARY} version)
         version=$(echo "$version_info" | head -n1 | awk '{print $3}')
     fi
-    latest_version=$(get_latest_version "version" | sed 's/^v//')
+    latest_version=$(get_latest_version "version" 2>/dev/null | sed 's/^v//')
 
     case ${status} in
         0)
             echo -e "[信息] sing-box 状态: ${yellow}未运行${plain}"
             if [[ -n "${version}" ]]; then
                 echo -e "[信息] sing-box 版本: ${green}${version}${plain}"
-                echo -e "[信息] 最新版本: ${green}${latest_version}${plain}"
+                if [[ -n "${latest_version}" ]]; then
+                    echo -e "[信息] 最新版本: ${green}${latest_version}${plain}"
+                else
+                    echo -e "[信息] 最新版本: ${yellow}获取失败${plain}"
+                fi
             fi
             show_sing_box_enable_status
             ;;
@@ -226,9 +264,13 @@ show_sing_box_status() {
             echo -e "[信息] sing-box 状态: ${green}已运行${plain}"
             if [[ -n "${version}" ]]; then
                 echo -e "[信息] sing-box 版本: ${green}${version}${plain}"
-                echo -e "[信息] 最新版本: ${green}${latest_version}${plain}"
-                if [ "${version}" != "${latest_version}" ]; then
-                    echo -e "[信息] 发现新版本: ${yellow}建议更新${plain}"
+                if [[ -n "${latest_version}" ]]; then
+                    echo -e "[信息] 最新版本: ${green}${latest_version}${plain}"
+                    if [ "${version}" != "${latest_version}" ]; then
+                        echo -e "[信息] 发现新版本: ${yellow}建议更新${plain}"
+                    fi
+                else
+                    echo -e "[信息] 最新版本: ${yellow}获取失败${plain}"
                 fi
                 local environment=$(echo "$version_info" | grep "Environment:" | awk '{print $2" "$3}')
                 local tags=$(echo "$version_info" | grep "Tags:" | cut -d':' -f2-)
@@ -245,7 +287,11 @@ show_sing_box_status() {
             ;;
         255)
             echo -e "[信息] sing-box 状态: ${red}未安装${plain}"
-            echo -e "[信息] 最新版本: ${green}${latest_version}${plain}"
+            if [[ -n "${latest_version}" ]]; then
+                echo -e "[信息] 最新版本: ${green}${latest_version}${plain}"
+            else
+                echo -e "[信息] 最新版本: ${yellow}获取失败${plain}"
+            fi
             ;;
     esac
 }
@@ -290,7 +336,7 @@ install_sing_box_binary() {
 
     LOGD "开始下载 sing-box_${name}"
     LOGD "下载地址: ${download_link}"
-    if ! curl -fsSL -o "${temp_dir}/sing-box.tar.gz" "${download_link}"; then
+    if ! curl -fsSL -A "Linux_tool" -o "${temp_dir}/sing-box.tar.gz" "${download_link}"; then
         rm -rf "${temp_dir}"
         LOGE "sing-box 下载失败"
         return 1
